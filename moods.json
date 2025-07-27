@@ -1,0 +1,36 @@
+{
+  "moods": [
+    {
+      "name": "energetic",
+      "attack": [0.001, 0.01],
+      "decay": [0.05, 0.2],
+      "sustain": [0.5, 1.0],
+      "release": [0.1, 0.3],
+      "tremFreq": [5.0, 15.0],
+      "tremDepth": [0.1, 0.3],
+      "vibFreq": [5.0, 15.0],
+      "vibDepth": [0.01, 0.05],
+      "alphaLP": [0.0, 0.3],
+      "alphaHP": [0.0, 0.95],
+      "powerGamma": [0.8, 1.2],
+      "noiseLevel": [0.1, 0.3],
+      "articulation": [0.2, 0.4]
+    },
+    {
+      "name": "calm",
+      "attack": [0.01, 0.05],
+      "decay": [0.2, 0.5],
+      "sustain": [0.2, 0.5],
+      "release": [0.5, 1.0],
+      "tremFreq": [0.0, 0.0],
+      "tremDepth": [0.0, 0.0],
+      "vibFreq": [0.0, 0.0],
+      "vibDepth": [0.0, 0.0],
+      "alphaLP": [0.8, 0.95],
+      "alphaHP": [0.0, 0.0],
+      "powerGamma": [1.0, 1.0],
+      "noiseLevel": [0.0, 0.1],
+      "articulation": [0.0, 0.2]
+    }
+  ]
+}

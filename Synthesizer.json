@@ -1,0 +1,74 @@
+{
+  "sections": {
+    "intro": {
+      "oscillator": ["sine", "triangle"],
+      "adsr": {
+        "attack": [0.5, 1.0],
+        "decay": [0.5, 0.5],
+        "sustain": [0.5, 0.5],
+        "release": [1.0, 2.0]
+      },
+      "filter": "low-pass",
+      "fx": ["high reverb", "light delay"],
+      "emotion": "calm, reflective",
+      "topology": "low damping, simple spectra"
+    },
+    "verse": {
+      "oscillator": ["sawtooth", "square"],
+      "adsr": {
+        "attack": [0.1, 0.3],
+        "decay": [0.2, 0.2],
+        "sustain": [0.7, 0.7],
+        "release": [0.5, 0.5]
+      },
+      "filter": "band-pass, slight high-pass",
+      "fx": ["light chorus", "subtle delay"],
+      "emotion": "supportive, steady",
+      "topology": "mid-range damping, moderate complexity"
+    },
+    "chorus": {
+      "oscillator": ["sawtooth", "pulse-width modulation"],
+      "adsr": {
+        "attack": [0.0, 0.1],
+        "decay": [0.3, 0.3],
+        "sustain": [0.8, 0.8],
+        "release": [0.4, 0.4]
+      },
+      "filter": "high-pass, notch",
+      "fx": ["delay", "distortion"],
+      "emotion": "energetic, bright",
+      "topology": "low damping, rich spectra"
+    },
+    "bridge": {
+      "oscillator": ["fm", "wavetable"],
+      "adsr": {
+        "attack": [0.01, 1.0],
+        "decay": [0.01, 1.0],
+        "sustain": [0.6, 0.6],
+        "release": [1.0, 1.0]
+      },
+      "filter": "automated cutoff",
+      "fx": ["ring modulation", "flanger"],
+      "emotion": "tense, surprising",
+      "topology": "high variability, synthetic dimension"
+    },
+    "outro": {
+      "oscillator": ["sine", "triangle"],
+      "adsr": {
+        "attack": [0.3, 0.3],
+        "decay": [0.6, 0.6],
+        "sustain": [0.3, 0.3],
+        "release": [1.5, 3.0]
+      },
+      "filter": "low-pass",
+      "fx": ["increasing reverb", "fade-out delay"],
+      "emotion": "reflective, conclusive",
+      "topology": "high damping, simple spectra"
+    }
+  },
+  "topological_notes": {
+    "parameter_space": "Multi-dimensional manifold with oscillator, ADSR, filter, FX, and emotion axes",
+    "navigation": "Smooth transitions via parameter interpolation (e.g., sound continua)",
+    "ai_application": "Regions represent sections; paths enable learning of musical relationships"
+  }
+}
