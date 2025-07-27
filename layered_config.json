@@ -1,0 +1,108 @@
+{
+    "layers": {
+        "ambient_pad": {
+            "layer_gain": 0.2880000174045563
+        },
+        "background_texture": {
+            "layer_gain": 0.14400000870227814
+        },
+        "lead_foreground": {
+            "layer_gain": 0.6479999423027039
+        },
+        "main_melodic": {
+            "adsr": {
+                "group": {
+                    "attack": 900.0,
+                    "decay": 480.0000305175781,
+                    "release": 1800.0,
+                    "sustain": 0.6000000238418579
+                }
+            },
+            "effects": [
+                {
+                    "mix": 0.30000001192092896,
+                    "type": "reverb",
+                    "wet": 0.5
+                },
+                {
+                    "feedback": 0.30000001192092896,
+                    "mix": 0.4000000059604645,
+                    "time": "500ms",
+                    "type": "delay"
+                }
+            ],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "attack": "600ms",
+                "curve": "linear",
+                "cutoff": "800Hz",
+                "decay": "400ms",
+                "detune": 0.019999999552965164,
+                "envelope_amount": 0.0,
+                "filter_type": "",
+                "mix_ratios": [
+                    0.699999988079071,
+                    0.30000001192092896
+                ],
+                "release": "1200ms",
+                "resonance": 0.20000000298023224,
+                "slope": "",
+                "soundCharacteristics": {
+                    "dynamic": "",
+                    "emotional": [],
+                    "material": "",
+                    "timbral": ""
+                },
+                "sustain": 0.6000000238418579,
+                "topologicalMetadata": {
+                    "damping": "",
+                    "manifold_position": "",
+                    "spectral_complexity": ""
+                },
+                "type": "ADSR",
+                "types": [
+                    "sine",
+                    "triangle"
+                ]
+            },
+            "instrumentType": "subtractive",
+            "layer_gain": 0.5040000081062317,
+            "oscTypes": {
+                "osc1": [
+                    "sine",
+                    "triangle"
+                ]
+            },
+            "soundCharacteristics": {
+                "dynamic": "tribal",
+                "emotional": [
+                    {
+                        "tag": "calm",
+                        "weight": 0.800000011920929
+                    },
+                    {
+                        "tag": "reflective",
+                        "weight": 0.6000000238418579
+                    }
+                ],
+                "material": "analog",
+                "timbral": "warm"
+            },
+            "topologicalMetadata": {
+                "damping": "high",
+                "manifold_position": "intro/outro region",
+                "spectral_complexity": "low"
+            },
+            "topology": "",
+            "useDynamicGate": false
+        },
+        "rhythmic_motion": {
+            "layer_gain": 0.4320000112056732
+        },
+        "supportive_harmony": {
+            "layer_gain": 0.35999998450279236
+        }
+    }
+}
