@@ -1,0 +1,1169 @@
+{
+    "patch_metadata": {
+        "patch_version": "2.0",
+        "section": "intro",
+        "timestamp": 1753625956,
+        "total_layers": 6,
+        "user_choices": {
+            "effects": "reverb",
+            "instrument": "guitar",
+            "mood": "calm",
+            "section": "intro",
+            "timbre": "warm"
+        }
+    },
+    "renderable_layers": [
+        {
+            "adsr": {
+                "group": {
+                    "attack": 900.0,
+                    "decay": 480.0000305175781,
+                    "release": 1800.0,
+                    "sustain": 0.6000000238418579
+                }
+            },
+            "effects": [
+                {
+                    "mix": 0.30000001192092896,
+                    "type": "reverb",
+                    "wet": 0.5
+                },
+                {
+                    "feedback": 0.30000001192092896,
+                    "mix": 0.4000000059604645,
+                    "time": "500ms",
+                    "type": "delay"
+                }
+            ],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "attack": "600ms",
+                "curve": "linear",
+                "cutoff": "800Hz",
+                "decay": "400ms",
+                "detune": 0.019999999552965164,
+                "envelope_amount": 0.0,
+                "filter_type": "",
+                "mix_ratios": [
+                    0.699999988079071,
+                    0.30000001192092896
+                ],
+                "release": "1200ms",
+                "resonance": 0.20000000298023224,
+                "slope": "",
+                "soundCharacteristics": {
+                    "dynamic": "",
+                    "emotional": [],
+                    "material": "",
+                    "timbral": ""
+                },
+                "sustain": 0.6000000238418579,
+                "topologicalMetadata": {
+                    "damping": "",
+                    "manifold_position": "",
+                    "spectral_complexity": ""
+                },
+                "type": "ADSR",
+                "types": [
+                    "sine",
+                    "triangle"
+                ]
+            },
+            "instrumentType": "subtractive",
+            "layer_properties": {
+                "baseGain": 0.25,
+                "priority": 2.0,
+                "reverb": 0.5,
+                "stereoWidth": 0.699999988079071
+            },
+            "layer_role": "ambient_pad",
+            "oscTypes": {
+                "osc1": [
+                    "sine",
+                    "triangle"
+                ]
+            },
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "tribal",
+                "emotional": [
+                    {
+                        "tag": "calm",
+                        "weight": 0.800000011920929
+                    },
+                    {
+                        "tag": "reflective",
+                        "weight": 0.6000000238418579
+                    }
+                ],
+                "material": "analog",
+                "timbral": "warm"
+            },
+            "topologicalMetadata": {
+                "damping": "high",
+                "manifold_position": "intro/outro region",
+                "spectral_complexity": "low"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "group": {
+                        "attack": {
+                            "current": 900.0,
+                            "max": 900.0,
+                            "min": 900.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 480.0000305175781,
+                            "max": 480.0000305175781,
+                            "min": 480.0000305175781,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 1800.0,
+                            "max": 1800.0,
+                            "min": 1800.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.6000000238418579,
+                            "max": 0.6000000238418579,
+                            "min": 0.6000000238418579,
+                            "tunable": true
+                        }
+                    }
+                },
+                "effects": {
+                    "delay": {
+                        "feedback": {
+                            "tunable": true,
+                            "value": 0.30000001192092896
+                        },
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.4000000059604645
+                        },
+                        "time": {
+                            "tunable": true,
+                            "value": "500ms"
+                        }
+                    },
+                    "reverb": {
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.30000001192092896
+                        },
+                        "wet": {
+                            "tunable": true,
+                            "value": 0.5
+                        }
+                    }
+                },
+                "guitar": {
+                    "cutoff": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "detune": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.019999999552965164
+                    },
+                    "envelope_amount": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "resonance": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.20000000298023224
+                    },
+                    "sustain": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.6000000238418579
+                    }
+                }
+            },
+            "useDynamicGate": false
+        },
+        {
+            "adsr": {
+                "osc": {
+                    "attack": [
+                        30.0,
+                        80.0
+                    ],
+                    "decay": [
+                        400.0,
+                        600.0
+                    ],
+                    "delay": [
+                        10.0,
+                        30.0
+                    ],
+                    "release": [
+                        1000.0,
+                        1500.0
+                    ],
+                    "sustain": [
+                        0.5,
+                        0.699999988079071
+                    ]
+                }
+            },
+            "effects": [],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "ai_control": true,
+                "burst_length": [
+                    0.006000000052154064,
+                    0.012000000104308128
+                ],
+                "curve": "logarithmic",
+                "cutoff": [
+                    600.0,
+                    1000.0
+                ],
+                "decay_rate": [
+                    1.0,
+                    1.5
+                ],
+                "depth": [
+                    5.0,
+                    12.0
+                ],
+                "detune_range": [
+                    0.0010000000474974513,
+                    0.006000000052154064
+                ],
+                "envelope_amount": [
+                    0.30000001192092896,
+                    0.5
+                ],
+                "filter_type": "low-pass",
+                "freq_range": [
+                    82.0,
+                    1000.0
+                ],
+                "gauge": "medium",
+                "intensity": [
+                    0.10000000149011612,
+                    0.30000001192092896
+                ],
+                "ir_file": "classical_guitar_ir.wav",
+                "material": "nylon",
+                "mix": [
+                    0.5,
+                    0.699999988079071
+                ],
+                "noiseIntensity": 0.20000000298023224,
+                "noiseProbability": 0.15000000596046448,
+                "noise_type": "white",
+                "num_strings": "6",
+                "position": [
+                    0.5,
+                    0.699999988079071
+                ],
+                "resonance": [
+                    0.10000000149011612,
+                    0.20000000298023224
+                ],
+                "slope": "12dB/oct",
+                "soundCharacteristics": {
+                    "dynamic": "sustained",
+                    "emotional": [
+                        {
+                            "tag": "delicate",
+                            "weight": 0.800000011920929
+                        },
+                        {
+                            "tag": "reflective",
+                            "weight": 0.699999988079071
+                        }
+                    ],
+                    "material": "wood",
+                    "timbral": "mellow"
+                },
+                "stiffness": "easy",
+                "sympathetic_harmonics": [
+                    0.15000000596046448,
+                    0.07999999821186066,
+                    0.03999999910593033
+                ],
+                "sympathetic_num_layers": [
+                    2.0
+                ],
+                "sympathetic_randomize_range": [
+                    0.019999999552965164,
+                    0.05999999865889549
+                ],
+                "sympathetic_volume": [
+                    0.05000000074505806,
+                    0.10000000149011612
+                ],
+                "tension": "low",
+                "topologicalMetadata": {
+                    "damping": "high",
+                    "manifold_position": "outro region",
+                    "spectral_complexity": "low"
+                },
+                "tuning": "E2,A2,D3,G3,B3,E4",
+                "type": "DADSR",
+                "vibe_set": [
+                    1.0,
+                    0.4000000059604645,
+                    0.20000000298023224,
+                    0.10000000149011612
+                ],
+                "vibratoHz": [
+                    3.0,
+                    5.0
+                ]
+            },
+            "instrumentType": "classical",
+            "layer_properties": {
+                "baseGain": 0.8500000238418579,
+                "priority": 6.0,
+                "reverb": 0.10000000149011612,
+                "stereoWidth": 0.30000001192092896
+            },
+            "layer_role": "lead_foreground",
+            "oscTypes": {},
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "sustained",
+                "emotional": [
+                    {
+                        "tag": "delicate",
+                        "weight": 0.800000011920929
+                    },
+                    {
+                        "tag": "reflective",
+                        "weight": 0.699999988079071
+                    }
+                ],
+                "material": "wood",
+                "timbral": "mellow"
+            },
+            "topologicalMetadata": {
+                "damping": "high",
+                "manifold_position": "outro region",
+                "spectral_complexity": "low"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "osc": {
+                        "attack": {
+                            "current": 55.0,
+                            "max": 80.0,
+                            "min": 30.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 500.0,
+                            "max": 600.0,
+                            "min": 400.0,
+                            "tunable": true
+                        },
+                        "delay": {
+                            "current": 20.0,
+                            "max": 30.0,
+                            "min": 10.0,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 1250.0,
+                            "max": 1500.0,
+                            "min": 1000.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.6000000238418579,
+                            "max": 0.699999988079071,
+                            "min": 0.5,
+                            "tunable": true
+                        }
+                    }
+                },
+                "guitar": {
+                    "noiseIntensity": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.20000000298023224
+                    },
+                    "noiseProbability": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.15000000596046448
+                    }
+                }
+            },
+            "useDynamicGate": false
+        },
+        {
+            "adsr": {
+                "group": {
+                    "attack": 40.0,
+                    "decay": 200.0,
+                    "release": 300.0,
+                    "sustain": 0.800000011920929
+                }
+            },
+            "effects": [
+                {
+                    "feedback": 0.4000000059604645,
+                    "mix": 0.20000000298023224,
+                    "time": "250ms",
+                    "type": "delay"
+                },
+                {
+                    "gain": 0.30000001192092896,
+                    "mix": 0.20000000298023224,
+                    "type": "distortion"
+                }
+            ],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "attack": "40ms",
+                "curve": "exponential",
+                "cutoff": "1000Hz",
+                "decay": "200ms",
+                "detune": 0.07000000029802322,
+                "envelope_amount": 0.699999988079071,
+                "filter_type": "",
+                "mix_ratios": [
+                    0.5,
+                    0.5
+                ],
+                "release": "300ms",
+                "resonance": 0.5,
+                "slope": "24dB/oct",
+                "soundCharacteristics": {
+                    "dynamic": "",
+                    "emotional": [],
+                    "material": "",
+                    "timbral": ""
+                },
+                "sustain": 0.800000011920929,
+                "topologicalMetadata": {
+                    "damping": "",
+                    "manifold_position": "",
+                    "spectral_complexity": ""
+                },
+                "type": "ADSR",
+                "types": [
+                    "triangle",
+                    "square"
+                ]
+            },
+            "instrumentType": "subtractive",
+            "layer_properties": {
+                "baseGain": 0.8500000238418579,
+                "priority": 6.0,
+                "reverb": 0.10000000149011612,
+                "stereoWidth": 0.30000001192092896
+            },
+            "layer_role": "lead_foreground",
+            "oscTypes": {
+                "osc1": [
+                    "triangle",
+                    "square"
+                ]
+            },
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "sustained",
+                "emotional": [
+                    {
+                        "tag": "funky",
+                        "weight": 0.8999999761581421
+                    },
+                    {
+                        "tag": "warm",
+                        "weight": 0.699999988079071
+                    }
+                ],
+                "material": "solid",
+                "timbral": "fat"
+            },
+            "topologicalMetadata": {
+                "damping": "low",
+                "manifold_position": "lead hook",
+                "spectral_complexity": "medium"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "group": {
+                        "attack": {
+                            "current": 40.0,
+                            "max": 40.0,
+                            "min": 40.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 200.0,
+                            "max": 200.0,
+                            "min": 200.0,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 300.0,
+                            "max": 300.0,
+                            "min": 300.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.800000011920929,
+                            "max": 0.800000011920929,
+                            "min": 0.800000011920929,
+                            "tunable": true
+                        }
+                    }
+                },
+                "effects": {
+                    "delay": {
+                        "feedback": {
+                            "tunable": true,
+                            "value": 0.4000000059604645
+                        },
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.20000000298023224
+                        },
+                        "time": {
+                            "tunable": true,
+                            "value": "250ms"
+                        }
+                    },
+                    "distortion": {
+                        "gain": {
+                            "tunable": true,
+                            "value": 0.30000001192092896
+                        },
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.20000000298023224
+                        }
+                    }
+                },
+                "guitar": {
+                    "cutoff": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "detune": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.07000000029802322
+                    },
+                    "envelope_amount": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.699999988079071
+                    },
+                    "resonance": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "sustain": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.800000011920929
+                    }
+                }
+            },
+            "useDynamicGate": false
+        },
+        {
+            "adsr": {
+                "osc": {
+                    "attack": [
+                        50.0,
+                        100.0
+                    ],
+                    "decay": [
+                        300.0,
+                        500.0
+                    ],
+                    "hold": [
+                        20.0,
+                        50.0
+                    ],
+                    "release": [
+                        800.0,
+                        1200.0
+                    ],
+                    "sustain": [
+                        0.6000000238418579,
+                        0.800000011920929
+                    ]
+                }
+            },
+            "effects": [],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "ai_control": true,
+                "burst_length": [
+                    0.004999999888241291,
+                    0.009999999776482582
+                ],
+                "curve": "exponential",
+                "cutoff": [
+                    800.0,
+                    1200.0
+                ],
+                "decay_rate": [
+                    0.800000011920929,
+                    1.2000000476837158
+                ],
+                "depth": [
+                    10.0,
+                    20.0
+                ],
+                "detune_range": [
+                    0.0020000000949949026,
+                    0.00800000037997961
+                ],
+                "envelope_amount": [
+                    0.20000000298023224,
+                    0.5
+                ],
+                "filter_type": "low-pass",
+                "freq_range": [
+                    82.0,
+                    1000.0
+                ],
+                "gauge": "light",
+                "intensity": [
+                    0.20000000298023224,
+                    0.4000000059604645
+                ],
+                "ir_file": "acoustic_dreadnought_ir.wav",
+                "material": "steel",
+                "mix": [
+                    0.4000000059604645,
+                    0.6000000238418579
+                ],
+                "noiseIntensity": 0.20000000298023224,
+                "noiseProbability": 0.15000000596046448,
+                "noise_type": "white",
+                "num_strings": "6",
+                "position": [
+                    0.6000000238418579,
+                    0.800000011920929
+                ],
+                "resonance": [
+                    0.10000000149011612,
+                    0.30000001192092896
+                ],
+                "slope": "12dB/oct",
+                "soundCharacteristics": {
+                    "dynamic": "sustained",
+                    "emotional": [
+                        {
+                            "tag": "intimate",
+                            "weight": 0.800000011920929
+                        },
+                        {
+                            "tag": "warm",
+                            "weight": 0.699999988079071
+                        }
+                    ],
+                    "material": "wood",
+                    "timbral": "warm"
+                },
+                "stiffness": "medium",
+                "sympathetic_harmonics": [
+                    0.20000000298023224,
+                    0.10000000149011612,
+                    0.05000000074505806
+                ],
+                "sympathetic_num_layers": [
+                    2.0
+                ],
+                "sympathetic_randomize_range": [
+                    0.05000000074505806,
+                    0.10000000149011612
+                ],
+                "sympathetic_volume": [
+                    0.10000000149011612,
+                    0.15000000596046448
+                ],
+                "tension": "medium",
+                "topologicalMetadata": {
+                    "damping": "high",
+                    "manifold_position": "intro/verse region",
+                    "spectral_complexity": "medium"
+                },
+                "tuning": "E2,A2,D3,G3,B3,E4",
+                "type": "AHDSR",
+                "vibe_set": [
+                    1.0,
+                    0.5,
+                    0.30000001192092896,
+                    0.20000000298023224,
+                    0.10000000149011612
+                ],
+                "vibratoHz": [
+                    4.0,
+                    6.0
+                ]
+            },
+            "instrumentType": "acoustic",
+            "layer_properties": {
+                "baseGain": 0.25,
+                "priority": 2.0,
+                "reverb": 0.5,
+                "stereoWidth": 0.699999988079071
+            },
+            "layer_role": "ambient_pad",
+            "oscTypes": {},
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "sustained",
+                "emotional": [
+                    {
+                        "tag": "intimate",
+                        "weight": 0.800000011920929
+                    },
+                    {
+                        "tag": "warm",
+                        "weight": 0.699999988079071
+                    }
+                ],
+                "material": "wood",
+                "timbral": "warm"
+            },
+            "topologicalMetadata": {
+                "damping": "high",
+                "manifold_position": "intro/verse region",
+                "spectral_complexity": "medium"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "osc": {
+                        "attack": {
+                            "current": 75.0,
+                            "max": 100.0,
+                            "min": 50.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 400.0,
+                            "max": 500.0,
+                            "min": 300.0,
+                            "tunable": true
+                        },
+                        "hold": {
+                            "current": 35.0,
+                            "max": 50.0,
+                            "min": 20.0,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 1000.0,
+                            "max": 1200.0,
+                            "min": 800.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.7000000476837158,
+                            "max": 0.800000011920929,
+                            "min": 0.6000000238418579,
+                            "tunable": true
+                        }
+                    }
+                },
+                "guitar": {
+                    "noiseIntensity": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.20000000298023224
+                    },
+                    "noiseProbability": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.15000000596046448
+                    }
+                }
+            },
+            "useDynamicGate": false
+        },
+        {
+            "adsr": {
+                "group": {
+                    "attack": 500.0,
+                    "decay": 600.0,
+                    "release": 1200.0,
+                    "sustain": 0.699999988079071
+                }
+            },
+            "effects": [
+                {
+                    "depth": 0.699999988079071,
+                    "mix": 1.0,
+                    "rate": "0.2Hz",
+                    "type": "chorus"
+                },
+                {
+                    "mix": 0.5,
+                    "type": "reverb",
+                    "wet": 0.5
+                }
+            ],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "attack": "500ms",
+                "curve": "exponential",
+                "cutoff": "900Hz",
+                "decay": "600ms",
+                "detune": 0.03999999910593033,
+                "envelope_amount": 0.5,
+                "filter_type": "",
+                "mix_ratios": [
+                    0.6000000238418579,
+                    0.4000000059604645
+                ],
+                "release": "1200ms",
+                "resonance": 0.4000000059604645,
+                "slope": "24dB/oct",
+                "soundCharacteristics": {
+                    "dynamic": "",
+                    "emotional": [],
+                    "material": "",
+                    "timbral": ""
+                },
+                "sustain": 0.699999988079071,
+                "topologicalMetadata": {
+                    "damping": "",
+                    "manifold_position": "",
+                    "spectral_complexity": ""
+                },
+                "type": "ADSR",
+                "types": [
+                    "sawtooth",
+                    "square"
+                ]
+            },
+            "instrumentType": "subtractive",
+            "layer_properties": {
+                "baseGain": 0.25,
+                "priority": 2.0,
+                "reverb": 0.5,
+                "stereoWidth": 0.699999988079071
+            },
+            "layer_role": "ambient_pad",
+            "oscTypes": {
+                "osc1": [
+                    "sawtooth",
+                    "square"
+                ]
+            },
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "sustained",
+                "emotional": [
+                    {
+                        "tag": "lush",
+                        "weight": 0.8999999761581421
+                    },
+                    {
+                        "tag": "nostalgic",
+                        "weight": 0.800000011920929
+                    }
+                ],
+                "material": "analog",
+                "timbral": "warm"
+            },
+            "topologicalMetadata": {
+                "damping": "medium",
+                "manifold_position": "chorus pad",
+                "spectral_complexity": "medium"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "group": {
+                        "attack": {
+                            "current": 500.0,
+                            "max": 500.0,
+                            "min": 500.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 600.0,
+                            "max": 600.0,
+                            "min": 600.0,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 1200.0,
+                            "max": 1200.0,
+                            "min": 1200.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.699999988079071,
+                            "max": 0.699999988079071,
+                            "min": 0.699999988079071,
+                            "tunable": true
+                        }
+                    }
+                },
+                "effects": {
+                    "chorus": {
+                        "depth": {
+                            "tunable": true,
+                            "value": 0.699999988079071
+                        },
+                        "mix": {
+                            "tunable": true,
+                            "value": 1.0
+                        },
+                        "rate": {
+                            "tunable": true,
+                            "value": "0.2Hz"
+                        }
+                    },
+                    "reverb": {
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.5
+                        },
+                        "wet": {
+                            "tunable": true,
+                            "value": 0.5
+                        }
+                    }
+                },
+                "guitar": {
+                    "cutoff": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "detune": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.03999999910593033
+                    },
+                    "envelope_amount": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "resonance": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.4000000059604645
+                    },
+                    "sustain": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.699999988079071
+                    }
+                }
+            },
+            "useDynamicGate": false
+        },
+        {
+            "adsr": {
+                "group": {
+                    "attack": 300.0,
+                    "decay": 500.0,
+                    "release": 800.0,
+                    "sustain": 0.699999988079071
+                }
+            },
+            "effects": [
+                {
+                    "depth": 0.5,
+                    "mix": 0.699999988079071,
+                    "rate": "0.3Hz",
+                    "type": "chorus"
+                },
+                {
+                    "mix": 0.550000011920929,
+                    "type": "reverb",
+                    "wet": 0.30000001192092896
+                }
+            ],
+            "emotion": "",
+            "gateDecaySec": 0.0,
+            "gateThreshold": 0.0,
+            "guitarParams": {
+                "attack": "300ms",
+                "curve": "nonlinear",
+                "cutoff": "700Hz",
+                "decay": "500ms",
+                "detune": 0.03999999910593033,
+                "envelope_amount": 0.0,
+                "filter_type": "",
+                "mix_ratios": [
+                    0.6000000238418579,
+                    0.4000000059604645
+                ],
+                "release": "800ms",
+                "resonance": 0.20000000298023224,
+                "slope": "",
+                "soundCharacteristics": {
+                    "dynamic": "",
+                    "emotional": [],
+                    "material": "",
+                    "timbral": ""
+                },
+                "sustain": 0.699999988079071,
+                "topologicalMetadata": {
+                    "damping": "",
+                    "manifold_position": "",
+                    "spectral_complexity": ""
+                },
+                "type": "ADSR",
+                "types": [
+                    "triangle",
+                    "sine"
+                ]
+            },
+            "instrumentType": "subtractive",
+            "layer_properties": {
+                "baseGain": 0.25,
+                "priority": 2.0,
+                "reverb": 0.5,
+                "stereoWidth": 0.699999988079071
+            },
+            "layer_role": "ambient_pad",
+            "oscTypes": {
+                "osc1": [
+                    "triangle",
+                    "sine"
+                ]
+            },
+            "ready_for_synthesis": true,
+            "soundCharacteristics": {
+                "dynamic": "percussive",
+                "emotional": [
+                    {
+                        "tag": "lush",
+                        "weight": 0.800000011920929
+                    },
+                    {
+                        "tag": "warm",
+                        "weight": 0.6000000238418579
+                    }
+                ],
+                "material": "empty-container",
+                "timbral": "lush"
+            },
+            "topologicalMetadata": {
+                "damping": "high",
+                "manifold_position": "verse support",
+                "spectral_complexity": "medium"
+            },
+            "topology": "",
+            "tunable_properties": {
+                "adsr": {
+                    "group": {
+                        "attack": {
+                            "current": 300.0,
+                            "max": 300.0,
+                            "min": 300.0,
+                            "tunable": true
+                        },
+                        "decay": {
+                            "current": 500.0,
+                            "max": 500.0,
+                            "min": 500.0,
+                            "tunable": true
+                        },
+                        "release": {
+                            "current": 800.0,
+                            "max": 800.0,
+                            "min": 800.0,
+                            "tunable": true
+                        },
+                        "sustain": {
+                            "current": 0.699999988079071,
+                            "max": 0.699999988079071,
+                            "min": 0.699999988079071,
+                            "tunable": true
+                        }
+                    }
+                },
+                "effects": {
+                    "chorus": {
+                        "depth": {
+                            "tunable": true,
+                            "value": 0.5
+                        },
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.699999988079071
+                        },
+                        "rate": {
+                            "tunable": true,
+                            "value": "0.3Hz"
+                        }
+                    },
+                    "reverb": {
+                        "mix": {
+                            "tunable": true,
+                            "value": 0.550000011920929
+                        },
+                        "wet": {
+                            "tunable": true,
+                            "value": 0.30000001192092896
+                        }
+                    }
+                },
+                "guitar": {
+                    "cutoff": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "detune": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.03999999910593033
+                    },
+                    "envelope_amount": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "resonance": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.20000000298023224
+                    },
+                    "sustain": {
+                        "tunable": true,
+                        "type": "float",
+                        "value": 0.699999988079071
+                    }
+                }
+            },
+            "useDynamicGate": false
+        }
+    ],
+    "section_name": "intro"
+}
