@@ -1,0 +1,332 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Semantic Keyword Database for AI-driven instrument synthesis",
+    "lastUpdated": "2024-01-01",
+    "totalKeywords": 45,
+    "categories": ["timbral", "emotional", "dynamic", "material", "structural"]
+  },
+  "keywords": {
+    "warm": {
+      "category": "timbral",
+      "aliases": ["soft", "mellow", "cozy", "gentle"],
+      "scoreWeight": 0.9,
+      "description": "Soft, enveloping timbral characteristic",
+      "vectorEmbedding": [0.9, 0.2, 0.1, 0.6, 0.3]
+    },
+    "bright": {
+      "category": "timbral", 
+      "aliases": ["shiny", "clear", "brilliant", "luminous"],
+      "scoreWeight": 0.85,
+      "description": "Clear, high-frequency emphasized timbre",
+      "vectorEmbedding": [0.2, 0.9, 0.7, 0.4, 0.1]
+    },
+    "dark": {
+      "category": "timbral",
+      "aliases": ["deep", "shadowy", "mysterious", "brooding"],
+      "scoreWeight": 0.8,
+      "description": "Low-frequency emphasized, subdued timbre",
+      "vectorEmbedding": [0.1, 0.2, 0.9, 0.7, 0.5]
+    },
+    "lush": {
+      "category": "timbral",
+      "aliases": ["rich", "full", "luxurious", "dense"],
+      "scoreWeight": 0.85,
+      "description": "Rich, harmonically complex timbre",
+      "vectorEmbedding": [0.8, 0.6, 0.4, 0.9, 0.7]
+    },
+    "gritty": {
+      "category": "timbral",
+      "aliases": ["rough", "distorted", "harsh", "raw"],
+      "scoreWeight": 0.8,
+      "description": "Rough, distorted timbral quality",
+      "vectorEmbedding": [0.3, 0.7, 0.8, 0.2, 0.9]
+    },
+    "ethereal": {
+      "category": "timbral",
+      "aliases": ["airy", "heavenly", "floating", "weightless"],
+      "scoreWeight": 0.8,
+      "description": "Light, floating timbral characteristic",
+      "vectorEmbedding": [0.7, 0.9, 0.2, 0.8, 0.1]
+    },
+    "vintage": {
+      "category": "timbral",
+      "aliases": ["retro", "old-school", "classic", "analog"],
+      "scoreWeight": 0.75,
+      "description": "Vintage, analog-style timbral quality",
+      "vectorEmbedding": [0.8, 0.4, 0.6, 0.7, 0.5]
+    },
+    "bell-like": {
+      "category": "timbral",
+      "aliases": ["ringing", "metallic", "crystalline", "chiming"],
+      "scoreWeight": 0.75,
+      "description": "Metallic, ringing timbral quality",
+      "vectorEmbedding": [0.4, 0.8, 0.3, 0.6, 0.7]
+    },
+    "fat": {
+      "category": "timbral",
+      "aliases": ["thick", "full", "robust", "wide"],
+      "scoreWeight": 0.85,
+      "description": "Thick, full-bodied timbre",
+      "vectorEmbedding": [0.9, 0.5, 0.7, 0.8, 0.6]
+    },
+    "thin": {
+      "category": "timbral",
+      "aliases": ["narrow", "light", "sparse", "minimal"],
+      "scoreWeight": 0.7,
+      "description": "Thin, minimal timbral characteristic",
+      "vectorEmbedding": [0.2, 0.6, 0.4, 0.3, 0.8]
+    },
+    "calm": {
+      "category": "emotional",
+      "aliases": ["peaceful", "relaxed", "serene", "tranquil"],
+      "scoreWeight": 0.8,
+      "description": "Peaceful, relaxing emotional quality",
+      "vectorEmbedding": [0.8, 0.3, 0.2, 0.7, 0.1]
+    },
+    "energetic": {
+      "category": "emotional",
+      "aliases": ["lively", "vibrant", "dynamic", "exciting"],
+      "scoreWeight": 0.9,
+      "description": "High-energy, exciting emotional characteristic",
+      "vectorEmbedding": [0.2, 0.9, 0.8, 0.4, 0.7]
+    },
+    "nostalgic": {
+      "category": "emotional",
+      "aliases": ["sentimental", "bittersweet", "wistful", "longing"],
+      "scoreWeight": 0.95,
+      "description": "Nostalgic, sentimental emotional quality",
+      "vectorEmbedding": [0.7, 0.4, 0.8, 0.9, 0.5]
+    },
+    "aggressive": {
+      "category": "emotional",
+      "aliases": ["intense", "fierce", "powerful", "forceful"],
+      "scoreWeight": 0.9,
+      "description": "Intense, aggressive emotional characteristic",
+      "vectorEmbedding": [0.3, 0.8, 0.9, 0.2, 0.9]
+    },
+    "dreamy": {
+      "category": "emotional",
+      "aliases": ["ethereal", "surreal", "floating", "ambient"],
+      "scoreWeight": 0.85,
+      "description": "Dreamy, ambient emotional quality",
+      "vectorEmbedding": [0.8, 0.5, 0.3, 0.9, 0.2]
+    },
+    "playful": {
+      "category": "emotional",
+      "aliases": ["fun", "lighthearted", "cheerful", "bouncy"],
+      "scoreWeight": 0.7,
+      "description": "Playful, fun emotional characteristic",
+      "vectorEmbedding": [0.6, 0.8, 0.4, 0.5, 0.3]
+    },
+    "reflective": {
+      "category": "emotional",
+      "aliases": ["thoughtful", "introspective", "contemplative", "meditative"],
+      "scoreWeight": 0.8,
+      "description": "Reflective, thoughtful emotional quality",
+      "vectorEmbedding": [0.7, 0.3, 0.6, 0.8, 0.4]
+    },
+    "hypnotic": {
+      "category": "emotional",
+      "aliases": ["mesmerizing", "trance-like", "repetitive", "entrancing"],
+      "scoreWeight": 0.75,
+      "description": "Hypnotic, trance-like emotional characteristic",
+      "vectorEmbedding": [0.5, 0.6, 0.7, 0.8, 0.9]
+    },
+    "intense": {
+      "category": "emotional",
+      "aliases": ["strong", "powerful", "overwhelming", "concentrated"],
+      "scoreWeight": 0.9,
+      "description": "Intense, powerful emotional quality",
+      "vectorEmbedding": [0.4, 0.9, 0.8, 0.3, 0.8]
+    },
+    "delicate": {
+      "category": "emotional",
+      "aliases": ["fragile", "gentle", "subtle", "refined"],
+      "scoreWeight": 0.75,
+      "description": "Delicate, gentle emotional characteristic",
+      "vectorEmbedding": [0.8, 0.4, 0.3, 0.7, 0.2]
+    },
+    "punchy": {
+      "category": "dynamic",
+      "aliases": ["sharp", "impactful", "snappy", "crisp"],
+      "scoreWeight": 0.85,
+      "description": "Sharp, impactful dynamic characteristic",
+      "vectorEmbedding": [0.3, 0.8, 0.7, 0.4, 0.9]
+    },
+    "smooth": {
+      "category": "dynamic",
+      "aliases": ["flowing", "seamless", "fluid", "graceful"],
+      "scoreWeight": 0.8,
+      "description": "Smooth, flowing dynamic quality",
+      "vectorEmbedding": [0.8, 0.5, 0.4, 0.7, 0.3]
+    },
+    "percussive": {
+      "category": "dynamic",
+      "aliases": ["strike", "hit", "attack", "transient"],
+      "scoreWeight": 0.7,
+      "description": "Percussive, attack-heavy dynamic characteristic",
+      "vectorEmbedding": [0.2, 0.7, 0.6, 0.3, 0.9]
+    },
+    "sustained": {
+      "category": "dynamic",
+      "aliases": ["long", "held", "continuous", "extended"],
+      "scoreWeight": 0.75,
+      "description": "Sustained, continuous dynamic quality",
+      "vectorEmbedding": [0.7, 0.4, 0.5, 0.8, 0.2]
+    },
+    "rhythmic": {
+      "category": "dynamic",
+      "aliases": ["pulsed", "beat-driven", "metric", "groovy"],
+      "scoreWeight": 0.8,
+      "description": "Rhythmic, beat-oriented dynamic characteristic",
+      "vectorEmbedding": [0.5, 0.7, 0.6, 0.4, 0.8]
+    },
+    "steady": {
+      "category": "dynamic",
+      "aliases": ["consistent", "stable", "unchanging", "reliable"],
+      "scoreWeight": 0.75,
+      "description": "Steady, consistent dynamic quality",
+      "vectorEmbedding": [0.6, 0.5, 0.7, 0.8, 0.4]
+    },
+    "tribal": {
+      "category": "dynamic",
+      "aliases": ["primitive", "ritual", "ceremonial", "ancient"],
+      "scoreWeight": 0.7,
+      "description": "Tribal, primitive dynamic characteristic",
+      "vectorEmbedding": [0.4, 0.6, 0.8, 0.5, 0.7]
+    },
+    "bouncy": {
+      "category": "dynamic",
+      "aliases": ["springy", "elastic", "lively", "energetic"],
+      "scoreWeight": 0.75,
+      "description": "Bouncy, elastic dynamic quality",
+      "vectorEmbedding": [0.6, 0.8, 0.5, 0.4, 0.7]
+    },
+    "evolving": {
+      "category": "dynamic",
+      "aliases": ["changing", "developing", "morphing", "transforming"],
+      "scoreWeight": 0.85,
+      "description": "Evolving, transforming dynamic characteristic",
+      "vectorEmbedding": [0.7, 0.6, 0.8, 0.9, 0.5]
+    },
+    "organic": {
+      "category": "material",
+      "aliases": ["natural", "acoustic", "real", "living"],
+      "scoreWeight": 0.8,
+      "description": "Natural, organic material quality",
+      "vectorEmbedding": [0.9, 0.4, 0.5, 0.8, 0.3]
+    },
+    "synthetic": {
+      "category": "material",
+      "aliases": ["digital", "artificial", "electronic", "processed"],
+      "scoreWeight": 0.75,
+      "description": "Synthetic, electronic material characteristic",
+      "vectorEmbedding": [0.2, 0.8, 0.7, 0.3, 0.9]
+    },
+    "wood": {
+      "category": "material",
+      "aliases": ["wooden", "timber", "natural", "warm"],
+      "scoreWeight": 0.8,
+      "description": "Wooden, natural material quality",
+      "vectorEmbedding": [0.8, 0.4, 0.6, 0.7, 0.2]
+    },
+    "metal": {
+      "category": "material",
+      "aliases": ["metallic", "steel", "iron", "hard"],
+      "scoreWeight": 0.75,
+      "description": "Metallic, hard material characteristic",
+      "vectorEmbedding": [0.3, 0.7, 0.8, 0.4, 0.6]
+    },
+    "glass": {
+      "category": "material",
+      "aliases": ["glassy", "crystalline", "transparent", "fragile"],
+      "scoreWeight": 0.7,
+      "description": "Glass-like, crystalline material quality",
+      "vectorEmbedding": [0.5, 0.8, 0.3, 0.6, 0.4]
+    },
+    "plastic": {
+      "category": "material",
+      "aliases": ["synthetic", "artificial", "processed", "cheap"],
+      "scoreWeight": 0.65,
+      "description": "Plastic, synthetic material characteristic",
+      "vectorEmbedding": [0.3, 0.6, 0.5, 0.2, 0.7]
+    },
+    "string": {
+      "category": "material",
+      "aliases": ["stringed", "plucked", "bowed", "vibrating"],
+      "scoreWeight": 0.7,
+      "description": "String-based material quality",
+      "vectorEmbedding": [0.6, 0.5, 0.4, 0.8, 0.3]
+    },
+    "air": {
+      "category": "material",
+      "aliases": ["airy", "breath", "wind", "gaseous"],
+      "scoreWeight": 0.65,
+      "description": "Air-like, breath-based material characteristic",
+      "vectorEmbedding": [0.7, 0.3, 0.2, 0.5, 0.1]
+    },
+    "intro": {
+      "category": "structural",
+      "aliases": ["beginning", "opening", "start", "prelude"],
+      "scoreWeight": 0.8,
+      "description": "Introduction section of musical structure",
+      "vectorEmbedding": [0.8, 0.3, 0.4, 0.6, 0.2]
+    },
+    "verse": {
+      "category": "structural",
+      "aliases": ["stanza", "main", "narrative", "story"],
+      "scoreWeight": 0.8,
+      "description": "Verse section of musical structure",
+      "vectorEmbedding": [0.6, 0.5, 0.6, 0.7, 0.4]
+    },
+    "chorus": {
+      "category": "structural",
+      "aliases": ["refrain", "hook", "main-theme", "climax"],
+      "scoreWeight": 0.9,
+      "description": "Chorus section of musical structure",
+      "vectorEmbedding": [0.4, 0.8, 0.7, 0.5, 0.8]
+    },
+    "bridge": {
+      "category": "structural",
+      "aliases": ["middle-eight", "transition", "break", "interlude"],
+      "scoreWeight": 0.8,
+      "description": "Bridge section of musical structure",
+      "vectorEmbedding": [0.5, 0.6, 0.8, 0.7, 0.6]
+    },
+    "outro": {
+      "category": "structural",
+      "aliases": ["ending", "conclusion", "finale", "coda"],
+      "scoreWeight": 0.8,
+      "description": "Outro section of musical structure",
+      "vectorEmbedding": [0.7, 0.4, 0.5, 0.8, 0.3]
+    },
+    "breakdown": {
+      "category": "structural",
+      "aliases": ["drop", "reduction", "minimal", "stripped"],
+      "scoreWeight": 0.75,
+      "description": "Breakdown section with reduced elements",
+      "vectorEmbedding": [0.3, 0.7, 0.6, 0.4, 0.9]
+    },
+    "buildup": {
+      "category": "structural",
+      "aliases": ["crescendo", "riser", "tension", "anticipation"],
+      "scoreWeight": 0.8,
+      "description": "Buildup section creating tension",
+      "vectorEmbedding": [0.4, 0.8, 0.7, 0.6, 0.8]
+    }
+  },
+  "categoryDescriptions": {
+    "timbral": "Characteristics related to the tone color and texture of sounds",
+    "emotional": "Characteristics related to the emotional impact and mood of sounds",
+    "dynamic": "Characteristics related to the temporal and amplitude behavior of sounds",
+    "material": "Characteristics related to the perceived physical material or source of sounds",
+    "structural": "Characteristics related to the position and role within musical structure"
+  },
+  "scoringNotes": {
+    "exactMatch": "Full weight when keyword matches exactly",
+    "aliasMatch": "80% weight when alias matches",
+    "categoryBonus": "Additional 10% for matching category context",
+    "vectorSimilarity": "Cosine similarity used for advanced matching when vectors available"
+  }
+}
