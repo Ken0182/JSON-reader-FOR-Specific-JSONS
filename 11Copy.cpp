@@ -9,6 +9,9 @@
 #include <cctype>
 #include <variant>
 #include <set> // For tracking keys
+#include <iomanip> // For setprecision
+#include <sstream> // For stringstream
+#include <ctime> // For time functions
 
 using namespace std;
 using json = nlohmann::json;
@@ -1135,52 +1138,159 @@ private:
     public:
     // Menu queuing order: Sequential, with back option
 void interactiveMenu() {
+    cout << "\n=== AI-Driven Audio Configuration Platform ===\n";
+    cout << "Progressive Narrowing Workflow\n\n";
+    
     vector<string> selectedTags;
-    string section = getUserInput("1. Select Section (intro, verse, etc.): ");
+    map<string, string> userChoices;
+    map<string, vector<string>> availableChoices;
+    
+    // Stage 1: Section Selection with AI suggestions
+    cout << "1. Musical Section Selection\n";
+    availableChoices["sections"] = {"intro", "verse", "pre-chorus", "chorus", "drop", "bridge", "outro", "hook"};
+    displayChoicesWithAI("section", availableChoices["sections"], selectedTags);
+    string section = getUserInputWithValidation("Select section: ", availableChoices["sections"]);
     selectedTags.push_back(section);
-
-    string mood = getUserInput("2. Select Mood (calm, nostalgic, etc.): ");
+    userChoices["section"] = section;
+    
+    // Stage 2: Mood Selection with contextual filtering
+    cout << "\n2. Mood Selection (contextual to " << section << ")\n";
+    availableChoices["moods"] = filterMoodsForSection(section);
+    displayChoicesWithAI("mood", availableChoices["moods"], selectedTags);
+    string mood = getUserInputWithValidation("Select mood: ", availableChoices["moods"]);
     selectedTags.push_back(mood);
-
-    string timbre = getUserInput("3. Select Timbre (warm, bright, etc.): ");
+    userChoices["mood"] = mood;
+    
+    // Stage 3: Timbre Selection with AI narrowing
+    cout << "\n3. Timbre Selection (filtered for " << section << " + " << mood << ")\n";
+    availableChoices["timbres"] = filterTimbresForContext(selectedTags);
+    displayChoicesWithAI("timbre", availableChoices["timbres"], selectedTags);
+    string timbre = getUserInputWithValidation("Select timbre: ", availableChoices["timbres"]);
     selectedTags.push_back(timbre);
-
-    string instrument = getUserInput("4. Select Instrument (guitar, synth, bass, etc.): ");
+    userChoices["timbre"] = timbre;
+    
+    // Stage 4: Instrument Category Selection
+    cout << "\n4. Instrument Category Selection\n";
+    availableChoices["instruments"] = {"guitar", "synth", "hybrid", "ensemble"};
+    displayChoicesWithAI("instrument", availableChoices["instruments"], selectedTags);
+    string instrument = getUserInputWithValidation("Select instrument category: ", availableChoices["instruments"]);
     selectedTags.push_back(instrument);
-
-    string effectGroup = getUserInput("5. Select Effect Group (reverb, distortion, etc.): ");
+    userChoices["instrument"] = instrument;
+    
+    // Stage 5: Effect Group Selection
+    cout << "\n5. Effect Processing Selection\n";
+    availableChoices["effects"] = filterEffectsForContext(selectedTags);
+    displayChoicesWithAI("effects", availableChoices["effects"], selectedTags);
+    string effectGroup = getUserInputWithValidation("Select effect group: ", availableChoices["effects"]);
     selectedTags.push_back(effectGroup);
-
-    string synthType = getUserInput("6. Select Synthesizer Type (subtractive, fm, additive, etc.): ");
-    // Use in scoring
-
-    // Narrowing with grouping
-    auto groups = groupByCategory(selectedTags);
-    cout << "Grouped Categories:\n" << json(groups).dump(2) << endl;
-
-    // Suggestions (Step 3/4: scoring, selection)
+    userChoices["effects"] = effectGroup;
+    
+    // Stage 6: Synthesis Type (if applicable)
+    string synthType = "";
+    if (instrument == "synth" || instrument == "hybrid") {
+        cout << "\n6. Synthesis Type Selection\n";
+        availableChoices["synthesis"] = {"subtractive", "fm", "additive", "wavetable", "granular", "physical_modeling"};
+        displayChoicesWithAI("synthesis", availableChoices["synthesis"], selectedTags);
+        synthType = getUserInputWithValidation("Select synthesis type: ", availableChoices["synthesis"]);
+        selectedTags.push_back(synthType);
+        userChoices["synthesis"] = synthType;
+    }
+    
+    // AI Analysis and Recommendations
+    cout << "\n=== AI Analysis Results ===\n";
+    auto groupedTags = groupByCategory(selectedTags);
+    cout << "Categorized Selections:\n" << json(groupedTags).dump(2) << "\n\n";
+    
+    // Generate AI-scored recommendations
+    cout << "🎵 AI Recommendations (ranked by compatibility):\n";
     multimap<double, string, greater<double>> scoredConfigs;
     for (const auto& [key, cfg] : configs) {
         double score = computeSemanticScore(cfg, selectedTags, mood, synthType);
-        scoredConfigs.insert({score, key});
+        if (score > 0.1) { // Filter out very low scores
+            scoredConfigs.insert({score, key});
+        }
     }
-    cout << "AI Suggestions (highest score first):\n";
-    int count = 0;
+    
+    // Display top recommendations with details
+    int rank = 1;
+    vector<string> topRecommendations;
     for (const auto& [score, key] : scoredConfigs) {
-        if (++count > 5) break; // Top 5
-        cout << "- " << key << " (score: " << score << ")\n";
+        if (rank > 8) break; // Top 8 recommendations
+        
+        const auto& cfg = configs.at(key);
+        cout << rank << ". " << key << " (score: " << fixed << setprecision(2) << score << ")\n";
+        cout << "   Type: " << cfg.instrumentType;
+        cout << " | Timbre: " << cfg.soundCharacteristics.timbral;
+        cout << " | Material: " << cfg.soundCharacteristics.material;
+        cout << " | Dynamic: " << cfg.soundCharacteristics.dynamic << "\n";
+        
+        if (!cfg.soundCharacteristics.emotional.empty()) {
+            cout << "   Emotions: ";
+            for (const auto& [tag, weight] : cfg.soundCharacteristics.emotional) {
+                cout << tag << "(" << weight << ") ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+        
+        topRecommendations.push_back(key);
+        rank++;
     }
-
-    // Confirm/Save (stub; expand to generate layered config.json)
-    cout << "Enter config to confirm (or 'none'): ";
-    string chosen;
-    getline(cin, chosen);
-    if (chosen != "none") {
-        // Generate layered output
-        json layered = generateLayeredOutput(selectedTags, mood, synthType);
-        ofstream file("layered_config.json");
-        file << layered.dump(4);
-        file.close();
+    
+    // Advanced Configuration Menu
+    cout << "\n=== Configuration Options ===\n";
+    cout << "Choose your next action:\n";
+    cout << "1. Select a specific recommendation\n";
+    cout << "2. Generate layered composition\n";
+    cout << "3. Advanced tuning/harmonics configuration\n";
+    cout << "4. Back to modify selections\n";
+    cout << "5. Save current configuration\n";
+    cout << "6. Exit\n";
+    
+    int choice = getUserInputInt("Your choice (1-6): ");
+    
+    switch (choice) {
+        case 1: {
+            handleSpecificSelection(topRecommendations, userChoices);
+            break;
+        }
+        case 2: {
+            generateLayeredComposition(selectedTags, userChoices, topRecommendations);
+            break;
+        }
+        case 3: {
+            handleAdvancedConfiguration(topRecommendations, userChoices);
+            break;
+        }
+        case 4: {
+            // Recursive call to restart with option to modify
+            cout << "\nRestarting selection process...\n";
+            interactiveMenu();
+            return;
+        }
+        case 5: {
+            saveUserConfiguration(userChoices, topRecommendations);
+            break;
+        }
+        case 6:
+        default: {
+            cout << "Exiting...\n";
+            return;
+        }
+    }
+    
+    // Ask if user wants to continue iterating
+    cout << "\nWould you like to:\n";
+    cout << "1. Make another configuration\n";
+    cout << "2. Refine current configuration\n";
+    cout << "3. Exit\n";
+    
+    int continueChoice = getUserInputInt("Your choice (1-3): ");
+    if (continueChoice == 1) {
+        interactiveMenu();
+    } else if (continueChoice == 2) {
+        // TODO: Implement refinement workflow
+        cout << "Refinement workflow not yet implemented.\n";
     }
 }
 
@@ -1281,7 +1391,278 @@ json generateGroupedOutput(const vector<string>& userChoices) {
         }
     }
     return groupedOutput;
-}
+    }
+
+    // Helper functions for enhanced interactive menu
+    string getUserInputWithValidation(const string& prompt, const vector<string>& validOptions) {
+        while (true) {
+            string input = getUserInput(prompt);
+            input = lower(input);
+            
+            // Check if input is valid
+            for (const string& option : validOptions) {
+                if (lower(option) == input) {
+                    return option; // Return original case
+                }
+            }
+            
+            cout << "Invalid choice. Please select from: ";
+            for (size_t i = 0; i < validOptions.size(); ++i) {
+                cout << validOptions[i];
+                if (i < validOptions.size() - 1) cout << ", ";
+            }
+            cout << "\n";
+        }
+    }
+
+    int getUserInputInt(const string& prompt) {
+        while (true) {
+            string input = getUserInput(prompt);
+            try {
+                return stoi(input);
+            } catch (...) {
+                cout << "Please enter a valid number.\n";
+            }
+        }
+    }
+
+    void displayChoicesWithAI(const string& category, const vector<string>& choices, const vector<string>& currentTags) {
+        cout << "Available " << category << " options:\n";
+        
+        // Score each choice based on current context
+        multimap<double, string, greater<double>> scoredChoices;
+        
+        for (const string& choice : choices) {
+            double score = 0.0;
+            vector<string> testTags = currentTags;
+            testTags.push_back(choice);
+            
+            // Calculate contextual score based on existing configs
+            for (const auto& [key, cfg] : configs) {
+                score += computeSemanticScore(cfg, testTags, "", "") * 0.1;
+            }
+            
+            scoredChoices.insert({score, choice});
+        }
+        
+        // Display choices with AI recommendations
+        int rank = 1;
+        for (const auto& [score, choice] : scoredChoices) {
+            cout << rank << ". " << choice;
+            if (rank <= 3) cout << " ⭐"; // Mark top 3 as AI recommended
+            cout << "\n";
+            rank++;
+        }
+        cout << "\n";
+    }
+
+    vector<string> filterMoodsForSection(const string& section) {
+        vector<string> baseMoods = {"calm", "energetic", "nostalgic", "bright", "warm", "aggressive", "dreamy", "tense", "playful", "reflective"};
+        vector<string> filtered;
+        
+        // Context-specific mood filtering
+        if (section == "intro" || section == "outro") {
+            for (const string& mood : baseMoods) {
+                if (mood == "calm" || mood == "reflective" || mood == "dreamy" || mood == "warm") {
+                    filtered.push_back(mood);
+                }
+            }
+        } else if (section == "chorus" || section == "drop") {
+            for (const string& mood : baseMoods) {
+                if (mood == "energetic" || mood == "bright" || mood == "aggressive" || mood == "playful") {
+                    filtered.push_back(mood);
+                }
+            }
+        } else {
+            filtered = baseMoods; // All moods available for other sections
+        }
+        
+        return filtered;
+    }
+
+    vector<string> filterTimbresForContext(const vector<string>& tags) {
+        vector<string> allTimbres = {"warm", "bright", "gritty", "smooth", "harsh", "mellow", "crisp", "fat", "thin", "lush", "ethereal", "crystalline"};
+        vector<string> filtered;
+        
+        // Filter based on mood and section context
+        bool hasEnergetic = find(tags.begin(), tags.end(), "energetic") != tags.end();
+        bool hasCalm = find(tags.begin(), tags.end(), "calm") != tags.end();
+        bool hasIntro = find(tags.begin(), tags.end(), "intro") != tags.end();
+        bool hasChorus = find(tags.begin(), tags.end(), "chorus") != tags.end();
+        
+        for (const string& timbre : allTimbres) {
+            bool include = true;
+            
+            // Context-based filtering logic
+            if (hasCalm && (timbre == "harsh" || timbre == "aggressive")) include = false;
+            if (hasEnergetic && (timbre == "mellow" || timbre == "ethereal")) include = false;
+            if (hasIntro && (timbre == "gritty" || timbre == "harsh")) include = false;
+            if (hasChorus && (timbre == "thin" || timbre == "mellow")) include = false;
+            
+            if (include) filtered.push_back(timbre);
+        }
+        
+        return filtered.empty() ? allTimbres : filtered;
+    }
+
+    vector<string> filterEffectsForContext(const vector<string>& tags) {
+        vector<string> allEffects = {"reverb", "delay", "distortion", "chorus", "flanger", "phaser", "compression", "eq", "filter", "modulation"};
+        vector<string> filtered;
+        
+        // Filter effects based on context
+        bool hasGuitar = find(tags.begin(), tags.end(), "guitar") != tags.end();
+        bool hasSynth = find(tags.begin(), tags.end(), "synth") != tags.end();
+        bool hasCalm = find(tags.begin(), tags.end(), "calm") != tags.end();
+        bool hasAggressive = find(tags.begin(), tags.end(), "aggressive") != tags.end();
+        
+        for (const string& effect : allEffects) {
+            bool include = true;
+            
+            // Context-specific effect filtering
+            if (hasCalm && effect == "distortion") include = false;
+            if (hasGuitar && (effect == "flanger" || effect == "phaser")) include = true; // Guitar works well with modulation
+            if (hasSynth && (effect == "filter" || effect == "modulation")) include = true; // Synth benefits from filtering
+            if (hasAggressive && effect == "reverb") include = false; // Less reverb for aggressive sounds
+            
+            if (include) filtered.push_back(effect);
+        }
+        
+        return filtered.empty() ? allEffects : filtered;
+    }
+
+    void handleSpecificSelection(const vector<string>& recommendations, const map<string, string>& userChoices) {
+        cout << "\nSelect a specific configuration:\n";
+        for (size_t i = 0; i < recommendations.size(); ++i) {
+            cout << (i+1) << ". " << recommendations[i] << "\n";
+        }
+        
+        int choice = getUserInputInt("Enter choice (1-" + to_string(recommendations.size()) + "): ");
+        if (choice > 0 && choice <= recommendations.size()) {
+            string selectedConfig = recommendations[choice-1];
+            cout << "\nSelected: " << selectedConfig << "\n";
+            
+            // Display detailed configuration
+            if (configs.count(selectedConfig)) {
+                const auto& cfg = configs.at(selectedConfig);
+                cout << "\nDetailed Configuration:\n";
+                cout << cfg.to_json().dump(2) << "\n";
+                
+                // Ask if user wants to save this configuration
+                string save = getUserInput("Save this configuration? (y/n): ");
+                if (lower(save) == "y" || lower(save) == "yes") {
+                    json userConfig = {
+                        {"selected_config", selectedConfig},
+                        {"user_choices", userChoices},
+                        {"timestamp", time(nullptr)},
+                        {"configuration", cfg.to_json()}
+                    };
+                    
+                    ofstream file("user_selection.json");
+                    if (file) {
+                        file << userConfig.dump(4);
+                        file.close();
+                        cout << "Configuration saved to user_selection.json\n";
+                    }
+                }
+            }
+        }
+    }
+
+    void generateLayeredComposition(const vector<string>& selectedTags, const map<string, string>& userChoices, const vector<string>& topRecommendations) {
+        cout << "\n=== Generating Layered Composition ===\n";
+        
+        json layeredComposition = json::object();
+        vector<string> layers = {"background_texture", "ambient_pad", "supportive_harmony", "rhythmic_motion", "main_melodic", "lead_foreground"};
+        
+        // Assign top recommendations to layers based on their characteristics
+        for (size_t i = 0; i < min(layers.size(), topRecommendations.size()); ++i) {
+            string configKey = topRecommendations[i];
+            if (configs.count(configKey)) {
+                const auto& cfg = configs.at(configKey);
+                
+                json layerConfig = cfg.to_json();
+                layerConfig["layer_role"] = layers[i];
+                layerConfig["config_key"] = configKey;
+                
+                // Calculate layer-specific gain
+                float baseGain = 1.0f - (i * 0.15f); // Decreasing gain for background layers
+                layerConfig["layer_gain"] = baseGain;
+                
+                layeredComposition["layers"][layers[i]] = layerConfig;
+            }
+        }
+        
+        // Add composition metadata
+        layeredComposition["metadata"] = {
+            {"composition_type", "layered"},
+            {"user_choices", userChoices},
+            {"selected_tags", selectedTags},
+            {"total_layers", layeredComposition["layers"].size()},
+            {"timestamp", time(nullptr)}
+        };
+        
+        // Apply context-aware balancing
+        balanceLayerGains(layeredComposition, userChoices.count("mood") ? userChoices.at("mood") : "", 
+                         userChoices.count("section") ? userChoices.at("section") : "");
+        
+        // Save layered composition
+        ofstream file("layered_composition.json");
+        if (file) {
+            file << layeredComposition.dump(4);
+            file.close();
+            cout << "Layered composition saved to layered_composition.json\n";
+            cout << "Layers created: " << layeredComposition["layers"].size() << "\n";
+        }
+        
+        cout << "\nLayered Composition Structure:\n";
+        cout << layeredComposition.dump(2) << "\n";
+    }
+
+    void handleAdvancedConfiguration(const vector<string>& recommendations, const map<string, string>& userChoices) {
+        cout << "\n=== Advanced Configuration ===\n";
+        cout << "Advanced features:\n";
+        cout << "1. Tuning adjustments\n";
+        cout << "2. Sympathetic harmonics\n";
+        cout << "3. ADSR envelope fine-tuning\n";
+        cout << "4. Effect parameter adjustment\n";
+        cout << "5. Back to main menu\n";
+        
+        int choice = getUserInputInt("Select advanced feature (1-5): ");
+        
+        switch (choice) {
+            case 1:
+                cout << "Tuning adjustment feature coming soon...\n";
+                break;
+            case 2:
+                cout << "Sympathetic harmonics configuration coming soon...\n";
+                break;
+            case 3:
+                cout << "ADSR envelope fine-tuning coming soon...\n";
+                break;
+            case 4:
+                cout << "Effect parameter adjustment coming soon...\n";
+                break;
+            default:
+                return;
+        }
+    }
+
+    void saveUserConfiguration(const map<string, string>& userChoices, const vector<string>& recommendations) {
+        json userSession = {
+            {"session_type", "user_configuration"},
+            {"user_choices", userChoices},
+            {"ai_recommendations", recommendations},
+            {"timestamp", time(nullptr)},
+            {"version", "2.0"}
+        };
+        
+        ofstream file("user_session.json");
+        if (file) {
+            file << userSession.dump(4);
+            file.close();
+            cout << "User session saved to user_session.json\n";
+        }
+    }
 
     private:
 
@@ -1578,12 +1959,11 @@ json generateGroupedOutput(const vector<string>& userChoices) {
     json output = json::object();
     json guitar = json::object();
     json group = json::object();
-    json synth = json::object();
+    json sections = json::object();
     json schemaSection = json::object();
 
     // Collect global schema
     for (const auto& [type, schema] : BaseParamStruct::registeredSchemas) {
-        // Serialize schema: convert each ParamMeta map to json
         json typeSchemaJson = json::object();
         for (const auto& [param, meta] : schema) {
             typeSchemaJson[param] = meta.to_json();
@@ -1592,34 +1972,122 @@ json generateGroupedOutput(const vector<string>& userChoices) {
     }
     schemaSection["version"] = BaseParamStruct::schemaVersion;
 
-    // Main configs
+    // Group configs by sections (intro, verse, chorus, etc.) based on structure.json
+    map<string, vector<string>> sectionConfigs;
+    
+    // Main configs - properly categorized
     for (const auto& [key, cfg] : configs) {
-        json cfgJson = cfg.to_json();  // No embedded schema here!
-        if (cfg.instrumentType.find("guitar") != string::npos) {
+        json cfgJson = cfg.to_json();
+        
+        // Only include configs that would actually be synthesized/rendered
+        if (cfg.instrumentType.empty()) continue;
+        
+        // Categorize by instrument type
+        if (cfg.instrumentType.find("guitar") != string::npos || 
+            cfg.instrumentType == "acoustic" || 
+            cfg.instrumentType == "electric" || 
+            cfg.instrumentType == "classical" || 
+            cfg.instrumentType == "bass") {
             guitar[key] = cfgJson;
-        } else if (cfg.instrumentType == "synth" && (key.find("pad_") != string::npos || key.find("bass_") != string::npos)) {
+        } else if (cfg.instrumentType == "subtractive" || 
+                   cfg.instrumentType == "fm" || 
+                   cfg.instrumentType == "additive" || 
+                   cfg.instrumentType == "wavetable" ||
+                   cfg.instrumentType == "granular" ||
+                   cfg.instrumentType == "modular" ||
+                   cfg.instrumentType == "hybrid_ai" ||
+                   cfg.instrumentType == "physical_modeling" ||
+                   cfg.instrumentType == "ensemble_chorus") {
             group[key] = cfgJson;
-        } else if (cfg.instrumentType == "synth") {
-            synth[key] = cfgJson;
-        } else {
-            output[key] = cfgJson; // Fallback
+        }
+        
+        // Also categorize by musical section based on semantic analysis
+        string manifestPosition = cfg.topologicalMetadata.manifoldPosition;
+        if (!manifestPosition.empty()) {
+            if (manifestPosition.find("intro") != string::npos) {
+                sectionConfigs["intro"].push_back(key);
+            }
+            if (manifestPosition.find("verse") != string::npos) {
+                sectionConfigs["verse"].push_back(key);
+            }
+            if (manifestPosition.find("chorus") != string::npos) {
+                sectionConfigs["chorus"].push_back(key);
+            }
+            if (manifestPosition.find("bridge") != string::npos) {
+                sectionConfigs["bridge"].push_back(key);
+            }
+            if (manifestPosition.find("outro") != string::npos) {
+                sectionConfigs["outro"].push_back(key);
+            }
+        }
+        
+        // Check emotional tags for section assignment
+        for (const auto& [tag, weight] : cfg.soundCharacteristics.emotional) {
+            if (tag.find("intro") != string::npos) sectionConfigs["intro"].push_back(key);
+            if (tag.find("verse") != string::npos) sectionConfigs["verse"].push_back(key);
+            if (tag.find("chorus") != string::npos) sectionConfigs["chorus"].push_back(key);
+            if (tag.find("bridge") != string::npos) sectionConfigs["bridge"].push_back(key);
+            if (tag.find("outro") != string::npos) sectionConfigs["outro"].push_back(key);
+        }
+    }
+    
+    // Create sections with ranked configs
+    for (const auto& [sectionName, configKeys] : sectionConfigs) {
+        json sectionArray = json::array();
+        
+        // Score and rank configs for this section
+        multimap<double, string, greater<double>> scoredConfigs;
+        vector<string> sectionTags = {sectionName};
+        
+        for (const string& key : configKeys) {
+            if (configs.count(key)) {
+                double score = computeSemanticScore(configs.at(key), sectionTags, "", "");
+                scoredConfigs.insert({score, key});
+            }
+        }
+        
+        // Add top-ranked configs to section
+        int count = 0;
+        for (const auto& [score, key] : scoredConfigs) {
+            if (++count > 10) break; // Limit to top 10 per section
+            json configWithScore = configs.at(key).to_json();
+            configWithScore["ai_score"] = score;
+            configWithScore["config_key"] = key;
+            sectionArray.push_back(configWithScore);
+        }
+        
+        if (!sectionArray.empty()) {
+            sections[sectionName] = sectionArray;
         }
     }
 
+    // Build final structure
     if (!guitar.empty()) output["guitar"] = guitar;
     if (!group.empty()) output["group"] = group;
-    if (!synth.empty()) output["synthesizer"] = synth;
-    output["schema"] = schemaSection; // Only one global schema at the root
+    if (!sections.empty()) output["sections"] = sections;
+    output["schema"] = schemaSection;
+    
+    // Add metadata about the configuration
+    output["metadata"] = {
+        {"version", "2.0"},
+        {"generator", "AI-Driven Audio Configuration Platform"},
+        {"description", "Human- and AI-readable super map of all possible configurations"},
+        {"total_guitar_configs", guitar.size()},
+        {"total_group_configs", group.size()},
+        {"total_sections", sections.size()},
+        {"generation_timestamp", time(nullptr)}
+    };
 
     ofstream file(filename);
     if (file) {
         file << output.dump(4);
         file.close();
-        cout << "Configuration saved to " << filename << " with grouped sections and a single top-level schema." << endl;
+        cout << "Enhanced configuration saved to " << filename << " with proper grouping and AI scoring." << endl;
+        cout << "Structure: " << guitar.size() << " guitar configs, " << group.size() << " group configs, " << sections.size() << " sections" << endl;
     } else {
         cerr << "Failed to save configuration to " << filename << endl;
-      }
-   }
+    }
+}
 };
 
 int main() {
