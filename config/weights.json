@@ -1,0 +1,33 @@
+{
+  "weights": {
+    "semantic": 0.2,
+    "technical": 0.3,
+    "musicalRole": 0.3,
+    "layering": 0.2
+  },
+  "thresholds": {
+    "minimumScore": 0.3,
+    "recommendationThreshold": 0.7,
+    "technicalCompatibilityThreshold": 0.6
+  },
+  "userLearning": {
+    "boostFactor": 0.1,
+    "demoteFactor": 0.1,
+    "maxBoost": 2.0,
+    "minBoost": 0.1
+  },
+  "search": {
+    "defaultMaxResults": 10,
+    "semanticWeight": 0.6,
+    "textMatchWeight": 0.4
+  },
+  "compatibility": {
+    "sampleRateToleranceHz": 4800.0,
+    "bitDepthTolerance": 8,
+    "minimumPolyphony": 4,
+    "bpmOverlapRequired": 20.0,
+    "stereoWidthLimit": 1.5
+  },
+  "version": "1.0",
+  "description": "Multi-Dimensional Audio Configuration System - Scoring Weights and Thresholds"
+}

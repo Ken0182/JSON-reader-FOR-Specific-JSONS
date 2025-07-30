@@ -1,0 +1,174 @@
+{
+  "compatibility_analysis": {},
+  "instruments": {
+    "Acoustic_Warm_Fingerstyle": {
+      "adsr": {
+        "attack": [
+          50,
+          100
+        ],
+        "curve": "exponential",
+        "decay": [
+          300,
+          500
+        ],
+        "hold": [
+          20,
+          50
+        ],
+        "release": [
+          800,
+          1200
+        ],
+        "sustain": [
+          0.6,
+          0.8
+        ],
+        "type": "AHDSR"
+      },
+      "guitarParams": {
+        "attackNoise": {
+          "ai_control": true,
+          "burst_length": [
+            0.005,
+            0.01
+          ],
+          "enabled": true,
+          "intensity": [
+            0.2,
+            0.4
+          ],
+          "noise_type": "white"
+        },
+        "bodyResonance": {
+          "ai_control": true,
+          "ir_file": "acoustic_dreadnought_ir.wav",
+          "mix": [
+            0.4,
+            0.6
+          ]
+        },
+        "filter": {
+          "ai_control": true,
+          "cutoff": [
+            800,
+            1200
+          ],
+          "envelope_amount": [
+            0.2,
+            0.5
+          ],
+          "resonance": [
+            0.1,
+            0.3
+          ],
+          "slope": "12dB/oct",
+          "type": "low-pass"
+        },
+        "harmonics": {
+          "decay_rate": [
+            0.8,
+            1.2
+          ],
+          "sympathetic_resonance": {
+            "harmonics": [
+              0.2,
+              0.1,
+              0.05
+            ],
+            "num_layers": 2,
+            "randomize_range": [
+              0.05,
+              0.1
+            ],
+            "volume": [
+              0.1,
+              0.15
+            ]
+          },
+          "vibe_set": [
+            1.0,
+            0.5,
+            0.3,
+            0.2,
+            0.1
+          ]
+        },
+        "pick": {
+          "ai_control": true,
+          "noiseIntensity": 0.2,
+          "noiseProbability": 0.15,
+          "position": [
+            0.6,
+            0.8
+          ],
+          "stiffness": "medium"
+        },
+        "strings": {
+          "ai_control": true,
+          "detune_range": [
+            0.002,
+            0.008
+          ],
+          "gauge": "light",
+          "material": "steel",
+          "num_strings": 6,
+          "tension": "medium",
+          "tuning": [
+            "E2",
+            "A2",
+            "D3",
+            "G3",
+            "B3",
+            "E4"
+          ]
+        },
+        "vibrato": {
+          "ai_control": true,
+          "depth_cents": [
+            10,
+            20
+          ],
+          "freq_range": [
+            82,
+            1000
+          ],
+          "vibrato_hz": [
+            4.0,
+            6.0
+          ]
+        }
+      },
+      "metadata": {
+        "selected_count": 1,
+        "user_selection": true
+      },
+      "soundCharacteristics": {
+        "dynamic": "sustained",
+        "emotional": [
+          {
+            "tag": "intimate",
+            "weight": 0.8
+          },
+          {
+            "tag": "warm",
+            "weight": 0.7
+          }
+        ],
+        "material": "wood",
+        "timbral": "warm"
+      },
+      "topologicalMetadata": {
+        "damping": "high",
+        "manifold_position": "intro/verse region",
+        "spectral_complexity": "medium"
+      }
+    }
+  },
+  "metadata": {
+    "generator": "Multi-Dimensional Audio Configuration System",
+    "multidimensional_pointing": true,
+    "timestamp": 1753837290,
+    "version": "1.0"
+  }
+}
