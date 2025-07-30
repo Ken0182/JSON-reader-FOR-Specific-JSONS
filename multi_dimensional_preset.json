@@ -1,0 +1,383 @@
+{
+  "compatibility_analysis": {
+    "Acoustic_Warm_Fingerstyle_Bass_Classic_MoogPunch": {
+      "is_recommended": true,
+      "layering_score": 0.550000011920929,
+      "musical_role_score": 0.8000000715255737,
+      "overall_score": 0.7916362881660461,
+      "semantic_score": 0.8956810832023621,
+      "technical_score": 0.875
+    },
+    "Acoustic_Warm_Fingerstyle_Bell_DX7_ElectricPiano": {
+      "is_recommended": true,
+      "layering_score": 0.8500000238418579,
+      "musical_role_score": 0.8000000715255737,
+      "overall_score": 0.8881429433822632,
+      "semantic_score": 1.0782145261764526,
+      "technical_score": 0.875
+    },
+    "Bass_Classic_MoogPunch_Bell_DX7_ElectricPiano": {
+      "is_recommended": true,
+      "layering_score": 1.0,
+      "musical_role_score": 0.7000000476837158,
+      "overall_score": 0.892924964427948,
+      "semantic_score": 0.9146246314048767,
+      "technical_score": 1.0
+    }
+  },
+  "instruments": [
+    {
+      "category": "guitar",
+      "config": {
+        "adsr": {
+          "attack": [
+            50,
+            100
+          ],
+          "curve": "exponential",
+          "decay": [
+            300,
+            500
+          ],
+          "hold": [
+            20,
+            50
+          ],
+          "release": [
+            800,
+            1200
+          ],
+          "sustain": [
+            0.6,
+            0.8
+          ],
+          "type": "AHDSR"
+        },
+        "guitarParams": {
+          "attackNoise": {
+            "ai_control": true,
+            "burst_length": [
+              0.005,
+              0.01
+            ],
+            "enabled": true,
+            "intensity": [
+              0.2,
+              0.4
+            ],
+            "noise_type": "white"
+          },
+          "bodyResonance": {
+            "ai_control": true,
+            "ir_file": "acoustic_dreadnought_ir.wav",
+            "mix": [
+              0.4,
+              0.6
+            ]
+          },
+          "filter": {
+            "ai_control": true,
+            "cutoff": [
+              800,
+              1200
+            ],
+            "envelope_amount": [
+              0.2,
+              0.5
+            ],
+            "resonance": [
+              0.1,
+              0.3
+            ],
+            "slope": "12dB/oct",
+            "type": "low-pass"
+          },
+          "harmonics": {
+            "decay_rate": [
+              0.8,
+              1.2
+            ],
+            "sympathetic_resonance": {
+              "harmonics": [
+                0.2,
+                0.1,
+                0.05
+              ],
+              "num_layers": 2,
+              "randomize_range": [
+                0.05,
+                0.1
+              ],
+              "volume": [
+                0.1,
+                0.15
+              ]
+            },
+            "vibe_set": [
+              1.0,
+              0.5,
+              0.3,
+              0.2,
+              0.1
+            ]
+          },
+          "pick": {
+            "ai_control": true,
+            "noiseIntensity": 0.2,
+            "noiseProbability": 0.15,
+            "position": [
+              0.6,
+              0.8
+            ],
+            "stiffness": "medium"
+          },
+          "strings": {
+            "ai_control": true,
+            "detune_range": [
+              0.002,
+              0.008
+            ],
+            "gauge": "light",
+            "material": "steel",
+            "num_strings": 6,
+            "tension": "medium",
+            "tuning": [
+              "E2",
+              "A2",
+              "D3",
+              "G3",
+              "B3",
+              "E4"
+            ]
+          },
+          "vibrato": {
+            "ai_control": true,
+            "depth_cents": [
+              10,
+              20
+            ],
+            "freq_range": [
+              82,
+              1000
+            ],
+            "vibrato_hz": [
+              4.0,
+              6.0
+            ]
+          }
+        },
+        "soundCharacteristics": {
+          "dynamic": "sustained",
+          "emotional": [
+            {
+              "tag": "intimate",
+              "weight": 0.8
+            },
+            {
+              "tag": "warm",
+              "weight": 0.7
+            }
+          ],
+          "material": "wood",
+          "timbral": "warm"
+        },
+        "topologicalMetadata": {
+          "damping": "high",
+          "manifold_position": "intro/verse region",
+          "spectral_complexity": "medium"
+        }
+      },
+      "id": "Acoustic_Warm_Fingerstyle",
+      "layering_info": {
+        "frequency_range": "high-mid",
+        "mix_priority": 0.800000011920929,
+        "preferred_layer": "foreground",
+        "stereo_width": 0.5
+      },
+      "musical_role": {
+        "musical_context": "intro",
+        "primary_role": "lead",
+        "prominence": 0.800000011920929,
+        "tonal_character": "warm"
+      },
+      "name": "Acoustic_Warm_Fingerstyle",
+      "semantic_tags": [
+        "warm",
+        "wood",
+        "sustained",
+        "intimate",
+        "warm"
+      ],
+      "technical_specs": {
+        "bit_depth": 24,
+        "envelope_type": "AHDSR",
+        "polyphony_limit": 16,
+        "sample_rate": 44100.0
+      }
+    },
+    {
+      "category": "group",
+      "config": {
+        "adsr": {
+          "attack": "10ms",
+          "curve": "exponential",
+          "decay": "200ms",
+          "release": "300ms",
+          "sustain": 0.8,
+          "type": "ADSR"
+        },
+        "effects": [
+          {
+            "amount": 0.3,
+            "mix": 1.0,
+            "type": "saturation"
+          }
+        ],
+        "filter": {
+          "cutoff": "400Hz",
+          "envelope_amount": 0.6,
+          "resonance": 0.7,
+          "slope": "24dB/oct",
+          "type": "moog_ladder"
+        },
+        "oscillator": {
+          "detune": 0.02,
+          "mix_ratios": [
+            0.6,
+            0.4
+          ],
+          "types": [
+            "sawtooth",
+            "triangle"
+          ]
+        },
+        "soundCharacteristics": {
+          "dynamic": "punchy",
+          "emotional": [
+            {
+              "tag": "solid",
+              "weight": 0.8
+            }
+          ],
+          "material": "analog",
+          "timbral": "fat"
+        },
+        "synthesisType": "subtractive",
+        "topologicalMetadata": {
+          "damping": "low",
+          "manifold_position": "bass foundation",
+          "spectral_complexity": "medium"
+        }
+      },
+      "id": "Bass_Classic_MoogPunch",
+      "layering_info": {
+        "frequency_range": "low",
+        "mix_priority": 0.699999988079071,
+        "preferred_layer": "foreground",
+        "stereo_width": 0.20000000298023224
+      },
+      "musical_role": {
+        "musical_context": "any",
+        "primary_role": "bass",
+        "prominence": 0.699999988079071,
+        "tonal_character": "neutral"
+      },
+      "name": "Bass_Classic_MoogPunch",
+      "semantic_tags": [
+        "fat",
+        "analog",
+        "punchy",
+        "solid"
+      ],
+      "technical_specs": {
+        "bit_depth": 24,
+        "envelope_type": "ADSR",
+        "polyphony_limit": 16,
+        "sample_rate": 44100.0
+      }
+    },
+    {
+      "category": "group",
+      "config": {
+        "adsr": {
+          "attack": "30ms",
+          "curve": "exponential",
+          "decay": "600ms",
+          "release": "1000ms",
+          "sustain": 0.5,
+          "type": "ADSR"
+        },
+        "effects": [
+          {
+            "depth": 0.3,
+            "mix": 0.8,
+            "rate": "0.2Hz",
+            "type": "chorus"
+          }
+        ],
+        "filter": {
+          "cutoff": "800Hz",
+          "envelope_amount": 0.4,
+          "resonance": 0.2,
+          "slope": "12dB/oct",
+          "type": "high-pass"
+        },
+        "oscillator": {
+          "carrier_ratio": 2.0,
+          "modulation_index": 4.5,
+          "types": [
+            "fm"
+          ]
+        },
+        "soundCharacteristics": {
+          "dynamic": "sustained",
+          "emotional": [
+            {
+              "tag": "nostalgic",
+              "weight": 0.8
+            }
+          ],
+          "material": "metallic",
+          "timbral": "glassy"
+        },
+        "synthesisType": "fm",
+        "topologicalMetadata": {
+          "damping": "low",
+          "manifold_position": "verses/hooks",
+          "spectral_complexity": "high"
+        }
+      },
+      "id": "Bell_DX7_ElectricPiano",
+      "layering_info": {
+        "frequency_range": "mid",
+        "mix_priority": 0.4000000059604645,
+        "preferred_layer": "midground",
+        "stereo_width": 0.800000011920929
+      },
+      "musical_role": {
+        "musical_context": "verse",
+        "primary_role": "pad",
+        "prominence": 0.4000000059604645,
+        "tonal_character": "neutral"
+      },
+      "name": "Bell_DX7_ElectricPiano",
+      "semantic_tags": [
+        "glassy",
+        "metallic",
+        "sustained",
+        "nostalgic"
+      ],
+      "technical_specs": {
+        "bit_depth": 24,
+        "envelope_type": "ADSR",
+        "polyphony_limit": 16,
+        "sample_rate": 44100.0
+      }
+    }
+  ],
+  "metadata": {
+    "created": 1753824446,
+    "multidimensional_pointing": true,
+    "version": "1.0"
+  }
+}
