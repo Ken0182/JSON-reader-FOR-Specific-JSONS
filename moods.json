@@ -1,46 +1,258 @@
 {
-  "moods": [
-    {
-      "name": "energetic",
-      "attack": [0.001, 0.01],
-      "decay": [0.05, 0.2],
-      "sustain": [0.5, 1.0],
-      "release": [0.1, 0.3],
-      "tremFreq": [5.0, 15.0],
-      "tremDepth": [0.1, 0.3],
-      "vibFreq": [5.0, 15.0],
-      "vibDepth": [0.01, 0.05],
-      "alphaLP": [0.0, 0.3],
-      "alphaHP": [0.0, 0.95],
-      "powerGamma": [0.8, 1.2],
-      "noiseLevel": [0.1, 0.3],
-      "articulation": [0.2, 0.4],
-      "transientDetail": {
-        "intensity": [0.3, 0.5],
-        "enabled": true
+  "metadata": {
+    "description": "Mood-based parameter library linking emotional states to musical characteristics for AI-driven composition.",
+    "naming_convention": "Emotion descriptors mapping to musical parameters and ranges.",
+    "version": "1.0",
+    "ai_compatibility": "Designed for semantic analysis and emotional content generation."
+  },
+  "moods": {
+    "calm": {
+      "tempo_range": [60, 90],
+      "dynamics": {
+        "base_velocity": [0.3, 0.6],
+        "variation": [0.1, 0.2],
+        "crescendo_probability": 0.2
       },
-      "dynamicRange": "medium"
-    },
-    {
-      "name": "calm",
-      "attack": [0.01, 0.05],
-      "decay": [0.2, 0.5],
-      "sustain": [0.2, 0.5],
-      "release": [0.5, 1.0],
-      "tremFreq": [0.0, 0.0],
-      "tremDepth": [0.0, 0.0],
-      "vibFreq": [0.0, 0.0],
-      "vibDepth": [0.0, 0.0],
-      "alphaLP": [0.8, 0.95],
-      "alphaHP": [0.0, 0.0],
-      "powerGamma": [1.0, 1.0],
-      "noiseLevel": [0.0, 0.1],
+      "harmonic_preference": {
+        "consonance_weight": 0.8,
+        "modal_tendencies": ["dorian", "mixolydian"],
+        "chord_extensions": ["add9", "sus4"],
+        "resolution_strength": 0.7
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.1, 0.3],
+        "subdivision_complexity": "simple",
+        "accent_patterns": "regular"
+      },
+      "texture_properties": {
+        "density": [0.2, 0.5],
+        "layering": "sparse",
+        "voice_leading": "smooth"
+      },
       "articulation": [0.0, 0.2],
+      "alphaLP": [0.6, 0.8],
       "transientDetail": {
         "intensity": [0.1, 0.2],
         "enabled": true
       },
       "dynamicRange": "compressed"
+    },
+    "energetic": {
+      "tempo_range": [120, 160],
+      "dynamics": {
+        "base_velocity": [0.7, 0.9],
+        "variation": [0.2, 0.4],
+        "crescendo_probability": 0.6
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.6,
+        "modal_tendencies": ["ionian", "lydian"],
+        "chord_extensions": ["maj7", "add6"],
+        "resolution_strength": 0.9
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.4, 0.7],
+        "subdivision_complexity": "complex",
+        "accent_patterns": "varied"
+      },
+      "texture_properties": {
+        "density": [0.6, 0.9],
+        "layering": "dense",
+        "voice_leading": "active"
+      },
+      "articulation": [0.6, 0.9],
+      "alphaLP": [0.2, 0.4],
+      "transientDetail": {
+        "intensity": [0.6, 0.8],
+        "enabled": true
+      },
+      "dynamicRange": "expanded"
+    },
+    "melancholic": {
+      "tempo_range": [50, 80],
+      "dynamics": {
+        "base_velocity": [0.2, 0.5],
+        "variation": [0.1, 0.3],
+        "crescendo_probability": 0.3
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.4,
+        "modal_tendencies": ["aeolian", "phrygian"],
+        "chord_extensions": ["m7", "dim7"],
+        "resolution_strength": 0.5
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.0, 0.2],
+        "subdivision_complexity": "simple",
+        "accent_patterns": "irregular"
+      },
+      "texture_properties": {
+        "density": [0.1, 0.4],
+        "layering": "minimal",
+        "voice_leading": "descending"
+      },
+      "articulation": [0.1, 0.3],
+      "alphaLP": [0.7, 0.9],
+      "transientDetail": {
+        "intensity": [0.1, 0.3],
+        "enabled": true
+      },
+      "dynamicRange": "compressed"
+    },
+    "aggressive": {
+      "tempo_range": [140, 180],
+      "dynamics": {
+        "base_velocity": [0.8, 1.0],
+        "variation": [0.3, 0.5],
+        "crescendo_probability": 0.8
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.2,
+        "modal_tendencies": ["locrian", "phrygian_dominant"],
+        "chord_extensions": ["b5", "aug"],
+        "resolution_strength": 0.3
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.5, 0.8],
+        "subdivision_complexity": "complex",
+        "accent_patterns": "driving"
+      },
+      "texture_properties": {
+        "density": [0.7, 1.0],
+        "layering": "heavy",
+        "voice_leading": "angular"
+      },
+      "articulation": [0.7, 1.0],
+      "alphaLP": [0.1, 0.3],
+      "transientDetail": {
+        "intensity": [0.8, 1.0],
+        "enabled": true
+      },
+      "dynamicRange": "expanded"
+    },
+    "mysterious": {
+      "tempo_range": [70, 110],
+      "dynamics": {
+        "base_velocity": [0.3, 0.7],
+        "variation": [0.2, 0.4],
+        "crescendo_probability": 0.4
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.3,
+        "modal_tendencies": ["dorian", "harmonic_minor"],
+        "chord_extensions": ["m7b5", "dim"],
+        "resolution_strength": 0.4
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.2, 0.5],
+        "subdivision_complexity": "varied",
+        "accent_patterns": "unpredictable"
+      },
+      "texture_properties": {
+        "density": [0.3, 0.6],
+        "layering": "atmospheric",
+        "voice_leading": "chromatic"
+      },
+      "articulation": [0.2, 0.5],
+      "alphaLP": [0.5, 0.7],
+      "transientDetail": {
+        "intensity": [0.2, 0.4],
+        "enabled": true
+      },
+      "dynamicRange": "moderate"
+    },
+    "uplifting": {
+      "tempo_range": [100, 140],
+      "dynamics": {
+        "base_velocity": [0.6, 0.8],
+        "variation": [0.2, 0.3],
+        "crescendo_probability": 0.7
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.9,
+        "modal_tendencies": ["ionian", "lydian"],
+        "chord_extensions": ["maj9", "6/9"],
+        "resolution_strength": 0.8
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.3, 0.5],
+        "subdivision_complexity": "moderate",
+        "accent_patterns": "upbeat"
+      },
+      "texture_properties": {
+        "density": [0.5, 0.8],
+        "layering": "full",
+        "voice_leading": "ascending"
+      },
+      "articulation": [0.4, 0.7],
+      "alphaLP": [0.3, 0.5],
+      "transientDetail": {
+        "intensity": [0.4, 0.6],
+        "enabled": true
+      },
+      "dynamicRange": "moderate"
+    },
+    "contemplative": {
+      "tempo_range": [55, 85],
+      "dynamics": {
+        "base_velocity": [0.2, 0.4],
+        "variation": [0.1, 0.2],
+        "crescendo_probability": 0.2
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.7,
+        "modal_tendencies": ["dorian", "aeolian"],
+        "chord_extensions": ["sus2", "add9"],
+        "resolution_strength": 0.6
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.0, 0.2],
+        "subdivision_complexity": "simple",
+        "accent_patterns": "gentle"
+      },
+      "texture_properties": {
+        "density": [0.1, 0.3],
+        "layering": "transparent",
+        "voice_leading": "stepwise"
+      },
+      "articulation": [0.0, 0.1],
+      "alphaLP": [0.8, 1.0],
+      "transientDetail": {
+        "intensity": [0.05, 0.15],
+        "enabled": true
+      },
+      "dynamicRange": "highly compressed"
+    },
+    "playful": {
+      "tempo_range": [110, 150],
+      "dynamics": {
+        "base_velocity": [0.5, 0.8],
+        "variation": [0.3, 0.5],
+        "crescendo_probability": 0.5
+      },
+      "harmonic_preference": {
+        "consonance_weight": 0.8,
+        "modal_tendencies": ["mixolydian", "ionian"],
+        "chord_extensions": ["7", "6"],
+        "resolution_strength": 0.7
+      },
+      "rhythmic_characteristics": {
+        "syncopation_level": [0.4, 0.6],
+        "subdivision_complexity": "varied",
+        "accent_patterns": "bouncy"
+      },
+      "texture_properties": {
+        "density": [0.4, 0.7],
+        "layering": "playful",
+        "voice_leading": "dancing"
+      },
+      "articulation": [0.3, 0.6],
+      "alphaLP": [0.4, 0.6],
+      "transientDetail": {
+        "intensity": [0.3, 0.5],
+        "enabled": true
+      },
+      "dynamicRange": "moderate"
     }
-  ]
+  }
 }

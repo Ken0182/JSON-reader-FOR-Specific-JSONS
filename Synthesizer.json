@@ -1,74 +1,410 @@
 {
-  "sections": {
-    "intro": {
-      "oscillator": ["sine", "triangle"],
-      "adsr": {
-        "attack": [0.5, 1.0],
-        "decay": [0.5, 0.5],
-        "sustain": [0.5, 0.5],
-        "release": [1.0, 2.0]
-      },
-      "filter": "low-pass",
-      "fx": ["high reverb", "light delay"],
-      "emotion": "calm, reflective",
-      "topology": "low damping, simple spectra"
-    },
-    "verse": {
-      "oscillator": ["sawtooth", "square"],
-      "adsr": {
-        "attack": [0.1, 0.3],
-        "decay": [0.2, 0.2],
-        "sustain": [0.7, 0.7],
-        "release": [0.5, 0.5]
-      },
-      "filter": "band-pass, slight high-pass",
-      "fx": ["light chorus", "subtle delay"],
-      "emotion": "supportive, steady",
-      "topology": "mid-range damping, moderate complexity"
-    },
-    "chorus": {
-      "oscillator": ["sawtooth", "pulse-width modulation"],
-      "adsr": {
-        "attack": [0.0, 0.1],
-        "decay": [0.3, 0.3],
-        "sustain": [0.8, 0.8],
-        "release": [0.4, 0.4]
-      },
-      "filter": "high-pass, notch",
-      "fx": ["delay", "distortion"],
-      "emotion": "energetic, bright",
-      "topology": "low damping, rich spectra"
-    },
-    "bridge": {
-      "oscillator": ["fm", "wavetable"],
-      "adsr": {
-        "attack": [0.01, 1.0],
-        "decay": [0.01, 1.0],
-        "sustain": [0.6, 0.6],
-        "release": [1.0, 1.0]
-      },
-      "filter": "automated cutoff",
-      "fx": ["ring modulation", "flanger"],
-      "emotion": "tense, surprising",
-      "topology": "high variability, synthetic dimension"
-    },
-    "outro": {
-      "oscillator": ["sine", "triangle"],
-      "adsr": {
-        "attack": [0.3, 0.3],
-        "decay": [0.6, 0.6],
-        "sustain": [0.3, 0.3],
-        "release": [1.5, 3.0]
-      },
-      "filter": "low-pass",
-      "fx": ["increasing reverb", "fade-out delay"],
-      "emotion": "reflective, conclusive",
-      "topology": "high damping, simple spectra"
-    }
+  "metadata": {
+    "description": "Advanced synthesizer parameter library with comprehensive sound design capabilities for AI-driven synthesis.",
+    "naming_convention": "Synthesis type and characteristics descriptors with technical parameters.",
+    "version": "1.0",
+    "ai_compatibility": "Designed for real-time parameter modulation and sound generation algorithms."
   },
-  "topological_notes": {
-    "parameter_space": "Multi-dimensional manifold with oscillator, ADSR, filter, FX, and emotion axes",
-    "navigation": "Smooth transitions via parameter interpolation (e.g., sound continua)",
-    "ai_application": "Regions represent sections; paths enable learning of musical relationships"
+  "synthesizers": {
+    "analog_classic": {
+      "oscillators": {
+        "primary": {
+          "type": "sawtooth",
+          "frequency_range": [20, 20000],
+          "detune_range": [-50, 50],
+          "phase": [0.0, 1.0],
+          "stability": 0.95,
+          "harmonics": [1.0, 0.5, 0.25, 0.125, 0.0625]
+        },
+        "secondary": {
+          "type": "square",
+          "frequency_range": [20, 20000],
+          "pulse_width": [0.1, 0.9],
+          "detune_range": [-25, 25],
+          "harmonics": [1.0, 0.0, 0.33, 0.0, 0.2]
+        }
+      },
+      "filter": {
+        "type": "moog_ladder",
+        "cutoff_range": [20, 20000],
+        "resonance_range": [0.0, 1.0],
+        "drive": [0.0, 0.8],
+        "slope": "24dB/oct",
+        "self_oscillation": true
+      },
+      "envelope": {
+        "attack": [0.001, 10.0],
+        "decay": [0.001, 10.0],
+        "sustain": [0.0, 1.0],
+        "release": [0.001, 10.0],
+        "curve_type": "exponential"
+      },
+      "lfo": {
+        "rate": [0.01, 50.0],
+        "depth": [0.0, 1.0],
+        "waveform": ["sine", "triangle", "square", "random"],
+        "sync_options": ["free", "tempo"]
+      },
+      "effects": {
+        "chorus": {
+          "enabled": true,
+          "rate": [0.1, 10.0],
+          "depth": [0.0, 1.0],
+          "feedback": [0.0, 0.9]
+        },
+        "delay": {
+          "enabled": true,
+          "time": [0.001, 2.0],
+          "feedback": [0.0, 0.95],
+          "wet_dry": [0.0, 1.0]
+        }
+      },
+      "topological_metadata": {
+        "damping": "moderate",
+        "spectral_complexity": "medium",
+        "manifold_position": "classic analog region"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125],
+        "complexity": "medium"
+      },
+      "soundGeneration": "analog",
+      "fxCategories": ["modulation", "temporal"],
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate damping"
+    },
+    "fm_digital": {
+      "operators": {
+        "operator_1": {
+          "frequency_ratio": [0.5, 16.0],
+          "level": [0.0, 1.0],
+          "feedback": [0.0, 1.0],
+          "waveform": ["sine", "triangle", "square", "sawtooth"]
+        },
+        "operator_2": {
+          "frequency_ratio": [0.5, 16.0],
+          "level": [0.0, 1.0],
+          "modulation_index": [0.0, 8.0],
+          "waveform": ["sine", "triangle", "square", "sawtooth"]
+        },
+        "operator_3": {
+          "frequency_ratio": [0.5, 16.0],
+          "level": [0.0, 1.0],
+          "modulation_index": [0.0, 8.0],
+          "waveform": ["sine", "triangle", "square", "sawtooth"]
+        },
+        "operator_4": {
+          "frequency_ratio": [0.5, 16.0],
+          "level": [0.0, 1.0],
+          "modulation_index": [0.0, 8.0],
+          "waveform": ["sine", "triangle", "square", "sawtooth"]
+        }
+      },
+      "algorithms": {
+        "classic_stack": [1, 2, 3, 4],
+        "parallel_mod": [[1, 2], [3, 4]],
+        "complex_mod": [1, [2, 3], 4]
+      },
+      "envelope": {
+        "attack": [0.001, 5.0],
+        "decay_1": [0.001, 5.0],
+        "decay_2": [0.001, 10.0],
+        "sustain": [0.0, 1.0],
+        "release": [0.001, 10.0],
+        "curve_type": "linear"
+      },
+      "global_parameters": {
+        "pitch_envelope": {
+          "initial_level": [-24, 24],
+          "attack_time": [0.001, 2.0],
+          "decay_time": [0.001, 5.0]
+        },
+        "velocity_sensitivity": [0.0, 1.0],
+        "key_scaling": [-100, 100]
+      },
+      "effects": {
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.1, 1.0],
+          "decay_time": [0.1, 10.0],
+          "wet_dry": [0.0, 1.0]
+        }
+      },
+      "topological_metadata": {
+        "damping": "low",
+        "spectral_complexity": "high",
+        "manifold_position": "digital synthesis peak"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.15, 0.1],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["ambient"],
+      "theoryTuning": "equal",
+      "dynamicRange": "low damping"
+    },
+    "wavetable_modern": {
+      "wavetables": {
+        "primary": {
+          "table_size": 2048,
+          "num_waves": 64,
+          "interpolation": "linear",
+          "morphing_speed": [0.001, 10.0]
+        },
+        "secondary": {
+          "table_size": 2048,
+          "num_waves": 64,
+          "interpolation": "cubic",
+          "morphing_speed": [0.001, 10.0]
+        }
+      },
+      "oscillator_params": {
+        "position": [0.0, 1.0],
+        "morph_amount": [0.0, 1.0],
+        "phase_offset": [0.0, 1.0],
+        "sync_mode": ["off", "hard", "soft"]
+      },
+      "filter": {
+        "type": "multimode",
+        "cutoff_range": [20, 20000],
+        "resonance_range": [0.0, 1.0],
+        "drive": [0.0, 1.0],
+        "slope_options": ["12dB/oct", "24dB/oct", "36dB/oct"],
+        "modes": ["lowpass", "highpass", "bandpass", "notch"]
+      },
+      "modulation": {
+        "lfo_1": {
+          "rate": [0.01, 100.0],
+          "depth": [0.0, 1.0],
+          "waveform": ["sine", "triangle", "square", "random", "sample_hold"],
+          "targets": ["wavetable_pos", "filter_cutoff", "amplitude"]
+        },
+        "lfo_2": {
+          "rate": [0.01, 100.0],
+          "depth": [0.0, 1.0],
+          "waveform": ["sine", "triangle", "square", "random", "sample_hold"],
+          "targets": ["wavetable_morph", "filter_resonance", "pan"]
+        }
+      },
+      "envelope": {
+        "attack": [0.001, 10.0],
+        "decay": [0.001, 10.0],
+        "sustain": [0.0, 1.0],
+        "release": [0.001, 10.0],
+        "curve_type": "exponential"
+      },
+      "effects": {
+        "distortion": {
+          "enabled": true,
+          "type": "waveshaper",
+          "drive": [0.0, 1.0],
+          "bias": [0.0, 1.0]
+        },
+        "phaser": {
+          "enabled": true,
+          "rate": [0.1, 10.0],
+          "depth": [0.0, 1.0],
+          "feedback": [0.0, 0.9]
+        }
+      },
+      "topological_metadata": {
+        "damping": "variable",
+        "spectral_complexity": "very high",
+        "manifold_position": "modern digital frontier"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.7, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1],
+        "complexity": "very high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["modulation", "distortion"],
+      "theoryTuning": "equal",
+      "dynamicRange": "variable damping"
+    },
+    "granular_synthesis": {
+      "grain_parameters": {
+        "size": [0.001, 1.0],
+        "density": [1, 1000],
+        "position": [0.0, 1.0],
+        "speed": [0.1, 4.0],
+        "pitch_variation": [-12, 12],
+        "pan_spread": [0.0, 1.0]
+      },
+      "source_material": {
+        "type": "sample_based",
+        "sample_rate": 44100,
+        "bit_depth": 24,
+        "loop_mode": ["off", "forward", "bidirectional"],
+        "cross_fade": [0.0, 1.0]
+      },
+      "envelope": {
+        "grain_envelope": "gaussian",
+        "attack": [0.001, 0.1],
+        "release": [0.001, 0.1],
+        "shape_factor": [0.1, 10.0]
+      },
+      "modulation": {
+        "position_lfo": {
+          "rate": [0.01, 20.0],
+          "depth": [0.0, 1.0],
+          "waveform": "random"
+        },
+        "size_lfo": {
+          "rate": [0.01, 20.0],
+          "depth": [0.0, 1.0],
+          "waveform": "sine"
+        }
+      },
+      "effects": {
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.1, 1.0],
+          "decay_time": [0.1, 20.0],
+          "wet_dry": [0.0, 1.0]
+        },
+        "filter": {
+          "enabled": true,
+          "type": "lowpass",
+          "cutoff": [100, 15000],
+          "resonance": [0.0, 0.8]
+        }
+      },
+      "topological_metadata": {
+        "damping": "high",
+        "spectral_complexity": "extreme",
+        "manifold_position": "experimental texture region"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.3, 0.1, 0.05, 0.02],
+        "complexity": "low"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["ambient", "temporal"],
+      "theoryTuning": "microtonal",
+      "dynamicRange": "high damping"
+    },
+    "physical_modeling": {
+      "string_parameters": {
+        "length": [0.1, 2.0],
+        "tension": [0.1, 2.0],
+        "stiffness": [0.0, 1.0],
+        "damping": [0.0, 1.0],
+        "pluck_position": [0.05, 0.95],
+        "pluck_strength": [0.0, 1.0]
+      },
+      "resonator": {
+        "body_size": [0.1, 2.0],
+        "material_density": [0.1, 2.0],
+        "air_resonance": [50, 500],
+        "coupling_strength": [0.0, 1.0]
+      },
+      "excitation": {
+        "type": ["pluck", "bow", "strike"],
+        "velocity": [0.0, 1.0],
+        "position": [0.0, 1.0],
+        "noise_content": [0.0, 0.5]
+      },
+      "envelope": {
+        "attack": [0.001, 0.1],
+        "decay": [0.1, 10.0],
+        "sustain": [0.0, 1.0],
+        "release": [0.1, 10.0],
+        "curve_type": "natural"
+      },
+      "effects": {
+        "room_simulation": {
+          "enabled": true,
+          "room_size": [0.1, 1.0],
+          "reflectivity": [0.1, 0.9],
+          "absorption": [0.1, 0.9]
+        }
+      },
+      "topological_metadata": {
+        "damping": "natural",
+        "spectral_complexity": "organic",
+        "manifold_position": "acoustic simulation space"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.6, 0.4, 0.25, 0.15, 0.1, 0.06],
+        "complexity": "medium"
+      },
+      "soundGeneration": "physical_modeling",
+      "fxCategories": ["ambient"],
+      "theoryTuning": "just_intonation",
+      "dynamicRange": "natural damping"
+    },
+    "additive_synthesis": {
+      "harmonics": {
+        "fundamental": {
+          "frequency": [20, 4000],
+          "amplitude": [0.0, 1.0],
+          "phase": [0.0, 6.28]
+        },
+        "partial_2": {
+          "frequency_ratio": 2.0,
+          "amplitude": [0.0, 1.0],
+          "phase": [0.0, 6.28]
+        },
+        "partial_3": {
+          "frequency_ratio": 3.0,
+          "amplitude": [0.0, 1.0],
+          "phase": [0.0, 6.28]
+        },
+        "partial_4": {
+          "frequency_ratio": 4.0,
+          "amplitude": [0.0, 1.0],
+          "phase": [0.0, 6.28]
+        },
+        "partial_5": {
+          "frequency_ratio": 5.0,
+          "amplitude": [0.0, 1.0],
+          "phase": [0.0, 6.28]
+        }
+      },
+      "modulation": {
+        "amplitude_mod": {
+          "rate": [0.1, 50.0],
+          "depth": [0.0, 1.0],
+          "waveform": "sine"
+        },
+        "frequency_mod": {
+          "rate": [0.1, 50.0],
+          "depth": [0.0, 100.0],
+          "waveform": "sine"
+        }
+      },
+      "envelope": {
+        "attack": [0.001, 5.0],
+        "decay": [0.001, 5.0],
+        "sustain": [0.0, 1.0],
+        "release": [0.001, 10.0],
+        "curve_type": "linear"
+      },
+      "effects": {
+        "eq": {
+          "enabled": true,
+          "low_freq": [20, 200],
+          "low_gain": [-20, 20],
+          "mid_freq": [200, 2000],
+          "mid_gain": [-20, 20],
+          "high_freq": [2000, 20000],
+          "high_gain": [-20, 20]
+        }
+      },
+      "topological_metadata": {
+        "damping": "precise",
+        "spectral_complexity": "controlled",
+        "manifold_position": "harmonic precision zone"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.5, 0.33, 0.25, 0.2, 0.166, 0.143],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": [],
+      "theoryTuning": "equal",
+      "dynamicRange": "precise damping"
+    }
   }
 }

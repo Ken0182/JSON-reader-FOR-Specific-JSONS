@@ -1,92 +1,262 @@
 {
-  "sections": [
-    {
-      "sectionName": "Intro",
-      "group": "Pad_Warm_Calm",
-      "attackMul": 1.5,
-      "decayMul": 1.2,
-      "sustainMul": 1.0,
-      "releaseMul": 1.5,
-      "useDynamicGate": false,
-      "gateThreshold": 0.0,
-      "gateDecaySec": 0.0
+  "metadata": {
+    "description": "Musical structure parameter library defining sections, transitions, and formal elements for AI composition.",
+    "naming_convention": "Section names with descriptive qualities and structural functions.",
+    "version": "1.0",
+    "ai_compatibility": "Designed for form analysis and structural generation algorithms."
+  },
+  "sections": {
+    "intro": {
+      "duration_range": [8, 16],
+      "energy_trajectory": "building",
+      "harmonic_stability": "stable",
+      "texture_density": [0.1, 0.4],
+      "melodic_activity": "minimal",
+      "rhythmic_complexity": "simple",
+      "dynamic_level": [0.2, 0.5],
+      "instrumentation": {
+        "core_instruments": ["pad", "texture"],
+        "optional_additions": ["soft_percussion", "ambient_fx"],
+        "arrangement_style": "sparse"
+      },
+      "transition_characteristics": {
+        "fade_in_duration": [2, 4],
+        "build_up_intensity": [0.1, 0.3],
+        "anticipation_level": "low"
+      },
+      "frequencyRange": "full-spectrum",
+      "dynamicRange": "moderate"
     },
-    {
-      "sectionName": "Verse",
-      "group": "Lead_Bright_Energetic",
-      "attackMul": 1.0,
-      "decayMul": 1.0,
-      "sustainMul": 1.0,
-      "releaseMul": 1.0,
-      "useDynamicGate": false,
-      "gateThreshold": 0.0,
-      "gateDecaySec": 0.0
+    "verse": {
+      "duration_range": [16, 32],
+      "energy_trajectory": "steady",
+      "harmonic_stability": "stable",
+      "texture_density": [0.3, 0.6],
+      "melodic_activity": "moderate",
+      "rhythmic_complexity": "moderate",
+      "dynamic_level": [0.4, 0.7],
+      "instrumentation": {
+        "core_instruments": ["melody", "bass", "rhythm"],
+        "optional_additions": ["harmony", "counter_melody"],
+        "arrangement_style": "balanced"
+      },
+      "lyrical_characteristics": {
+        "narrative_function": "storytelling",
+        "emotional_content": "descriptive",
+        "melodic_contour": "conversational"
+      },
+      "frequencyRange": "mid-focused",
+      "dynamicRange": "moderate"
     },
-    {
-      "sectionName": "PreChorus",
-      "group": "Texture_Evolving_Tense",
-      "attackMul": 0.8,
-      "decayMul": 1.3,
-      "sustainMul": 1.2,
-      "releaseMul": 1.0,
-      "useDynamicGate": true,
-      "gateThreshold": 0.2,
-      "gateDecaySec": 0.1
+    "chorus": {
+      "duration_range": [16, 32],
+      "energy_trajectory": "peak",
+      "harmonic_stability": "strong",
+      "texture_density": [0.6, 0.9],
+      "melodic_activity": "high",
+      "rhythmic_complexity": "driving",
+      "dynamic_level": [0.7, 1.0],
+      "instrumentation": {
+        "core_instruments": ["lead", "harmony", "bass", "full_rhythm"],
+        "optional_additions": ["strings", "choir", "additional_percussion"],
+        "arrangement_style": "full"
+      },
+      "emotional_characteristics": {
+        "memorability": "high",
+        "emotional_peak": "climactic",
+        "sing_along_factor": "maximum"
+      },
+      "frequencyRange": "full-spectrum",
+      "dynamicRange": "expanded"
     },
-    {
-      "sectionName": "Chorus",
-      "group": "Lead_Supersaw_TranceAnthem",
-      "attackMul": 0.5,
-      "decayMul": 0.9,
-      "sustainMul": 1.0,
-      "releaseMul": 0.7,
-      "useDynamicGate": true,
-      "gateThreshold": 0.7,
-      "gateDecaySec": 0.10
+    "bridge": {
+      "duration_range": [8, 24],
+      "energy_trajectory": "contrasting",
+      "harmonic_stability": "exploratory",
+      "texture_density": [0.2, 0.8],
+      "melodic_activity": "varied",
+      "rhythmic_complexity": "complex",
+      "dynamic_level": [0.3, 0.8],
+      "instrumentation": {
+        "core_instruments": ["featured_instrument", "minimal_accompaniment"],
+        "optional_additions": ["solo_sections", "breakdown_elements"],
+        "arrangement_style": "experimental"
+      },
+      "structural_function": {
+        "contrast_level": "high",
+        "development_type": "modulatory",
+        "surprise_factor": "medium-high"
+      },
+      "frequencyRange": "selective",
+      "dynamicRange": "variable"
     },
-    {
-      "sectionName": "Drop",
-      "group": "Bass_DigitalGrowl_Aggressive",
-      "attackMul": 0.3,
-      "decayMul": 0.7,
-      "sustainMul": 0.5,
-      "releaseMul": 0.3,
-      "useDynamicGate": false,
-      "gateThreshold": 0.0,
-      "gateDecaySec": 0.0
+    "breakdown": {
+      "duration_range": [4, 16],
+      "energy_trajectory": "dropping",
+      "harmonic_stability": "minimal",
+      "texture_density": [0.1, 0.3],
+      "melodic_activity": "minimal",
+      "rhythmic_complexity": "reduced",
+      "dynamic_level": [0.1, 0.4],
+      "instrumentation": {
+        "core_instruments": ["sparse_elements"],
+        "optional_additions": ["filtered_elements", "ambient_textures"],
+        "arrangement_style": "deconstructed"
+      },
+      "temporal_characteristics": {
+        "silence_usage": "strategic",
+        "space_between_elements": "wide",
+        "anticipation_building": "high"
+      },
+      "frequencyRange": "filtered",
+      "dynamicRange": "compressed"
     },
-    {
-      "sectionName": "Bridge",
-      "group": "Texture_ModularChaos",
-      "attackMul": 1.0,
-      "decayMul": 1.0,
-      "sustainMul": 1.0,
-      "releaseMul": 1.0,
-      "useDynamicGate": false,
-      "gateThreshold": 0.0,
-      "gateDecaySec": 0.0
+    "buildup": {
+      "duration_range": [8, 32],
+      "energy_trajectory": "ascending",
+      "harmonic_stability": "building",
+      "texture_density": [0.2, 0.8],
+      "melodic_activity": "increasing",
+      "rhythmic_complexity": "intensifying",
+      "dynamic_level": [0.3, 0.9],
+      "instrumentation": {
+        "core_instruments": ["progressive_layers"],
+        "optional_additions": ["risers", "impacts", "sweeps"],
+        "arrangement_style": "additive"
+      },
+      "tension_characteristics": {
+        "tension_curve": "exponential",
+        "layer_addition_rate": "accelerating",
+        "anticipation_level": "maximum"
+      },
+      "frequencyRange": "expanding",
+      "dynamicRange": "expanding"
     },
-    {
-      "sectionName": "Outro",
-      "group": "Drone_Airy_Ambient",
-      "attackMul": 1.5,
-      "decayMul": 1.2,
-      "sustainMul": 1.0,
-      "releaseMul": 1.5,
-      "useDynamicGate": true,
-      "gateThreshold": 0.6,
-      "gateDecaySec": 0.12
+    "drop": {
+      "duration_range": [16, 64],
+      "energy_trajectory": "explosive",
+      "harmonic_stability": "powerful",
+      "texture_density": [0.8, 1.0],
+      "melodic_activity": "rhythmic",
+      "rhythmic_complexity": "driving",
+      "dynamic_level": [0.8, 1.0],
+      "instrumentation": {
+        "core_instruments": ["heavy_bass", "full_drums", "lead_synth"],
+        "optional_additions": ["sub_bass", "vocal_chops", "percussion_layers"],
+        "arrangement_style": "maximal"
+      },
+      "impact_characteristics": {
+        "initial_impact": "maximum",
+        "sustain_energy": "high",
+        "rhythmic_drive": "relentless"
+      },
+      "frequencyRange": "full-spectrum",
+      "dynamicRange": "maximum"
     },
-    {
-      "sectionName": "Hook",
-      "group": "Bell_Glassy_Clear",
-      "attackMul": 0.8,
-      "decayMul": 1.0,
-      "sustainMul": 1.5,
-      "releaseMul": 1.0,
-      "useDynamicGate": true,
-      "gateThreshold": 0.5,
-      "gateDecaySec": 0.05
+    "outro": {
+      "duration_range": [8, 24],
+      "energy_trajectory": "resolving",
+      "harmonic_stability": "resolving",
+      "texture_density": [0.1, 0.5],
+      "melodic_activity": "concluding",
+      "rhythmic_complexity": "simplifying",
+      "dynamic_level": [0.2, 0.6],
+      "instrumentation": {
+        "core_instruments": ["featured_melody", "harmonic_resolution"],
+        "optional_additions": ["ambient_tail", "reverb_extensions"],
+        "arrangement_style": "reflective"
+      },
+      "resolution_characteristics": {
+        "fade_out_duration": [4, 12],
+        "final_chord_sustain": [2, 8],
+        "emotional_closure": "satisfying"
+      },
+      "frequencyRange": "focused",
+      "dynamicRange": "moderate"
+    },
+    "bass_section": {
+      "duration_range": [4, 16],
+      "energy_trajectory": "foundational",
+      "harmonic_stability": "grounding",
+      "texture_density": [0.2, 0.4],
+      "melodic_activity": "rhythmic",
+      "rhythmic_complexity": "groove-based",
+      "dynamic_level": [0.5, 0.8],
+      "instrumentation": {
+        "core_instruments": ["bass", "kick", "minimal_harmony"],
+        "optional_additions": ["bass_fx", "sub_harmonics"],
+        "arrangement_style": "rhythm-focused"
+      },
+      "frequency_characteristics": {
+        "fundamental_range": [40, 200],
+        "harmonic_emphasis": "low-mid",
+        "sub_bass_presence": "strong"
+      },
+      "frequencyRange": "low-mid",
+      "dynamicRange": "moderate"
+    },
+    "ambient_interlude": {
+      "duration_range": [8, 32],
+      "energy_trajectory": "floating",
+      "harmonic_stability": "atmospheric",
+      "texture_density": [0.1, 0.3],
+      "melodic_activity": "evolving",
+      "rhythmic_complexity": "minimal",
+      "dynamic_level": [0.1, 0.4],
+      "instrumentation": {
+        "core_instruments": ["pads", "textures", "ambient_fx"],
+        "optional_additions": ["field_recordings", "granular_elements"],
+        "arrangement_style": "atmospheric"
+      },
+      "spatial_characteristics": {
+        "stereo_width": "wide",
+        "reverb_depth": "deep",
+        "movement_type": "subtle"
+      },
+      "frequencyRange": "full-spectrum",
+      "dynamicRange": "highly compressed"
+    },
+    "solo_section": {
+      "duration_range": [8, 32],
+      "energy_trajectory": "focused",
+      "harmonic_stability": "supportive",
+      "texture_density": [0.3, 0.6],
+      "melodic_activity": "virtuosic",
+      "rhythmic_complexity": "varied",
+      "dynamic_level": [0.4, 0.9],
+      "instrumentation": {
+        "core_instruments": ["featured_solo_instrument", "accompaniment"],
+        "optional_additions": ["call_and_response", "harmonic_support"],
+        "arrangement_style": "showcase"
+      },
+      "performance_characteristics": {
+        "technical_difficulty": "high",
+        "expressive_range": "wide",
+        "improvisational_space": "available"
+      },
+      "frequencyRange": "instrument-dependent",
+      "dynamicRange": "expressive"
+    },
+    "transition": {
+      "duration_range": [2, 8],
+      "energy_trajectory": "bridging",
+      "harmonic_stability": "modulatory",
+      "texture_density": [0.1, 0.7],
+      "melodic_activity": "connective",
+      "rhythmic_complexity": "adaptive",
+      "dynamic_level": [0.2, 0.8],
+      "instrumentation": {
+        "core_instruments": ["transitional_elements"],
+        "optional_additions": ["risers", "falls", "effects"],
+        "arrangement_style": "functional"
+      },
+      "function_characteristics": {
+        "smoothness_factor": "high",
+        "surprise_element": "optional",
+        "temporal_flexibility": "adaptive"
+      },
+      "frequencyRange": "contextual",
+      "dynamicRange": "adaptive"
     }
-  ]
+  }
 }
