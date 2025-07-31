@@ -908,9 +908,166 @@
         "spectral_complexity": "extreme",
         "manifold_position": "experimental bridge"
       }
-     }   
+     },
+        "Pad_Dreamy_Ethereal": {
+          "synthesis_type": "additive",
+          "oscillator": {
+            "types": ["sine", "triangle"],
+            "mix_ratios": [0.8, 0.2],
+            "detune": 0.03
+          },
+          "envelope": {
+            "type": "ADSR",
+            "attack": "800ms",
+            "decay": "600ms",
+            "sustain": 0.8,
+            "release": "1500ms",
+            "curve": "logarithmic"
+          },
+          "filter": {
+            "type": "low-pass",
+            "cutoff": "500Hz",
+            "resonance": 0.1
+          },
+          "fx": [
+            {"type": "reverb", "decay": "5s", "wet": 0.6, "mix": 0.7},
+            {"type": "chorus", "rate": "0.2Hz", "depth": 0.5, "mix": 0.4}
+          ],
+          "sound_characteristics": {
+            "timbral": "ethereal",
+            "material": "air",
+            "emotional": [
+              {"tag": "dreamy", "weight": 0.9},
+              {"tag": "reflective", "weight": 0.7}
+            ],
+            "dynamic": "sustained"
+          },
+          "topological_metadata": {
+            "damping": "high",
+            "spectral_complexity": "low",
+            "manifold_position": "outro fade"
+          }
+        },
+        "Lead_Intense_Aggressive": {
+          "synthesis_type": "fm",
+          "oscillator": {
+            "types": ["fm"],
+            "modulation_index": 6.0,
+            "carrier_ratio": 1.5
+          },
+          "envelope": {
+            "type": "ADSR",
+            "attack": "20ms",
+            "decay": "200ms",
+            "sustain": 0.9,
+            "release": "300ms",
+            "curve": "exponential"
+          },
+          "filter": {
+            "type": "high-pass",
+            "cutoff": "1200Hz",
+            "resonance": 0.6
+          },
+          "fx": [
+            {"type": "distortion", "gain": 0.5, "mix": 0.6},
+            {"type": "phaser", "rate": "1Hz", "depth": 0.7, "mix": 0.5}
+          ],
+          "sound_characteristics": {
+            "timbral": "gritty",
+            "material": "metal",
+            "emotional": [
+              {"tag": "intense", "weight": 0.9},
+              {"tag": "aggressive", "weight": 0.8}
+            ],
+            "dynamic": "punchy"
+          },
+          "topological_metadata": {
+            "damping": "low",
+            "spectral_complexity": "high",
+            "manifold_position": "chorus peak"
+          }
+        },
+        "Bass_Playful_Bouncy": {
+          "synthesis_type": "subtractive",
+          "oscillator": {
+            "types": ["square", "sawtooth"],
+            "mix_ratios": [0.5, 0.5],
+            "detune": 0.05
+          },
+          "envelope": {
+            "type": "ADSR",
+            "attack": "30ms",
+            "decay": "150ms",
+            "sustain": 0.6,
+            "release": "200ms",
+            "curve": "linear"
+          },
+          "filter": {
+            "type": "band-pass",
+            "cutoff": "800Hz",
+            "resonance": 0.4
+          },
+          "fx": [
+            {"type": "flanger", "rate": "0.5Hz", "depth": 0.6, "mix": 0.4},
+            {"type": "compression", "threshold": -15, "ratio": 6, "mix": 0.5}
+          ],
+          "sound_characteristics": {
+            "timbral": "bouncy",
+            "material": "plastic",
+            "emotional": [
+              {"tag": "playful", "weight": 0.8},
+              {"tag": "energetic", "weight": 0.7}
+            ],
+            "dynamic": "rhythmic"
+          },
+          "topological_metadata": {
+            "damping": "moderate",
+            "spectral_complexity": "medium",
+            "manifold_position": "verse groove"
+          }
+        },
+        "Pad_Hypnotic_Trance": {
+          "synthesis_type": "wavetable",
+          "oscillator": {
+            "types": ["wavetable"],
+            "mix_ratios": [1.0],
+            "morph_rate": 0.1
+          },
+          "envelope": {
+            "type": "ADSR",
+            "attack": "400ms",
+            "decay": "300ms",
+            "sustain": 0.9,
+            "release": "800ms",
+            "curve": "logarithmic"
+          },
+          "filter": {
+            "type": "low-pass",
+            "cutoff": "600Hz",
+            "resonance": 0.3
+          },
+          "fx": [
+            {"type": "phaser", "rate": "0.3Hz", "depth": 0.8, "mix": 0.6},
+            {"type": "reverb", "decay": "4s", "wet": 0.5, "mix": 0.5}
+          ],
+          "sound_characteristics": {
+            "timbral": "hypnotic",
+            "material": "ethereal",
+            "emotional": [
+              {"tag": "hypnotic", "weight": 0.9},
+              {"tag": "dreamy", "weight": 0.8}
+            ],
+            "dynamic": "sustained"
+          },
+          "topological_metadata": {
+            "damping": "high",
+            "spectral_complexity": "low",
+            "manifold_position": "bridge trance"
+          }
+        }
+      }
    }
-  }
+  
 
     
   
