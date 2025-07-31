@@ -95,7 +95,19 @@
             "damping": "high",
             "spectral_complexity": "medium",
             "manifold_position": "intro/verse region"
-          }
+          },
+          "transientDetail": {
+            "intensity": [0.2, 0.4],
+            "enabled": true
+          },
+          "harmonicContent": {
+            "overtones": [1.0, 0.5, 0.3, 0.2, 0.1],
+            "complexity": "medium"
+          },
+          "fxCategories": [],
+          "soundGeneration": "acoustic",
+          "theoryTuning": "equal",
+          "dynamicRange": "high damping"
         }
       }
     },
@@ -177,7 +189,19 @@
             "damping": "low",
             "spectral_complexity": "high",
             "manifold_position": "chorus peak"
-          }
+          },
+          "transientDetail": {
+            "intensity": [0.3, 0.5],
+            "enabled": true
+          },
+          "harmonicContent": {
+            "overtones": [1.0, 0.6, 0.5, 0.4, 0.3],
+            "complexity": "high"
+          },
+          "fxCategories": ["ambient"],
+          "soundGeneration": "acoustic",
+          "theoryTuning": "equal",
+          "dynamicRange": "low damping"
         }
       }
     },
@@ -256,7 +280,19 @@
             "damping": "high",
             "spectral_complexity": "low",
             "manifold_position": "outro region"
-          }
+          },
+          "transientDetail": {
+            "intensity": [0.1, 0.3],
+            "enabled": true
+          },
+          "harmonicContent": {
+            "overtones": [1.0, 0.4, 0.2, 0.1],
+            "complexity": "low"
+          },
+          "fxCategories": [],
+          "soundGeneration": "acoustic",
+          "theoryTuning": "equal",
+          "dynamicRange": "high damping"
         }
       }
     },
@@ -336,7 +372,19 @@
             "damping": "moderate",
             "spectral_complexity": "medium",
             "manifold_position": "verse/chorus foundation"
-          }
+          },
+          "transientDetail": {
+            "intensity": [0.2, 0.4],
+            "enabled": true
+          },
+          "harmonicContent": {
+            "overtones": [1.0, 0.7, 0.5, 0.3],
+            "complexity": "medium"
+          },
+          "fxCategories": [],
+          "soundGeneration": "acoustic",
+          "theoryTuning": "equal",
+          "dynamicRange": "moderate damping"
         }
       }
     }
@@ -372,7 +420,19 @@
           "damping": "high",
           "spectral_complexity": "low",
           "manifold_position": "rhythm section"
-        }
+        },
+        "transientDetail": {
+          "intensity": [0.1, 0.2],
+          "enabled": true
+        },
+        "harmonicContent": {
+          "overtones": [1.0, 0.3, 0.1],
+          "complexity": "low"
+        },
+        "fxCategories": [],
+        "soundGeneration": "acoustic",
+        "theoryTuning": "equal",
+        "dynamicRange": "high damping"
       },
       "HammerOn": {
         "envelope": {
@@ -394,7 +454,19 @@
           "damping": "moderate",
           "spectral_complexity": "medium",
           "manifold_position": "lead transition"
-        }
+        },
+        "transientDetail": {
+          "intensity": [0.2, 0.3],
+          "enabled": true
+        },
+        "harmonicContent": {
+          "overtones": [1.0, 0.5, 0.3],
+          "complexity": "medium"
+        },
+        "fxCategories": [],
+        "soundGeneration": "acoustic",
+        "theoryTuning": "equal",
+        "dynamicRange": "moderate damping"
       }
     }
   }
