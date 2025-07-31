@@ -87,6 +87,28 @@
       "useDynamicGate": true,
       "gateThreshold": 0.5,
       "gateDecaySec": 0.05
+    },
+    {
+      "sectionName": "BuildUp",
+      "group": "Texture_Evolving_Tense",
+      "attackMul": 0.8,
+      "decayMul": 1.2,
+      "sustainMul": 1.1,
+      "releaseMul": 1.0,
+      "useDynamicGate": true,
+      "gateThreshold": 0.4,
+      "gateDecaySec": 0.15
+    },
+    {
+      "sectionName": "Breakdown",
+      "group": "Drone_Airy_Ambient",
+      "attackMul": 1.2,
+      "decayMul": 1.5,
+      "sustainMul": 0.8,
+      "releaseMul": 1.3,
+      "useDynamicGate": false,
+      "gateThreshold": 0.0,
+      "gateDecaySec": 0.0
     }
   ]
 }
