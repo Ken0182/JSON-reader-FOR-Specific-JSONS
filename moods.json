@@ -31,6 +31,38 @@
       "powerGamma": [1.0, 1.0],
       "noiseLevel": [0.0, 0.1],
       "articulation": [0.0, 0.2]
+    },
+    {
+      "name": "dreamy",
+      "attack": [0.3, 0.6],
+      "decay": [0.4, 0.8],
+      "sustain": [0.7, 1.0],
+      "release": [1.0, 2.0],
+      "tremFreq": [0.5, 2.0],
+      "tremDepth": [0.05, 0.15],
+      "vibFreq": [1.0, 3.0],
+      "vibDepth": [0.02, 0.05],
+      "alphaLP": [0.7, 0.9],
+      "alphaHP": [0.0, 0.1],
+      "powerGamma": [0.9, 1.1],
+      "noiseLevel": [0.05, 0.15],
+      "articulation": [0.1, 0.3]
+    },
+    {
+      "name": "intense",
+      "attack": [0.001, 0.005],
+      "decay": [0.05, 0.1],
+      "sustain": [0.8, 1.0],
+      "release": [0.1, 0.2],
+      "tremFreq": [10.0, 20.0],
+      "tremDepth": [0.2, 0.4],
+      "vibFreq": [10.0, 20.0],
+      "vibDepth": [0.05, 0.1],
+      "alphaLP": [0.0, 0.2],
+      "alphaHP": [0.8, 1.0],
+      "powerGamma": [1.2, 1.5],
+      "noiseLevel": [0.2, 0.4],
+      "articulation": [0.5, 0.7]
     }
   ]
 }
