@@ -42,7 +42,15 @@
         "damping": "high",
         "spectral_complexity": "low",
         "manifold_position": "intro/outro region"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.7, 0.3],
+        "complexity": "low"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["ambient"],
+      "theoryTuning": "equal",
+      "dynamicRange": "high damping"
     },
     "Lead_Bright_Energetic": {
       "synthesis_type": "subtractive",
@@ -80,7 +88,15 @@
         "damping": "low",
         "spectral_complexity": "high",
         "manifold_position": "chorus peak"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.6, 0.4, 0.3],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["modulation"],
+      "theoryTuning": "equal",
+      "dynamicRange": "low damping"
     },
     "Bass_Punchy_Driving": {
       "synthesis_type": "subtractive",
@@ -118,7 +134,15 @@
         "damping": "moderate",
         "spectral_complexity": "medium",
         "manifold_position": "verse/chorus foundation"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.5, 0.5],
+        "complexity": "medium"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": [],
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate damping"
     },
     "Texture_Evolving_Tense": {
       "synthesis_type": "fm",
@@ -156,7 +180,15 @@
         "damping": "variable",
         "spectral_complexity": "high",
         "manifold_position": "bridge outlier"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["modulation"],
+      "theoryTuning": "microtonal",
+      "dynamicRange": "variable damping"
     },
     "Arp_Plucky_Rhythmic": {
       "synthesis_type": "subtractive",
@@ -194,7 +226,15 @@
         "damping": "high",
         "spectral_complexity": "medium",
         "manifold_position": "verse support"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1.0],
+        "complexity": "low"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": [],
+      "theoryTuning": "equal",
+      "dynamicRange": "high damping"
     },
     "Drone_Airy_Ambient": {
       "synthesis_type": "additive",
@@ -232,7 +272,15 @@
         "damping": "very high",
         "spectral_complexity": "low",
         "manifold_position": "intro/outro edge"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [1, 2, 4],
+        "complexity": "low"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["ambient"],
+      "theoryTuning": "equal",
+      "dynamicRange": "very high damping"
     },
     "Rhythm_Crunchy_Aggressive": {
       "synthesis_type": "subtractive",
@@ -270,7 +318,15 @@
         "damping": "low",
         "spectral_complexity": "high",
         "manifold_position": "chorus energy"
-      }
+      },
+      "harmonicContent": {
+        "overtones": [0.7, 0.3],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": [],
+      "theoryTuning": "microtonal",
+      "dynamicRange": "low damping"
     },
     "Bell_Glassy_Clear": {
       "synthesis_type": "additive",
