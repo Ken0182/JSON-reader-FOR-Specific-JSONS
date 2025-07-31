@@ -17,458 +17,324 @@
       "pitch_shift_range": [0.02, 0.08],
       "intensity": [0.1, 0.3],
       "ai_control": true
+    },
+    "string_interaction": {
+      "sympathetic_resonance": true,
+      "damping_variation": [0.8, 1.2],
+      "ai_control": true
     }
   },
-  "guitar_types": {
-    "acoustic": {
-      "groups": {
-        "Acoustic_Warm_Fingerstyle": {
-          "strings": {
-            "material": "steel",
-            "num_strings": 6,
-            "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
-            "gauge": "light",
-            "detune_range": [0.002, 0.008],
-            "tension": "medium",
-            "ai_control": true
-          },
-          "harmonics": {
-            "vibe_set": [1.0, 0.5, 0.3, 0.2, 0.1],
-            "decay_rate": [0.8, 1.2],
-            "sympathetic_resonance": {
-              "harmonics": [0.2, 0.1, 0.05],
-              "volume": [0.1, 0.15],
-              "num_layers": 2,
-              "randomize_range": [0.05, 0.1]
-            }
-          },
-          "envelope": {
-            "type": "AHDSR",
-            "attack": [50, 100],
-            "hold": [20, 50],
-            "decay": [300, 500],
-            "sustain": [0.6, 0.8],
-            "release": [800, 1200],
-            "curve": "exponential",
-            "ai_control": true
-          },
-          "filter": {
-            "type": "low-pass",
-            "cutoff": [800, 1200],
-            "resonance": [0.1, 0.3],
-            "envelope_amount": [0.2, 0.5],
-            "slope": "12dB/oct",
-            "ai_control": true
-          },
-          "attack_noise": {
-            "enabled": true,
-            "intensity": [0.2, 0.4],
-            "burst_length": [0.005, 0.01],
-            "noise_type": "white",
-            "ai_control": true
-          },
-          "body_resonance": {
-            "ir_file": "acoustic_dreadnought_ir.wav",
-            "mix": [0.4, 0.6],
-            "ai_control": true
-          },
-          "pick": {
-            "stiffness": "medium",     
-            "noiseProbability": 0.15,
-            "noiseIntensity": 0.2,
-            "position": [0.6, 0.8],
-            "ai_control": true
-          },
-          "vibrato": {
-            "freq_range": [82, 1000],
-            "vibrato_hz": [4.0, 6.0],
-            "depth_cents": [10, 20],
-            "ai_control": true
-          },
-          "sound_characteristics": {
-            "timbral": "warm",
-            "material": "wood",
-            "emotional": [{"tag": "intimate", "weight": 0.8}, {"tag": "warm", "weight": 0.7}],
-            "dynamic": "sustained"
-          },
-          "topological_metadata": {
-            "damping": "high",
-            "spectral_complexity": "medium",
-            "manifold_position": "intro/verse region"
-          },
-          "transientDetail": {
-            "intensity": [0.2, 0.4],
-            "enabled": true
-          },
-          "harmonicContent": {
-            "overtones": [1.0, 0.5, 0.3, 0.2, 0.1],
-            "complexity": "medium"
-          },
-          "fxCategories": ["ambient"],
-          "soundGeneration": "acoustic",
-          "theoryTuning": "equal",
-          "dynamicRange": "high damping"
+  "groups": {
+    "Acoustic_Warm_Fingerstyle": {
+      "strings": {
+        "material": "steel",
+        "num_strings": 6,
+        "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
+        "gauge": "light",
+        "detune_range": [0.002, 0.008],
+        "tension": "medium",
+        "ai_control": true
+      },
+      "harmonics": {
+        "vibe_set": [1.0, 0.5, 0.3, 0.2, 0.1],
+        "decay_rate": [0.8, 1.2],
+        "sympathetic_resonance": {
+          "harmonics": [0.2, 0.1, 0.05],
+          "volume": [0.1, 0.15],
+          "num_layers": 2,
+          "randomize_range": [0.05, 0.1]
         }
-      }
+      },
+      "attack_noise": {
+        "enabled": true,
+        "intensity": [0.15, 0.25],
+        "frequency_range": [1000, 5000],
+        "duration": [0.005, 0.02],
+        "ai_control": true
+      },
+      "fx": {
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.4, 0.6],
+          "decay": [2.0, 4.0],
+          "wet_dry": [0.2, 0.4]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [0, 3],
+          "mid_gain": [1, 4],
+          "high_gain": [2, 5]
+        }
+      },
+      "topological_metadata": {
+        "damping": "moderate",
+        "spectral_complexity": "medium",
+        "manifold_position": "acoustic fingerstyle region"
+      },
+      "transientDetail": {
+        "intensity": [0.15, 0.25],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.5, 0.3, 0.2, 0.1],
+        "complexity": "medium"
+      },
+      "fxCategories": ["ambient", "filtering"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate",
+      "frequencyRange": "mid-high"
     },
-    "electric": {
-      "groups": {
-        "Electric_Bright_Lead": {
-          "strings": {
-            "material": "nickel",
-            "num_strings": 6,
-            "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
-            "gauge": "medium",
-            "detune_range": [0.003, 0.01],
-            "tension": "high",
-            "ai_control": true
-          },
-          "harmonics": {
-            "vibe_set": [1.0, 0.6, 0.5, 0.4, 0.3],
-            "decay_rate": [0.6, 1.0],
-            "sympathetic_resonance": {
-              "harmonics": [0.3, 0.15, 0.08],
-              "volume": [0.08, 0.12],
-              "num_layers": 3,
-              "randomize_range": [0.03, 0.08]
-            }
-          },
-          "envelope": {
-            "type": "ADSR",
-            "attack": [20, 50],
-            "decay": [200, 400],
-            "sustain": [0.7, 0.9],
-            "release": [300, 600],
-            "curve": "linear",
-            "ai_control": true
-          },
-          "filter": {
-            "type": "high-pass",
-            "cutoff": [1000, 1500],
-            "resonance": [0.3, 0.5],
-            "envelope_amount": [0.4, 0.7],
-            "slope": "24dB/oct",
-            "ai_control": true
-          },
-          "attack_noise": {
-            "enabled": true,
-            "intensity": [0.3, 0.5],
-            "burst_length": [0.003, 0.008],
-            "noise_type": "pink",
-            "ai_control": true
-          },
-          "body_resonance": {
-            "ir_file": "electric_strat_ir.wav",
-            "mix": [0.3, 0.5],
-            "ai_control": true
-          },
-          "pick": {
-            "stiffness": "easy",
-            "noiseProbability": 0.15,
-            "noiseIntensity": 0.2,
-            "position": [0.7, 0.9],
-            "ai_control": true
-          },
-          "vibrato": {
-            "freq_range": [82, 1000],
-            "vibrato_hz": [5.0, 7.0],
-            "depth_cents": [8, 15],
-            "ai_control": true
-          },
-          "fx": [
-            {"type": "distortion", "gain": [0.2, 0.4], "wet": [0.3, 0.5], "ai_control": true},
-            {"type": "reverb", "decay": [2, 4], "wet": [0.2, 0.4], "ai_control": true}
-          ],
-          "sound_characteristics": {
-            "timbral": "bright",
-            "material": "metal",
-            "emotional": [{"tag": "energetic", "weight": 0.9}, {"tag": "bold", "weight": 0.7}],
-            "dynamic": "sustained"
-          },
-          "topological_metadata": {
-            "damping": "low",
-            "spectral_complexity": "high",
-            "manifold_position": "chorus peak"
-          },
-          "transientDetail": {
-            "intensity": [0.3, 0.5],
-            "enabled": true
-          },
-          "harmonicContent": {
-            "overtones": [1.0, 0.6, 0.5, 0.4, 0.3],
-            "complexity": "high"
-          },
-          "fxCategories": ["ambient", "modulation"],
-          "soundGeneration": "acoustic",
-          "theoryTuning": "equal",
-          "dynamicRange": "low damping"
+    "Electric_Bright_Lead": {
+      "strings": {
+        "material": "nickel",
+        "num_strings": 6,
+        "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
+        "gauge": "light",
+        "detune_range": [0.005, 0.015],
+        "tension": "medium",
+        "ai_control": true
+      },
+      "harmonics": {
+        "vibe_set": [1.0, 0.6, 0.5, 0.4, 0.3],
+        "decay_rate": [0.6, 1.0],
+        "sympathetic_resonance": {
+          "harmonics": [0.3, 0.2, 0.1],
+          "volume": [0.15, 0.25],
+          "num_layers": 3,
+          "randomize_range": [0.05, 0.15]
         }
-      }
+      },
+      "attack_noise": {
+        "enabled": true,
+        "intensity": [0.3, 0.5],
+        "frequency_range": [2000, 8000],
+        "duration": [0.002, 0.01],
+        "ai_control": true
+      },
+      "fx": {
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.3, 0.6],
+          "tone": [0.4, 0.7],
+          "wet_dry": [0.7, 0.9]
+        },
+        "phaser": {
+          "enabled": true,
+          "rate": [0.5, 2.0],
+          "depth": [0.3, 0.6],
+          "feedback": [0.2, 0.4]
+        },
+        "delay": {
+          "enabled": true,
+          "time": [0.2, 0.4],
+          "feedback": [0.3, 0.5],
+          "wet_dry": [0.2, 0.4]
+        },
+        "bitcrusher": {
+          "enabled": true,
+          "bit_depth": [8, 14],
+          "sample_rate": [8000, 22050],
+          "wet_dry": [0.1, 0.3]
+        }
+      },
+      "topological_metadata": {
+        "damping": "low",
+        "spectral_complexity": "high",
+        "manifold_position": "chorus peak"
+      },
+      "transientDetail": {
+        "intensity": [0.3, 0.5],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.6, 0.5, 0.4, 0.3],
+        "complexity": "high"
+      },
+      "fxCategories": ["distortion", "modulation", "special"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "expanded",
+      "frequencyRange": "full-spectrum"
     },
-    "classical": {
-      "groups": {
-        "Classical_Nylon_Soft": {
-          "strings": {
-            "material": "nylon",
-            "num_strings": 6,
-            "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
-            "gauge": "medium",
-            "detune_range": [0.001, 0.006],
-            "tension": "low",
-            "ai_control": true
-          },
-          "harmonics": {
-            "vibe_set": [1.0, 0.4, 0.2, 0.1],
-            "decay_rate": [1.0, 1.5],
-            "sympathetic_resonance": {
-              "harmonics": [0.15, 0.08, 0.04],
-              "volume": [0.05, 0.1],
-              "num_layers": 2,
-              "randomize_range": [0.02, 0.06]
-            }
-          },
-          "envelope": {
-            "type": "DADSR",
-            "delay": [10, 30],
-            "attack": [30, 80],
-            "decay": [400, 600],
-            "sustain": [0.5, 0.7],
-            "release": [1000, 1500],
-            "curve": "logarithmic",
-            "ai_control": true
-          },
-          "filter": {
-            "type": "low-pass",
-            "cutoff": [600, 1000],
-            "resonance": [0.1, 0.2],
-            "envelope_amount": [0.3, 0.5],
-            "slope": "12dB/oct",
-            "ai_control": true
-          },
-          "attack_noise": {
-            "enabled": true,
-            "intensity": [0.1, 0.3],
-            "burst_length": [0.006, 0.012],
-            "noise_type": "white",
-            "ai_control": true
-          },
-          "body_resonance": {
-            "ir_file": "classical_guitar_ir.wav",
-            "mix": [0.5, 0.7],
-            "ai_control": true
-          },
-          "pick": {
-            "stiffness": "easy",    
-            "noiseProbability": 0.15,
-            "noiseIntensity": 0.2,
-            "position": [0.5, 0.7],
-            "ai_control": true
-          },
-          "vibrato": {
-            "freq_range": [82, 1000],
-            "vibrato_hz": [3.0, 5.0],
-            "depth_cents": [5, 12],
-            "ai_control": true
-          },
-          "sound_characteristics": {
-            "timbral": "mellow",
-            "material": "wood",
-            "emotional": [{"tag": "delicate", "weight": 0.8}, {"tag": "reflective", "weight": 0.7}],
-            "dynamic": "sustained"
-          },
-          "topological_metadata": {
-            "damping": "high",
-            "spectral_complexity": "low",
-            "manifold_position": "outro region"
-          },
-          "transientDetail": {
-            "intensity": [0.1, 0.3],
-            "enabled": true
-          },
-          "harmonicContent": {
-            "overtones": [1.0, 0.4, 0.2, 0.1],
-            "complexity": "low"
-          },
-          "fxCategories": [],
-          "soundGeneration": "acoustic",
-          "theoryTuning": "equal",
-          "dynamicRange": "high damping"
+    "Classical_Nylon_Soft": {
+      "strings": {
+        "material": "nylon",
+        "num_strings": 6,
+        "tuning": ["E2", "A2", "D3", "G3", "B3", "E4"],
+        "gauge": "medium",
+        "detune_range": [0.001, 0.005],
+        "tension": "low",
+        "ai_control": true
+      },
+      "harmonics": {
+        "vibe_set": [1.0, 0.4, 0.2, 0.1],
+        "decay_rate": [1.0, 1.5],
+        "sympathetic_resonance": {
+          "harmonics": [0.1, 0.05, 0.02],
+          "volume": [0.05, 0.1],
+          "num_layers": 1,
+          "randomize_range": [0.02, 0.05]
         }
-      }
+      },
+      "attack_noise": {
+        "enabled": true,
+        "intensity": [0.1, 0.2],
+        "frequency_range": [500, 2000],
+        "duration": [0.01, 0.03],
+        "ai_control": true
+      },
+      "fx": {
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.6, 0.8],
+          "decay": [3.0, 6.0],
+          "wet_dry": [0.3, 0.5]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [-2, 1],
+          "mid_gain": [0, 3],
+          "high_gain": [-3, 0]
+        }
+      },
+      "topological_metadata": {
+        "damping": "high",
+        "spectral_complexity": "low",
+        "manifold_position": "outro region"
+      },
+      "transientDetail": {
+        "intensity": [0.1, 0.2],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.4, 0.2, 0.1],
+        "complexity": "low"
+      },
+      "fxCategories": ["ambient", "filtering"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "compressed",
+      "frequencyRange": "mid-high"
     },
-    "bass": {
-      "groups": {
-        "Bass_Punchy_Rock": {
-          "strings": {
-            "material": "nickel",
-            "num_strings": 4,
-            "tuning": ["E1", "A1", "D2", "G2"],
-            "gauge": "heavy",
-            "detune_range": [0.004, 0.012],
-            "tension": "high",
-            "ai_control": true
-          },
-          "harmonics": {
-            "vibe_set": [1.0, 0.7, 0.5, 0.3],
-            "decay_rate": [0.5, 0.9],
-            "sympathetic_resonance": {
-              "harmonics": [0.2, 0.1, 0.05],
-              "volume": [0.06, 0.1],
-              "num_layers": 2,
-              "randomize_range": [0.04, 0.08]
-            }
-          },
-          "envelope": {
-            "type": "AD",
-            "attack": [10, 30],
-            "decay": [200, 400],
-            "curve": "exponential",
-            "ai_control": true
-          },
-          "filter": {
-            "type": "low-pass",
-            "cutoff": [400, 800],
-            "resonance": [0.4, 0.6],
-            "envelope_amount": [0.3, 0.6],
-            "slope": "24dB/oct",
-            "ai_control": true
-          },
-          "attack_noise": {
-            "enabled": true,
-            "intensity": [0.2, 0.4],
-            "burst_length": [0.004, 0.009],
-            "noise_type": "pink",
-            "ai_control": true
-          },
-          "body_resonance": {
-            "ir_file": "bass_guitar_ir.wav",
-            "mix": [0.3, 0.5],
-            "ai_control": true
-          },
-          "pick": {
-            "stiffness": "hard",
-            "noiseProbability": 0.15,
-            "noiseIntensity": 0.2,
-            "position": [0.8, 1.0],
-            "ai_control": true
-          },
-          "vibrato": {
-            "freq_range": [41, 200],
-            "vibrato_hz": [4.0, 6.0],
-            "depth_cents": [10, 20],
-            "ai_control": true
-          },
-          "fx": [
-            {"type": "compressor", "threshold": [-20, -10], "ratio": [4, 8], "ai_control": true},
-            {"type": "distortion", "gain": [0.1, 0.3], "wet": [0.2, 0.4], "ai_control": true}
-          ],
-          "sound_characteristics": {
-            "timbral": "gritty",
-            "material": "metal",
-            "emotional": [{"tag": "driving", "weight": 0.8}, {"tag": "steady", "weight": 0.7}],
-            "dynamic": "percussive"
-          },
-          "topological_metadata": {
-            "damping": "moderate",
-            "spectral_complexity": "medium",
-            "manifold_position": "verse/chorus foundation"
-          },
-          "transientDetail": {
-            "intensity": [0.2, 0.4],
-            "enabled": true
-          },
-          "harmonicContent": {
-            "overtones": [1.0, 0.7, 0.5, 0.3],
-            "complexity": "medium"
-          },
-          "fxCategories": ["dynamics"],
-          "soundGeneration": "acoustic",
-          "theoryTuning": "equal",
-          "dynamicRange": "moderate damping",
-          "frequencyRange": "low-mid"
+    "Bass_Punchy_Rock": {
+      "strings": {
+        "material": "steel",
+        "num_strings": 4,
+        "tuning": ["E1", "A1", "D2", "G2"],
+        "gauge": "medium",
+        "detune_range": [0.001, 0.008],
+        "tension": "high",
+        "ai_control": true
+      },
+      "harmonics": {
+        "vibe_set": [1.0, 0.7, 0.5, 0.3],
+        "decay_rate": [0.5, 0.9],
+        "sympathetic_resonance": {
+          "harmonics": [0.2, 0.1, 0.05],
+          "volume": [0.1, 0.2],
+          "num_layers": 2,
+          "randomize_range": [0.03, 0.08]
         }
-      }
+      },
+      "attack_noise": {
+        "enabled": true,
+        "intensity": [0.2, 0.4],
+        "frequency_range": [100, 1000],
+        "duration": [0.005, 0.015],
+        "ai_control": true
+      },
+      "fx": {
+        "compressor": {
+          "enabled": true,
+          "ratio": [4.0, 8.0],
+          "attack": [1, 5],
+          "release": [50, 150]
+        },
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.4, 0.7],
+          "tone": [0.2, 0.5],
+          "wet_dry": [0.6, 0.8]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [3, 8],
+          "mid_gain": [0, 3],
+          "high_gain": [-6, -2]
+        },
+        "delay": {
+          "enabled": false
+        }
+      },
+      "topological_metadata": {
+        "damping": "moderate",
+        "spectral_complexity": "medium",
+        "manifold_position": "verse/chorus foundation"
+      },
+      "transientDetail": {
+        "intensity": [0.2, 0.4],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.7, 0.5, 0.3],
+        "complexity": "medium"
+      },
+      "fxCategories": ["distortion", "dynamics"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate",
+      "frequencyRange": "low-mid"
     }
   },
   "articulations": {
-    "groups": {
-      "Mute_Palm": {
-        "envelope": {
-          "type": "ADSR",
-          "attack": [5, 15],
-          "decay": [50, 100],
-          "sustain": [0.1, 0.3],
-          "release": [50, 100],
-          "curve": "exponential",
-          "ai_control": true
-        },
-        "filter": {
-          "type": "low-pass",
-          "cutoff": [1200, 1800],
-          "resonance": [0.2, 0.4],
-          "envelope_amount": [0.3, 0.5],
-          "slope": "24dB/oct",
-          "ai_control": true
-        },
-        "probability": [0.2, 0.5],
-        "sound_characteristics": {
-          "timbral": "damped",
-          "material": "muted",
-          "emotional": [{"tag": "tight", "weight": 0.8}],
-          "dynamic": "percussive"
-        },
-        "topological_metadata": {
-          "damping": "high",
-          "spectral_complexity": "low",
-          "manifold_position": "rhythm section"
-        },
-        "transientDetail": {
-          "intensity": [0.1, 0.2],
-          "enabled": true
-        },
-        "harmonicContent": {
-          "overtones": [1.0, 0.3, 0.1],
-          "complexity": "low"
-        },
-        "fxCategories": [],
-        "soundGeneration": "acoustic",
-        "theoryTuning": "equal",
-        "dynamicRange": "high damping"
+    "muted": {
+      "damping_factor": [2.0, 4.0],
+      "harmonic_reduction": [0.3, 0.6],
+      "attack_modification": [0.5, 0.8],
+      "frequency_cutoff": [500, 1500],
+      "topological_metadata": {
+        "damping": "high",
+        "spectral_complexity": "low",
+        "manifold_position": "rhythm section"
       },
-      "HammerOn": {
-        "envelope": {
-          "type": "AD",
-          "attack": [5, 10],
-          "decay": [100, 200],
-          "curve": "exponential",
-          "ai_control": true
-        },
-        "pitch_shift_cents": [50, 200],
-        "probability": [0.1, 0.3],
-        "sound_characteristics": {
-          "timbral": "smooth",
-          "material": "string",
-          "emotional": [{"tag": "expressive", "weight": 0.8}],
-          "dynamic": "percussive"
-        },
-        "topological_metadata": {
-          "damping": "moderate",
-          "spectral_complexity": "medium",
-          "manifold_position": "lead transition"
-        },
-        "transientDetail": {
-          "intensity": [0.2, 0.3],
-          "enabled": true
-        },
-        "harmonicContent": {
-          "overtones": [1.0, 0.5, 0.3],
-          "complexity": "medium"
-        },
-        "fxCategories": [],
-        "soundGeneration": "acoustic",
-        "theoryTuning": "equal",
-        "dynamicRange": "moderate damping"
-      }
+      "transientDetail": {
+        "intensity": [0.1, 0.2],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.3, 0.1],
+        "complexity": "low"
+      },
+      "fxCategories": ["filtering", "dynamics"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "compressed",
+      "frequencyRange": "limited"
+    },
+    "harmonics": {
+      "fundamental_reduction": [0.1, 0.3],
+      "harmonic_emphasis": [2.0, 5.0],
+      "attack_softening": [0.3, 0.6],
+      "frequency_boost": [2000, 8000],
+      "topological_metadata": {
+        "damping": "moderate",
+        "spectral_complexity": "medium",
+        "manifold_position": "lead transition"
+      },
+      "transientDetail": {
+        "intensity": [0.2, 0.3],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.5, 0.3],
+        "complexity": "medium"
+      },
+      "fxCategories": ["filtering", "ambient"],
+      "soundGeneration": "acoustic",
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate",
+      "frequencyRange": "high-focused"
     }
   }
 }

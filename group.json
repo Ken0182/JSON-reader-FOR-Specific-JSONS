@@ -34,7 +34,16 @@
           "decay": [3.0, 5.0],
           "wet_dry": [0.4, 0.6]
         },
+        "delay": {
+          "enabled": true,
+          "time": [0.3, 0.8],
+          "feedback": [0.2, 0.4],
+          "wet_dry": [0.2, 0.3]
+        },
         "chorus": {
+          "enabled": false
+        },
+        "compressor": {
           "enabled": false
         }
       },
@@ -51,10 +60,10 @@
         "overtones": [1.0, 0.7, 0.3, 0.15, 0.08],
         "complexity": "low"
       },
-      "fxCategories": ["ambient"],
-      "soundGeneration": "digital",
+      "fxCategories": ["ambient", "filtering"],
+      "soundGeneration": "analog",
       "theoryTuning": "equal",
-      "dynamicRange": "high damping"
+      "dynamicRange": "compressed"
     },
     "Lead_Bright_Energetic": {
       "envelope": {
@@ -79,15 +88,25 @@
       },
       "fx": {
         "reverb": {
-          "enabled": true,
-          "room_size": [0.3, 0.5],
-          "decay": [1.0, 2.0],
-          "wet_dry": [0.2, 0.4]
+          "enabled": false
         },
         "chorus": {
           "enabled": true,
           "rate": [2.0, 4.0],
-          "depth": [0.3, 0.5]
+          "depth": [0.3, 0.5],
+          "wet_dry": [0.3, 0.5]
+        },
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.3, 0.6],
+          "tone": [0.4, 0.7],
+          "wet_dry": [0.8, 1.0]
+        },
+        "compressor": {
+          "enabled": true,
+          "ratio": [3.0, 6.0],
+          "attack": [1, 5],
+          "release": [50, 150]
         }
       },
       "topological_metadata": {
@@ -103,14 +122,14 @@
         "overtones": [1.0, 0.6, 0.4, 0.3, 0.2, 0.15],
         "complexity": "high"
       },
-      "fxCategories": ["modulation"],
+      "fxCategories": ["modulation", "distortion"],
       "soundGeneration": "digital",
       "theoryTuning": "equal",
-      "dynamicRange": "low damping"
+      "dynamicRange": "expanded"
     },
     "Bass_Punchy_Driving": {
       "envelope": {
-        "attack": [0.05, 0.1],
+        "attack": [0.01, 0.03],
         "decay": [0.3, 0.6],
         "sustain": [0.8, 1.0],
         "release": [0.8, 1.5],
@@ -130,11 +149,23 @@
         "ai_control": true
       },
       "fx": {
-        "reverb": {
-          "enabled": false
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.4, 0.7],
+          "tone": [0.2, 0.4],
+          "wet_dry": [0.6, 0.8]
         },
-        "chorus": {
-          "enabled": false
+        "compressor": {
+          "enabled": true,
+          "ratio": [4.0, 8.0],
+          "attack": [1, 3],
+          "release": [30, 80]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [2, 6],
+          "mid_gain": [-2, 2],
+          "high_gain": [-6, -2]
         }
       },
       "topological_metadata": {
@@ -143,17 +174,17 @@
         "manifold_position": "verse/chorus foundation"
       },
       "transientDetail": {
-        "intensity": [0.3, 0.5],
+        "intensity": [0.7, 0.8],
         "enabled": true
       },
       "harmonicContent": {
         "overtones": [1.0, 0.5, 0.3, 0.2],
         "complexity": "medium"
       },
-      "fxCategories": [],
+      "fxCategories": ["distortion", "dynamics"],
       "soundGeneration": "digital",
       "theoryTuning": "equal",
-      "dynamicRange": "moderate damping"
+      "dynamicRange": "moderate"
     },
     "Texture_Evolving_Tense": {
       "envelope": {
@@ -167,8 +198,8 @@
         "type": "fm_synthesis",
         "carrier_freq": [440, 880],
         "modulator_freq": [220, 660],
-        "modulation_index": [2.0, 8.0],
-        "detune": [0.02, 0.08],
+        "modulation_index": [6.0, 8.0],
+        "detune": [0.06, 0.12],
         "ai_control": true
       },
       "filter": {
@@ -185,10 +216,17 @@
           "decay": [4.0, 8.0],
           "wet_dry": [0.5, 0.7]
         },
-        "chorus": {
+        "flanger": {
           "enabled": true,
-          "rate": [0.5, 1.5],
-          "depth": [0.4, 0.7]
+          "rate": [0.3, 1.2],
+          "depth": [0.4, 0.8],
+          "feedback": [0.3, 0.6]
+        },
+        "ring_mod": {
+          "enabled": true,
+          "frequency": [50, 200],
+          "depth": [0.2, 0.5],
+          "wet_dry": [0.1, 0.3]
         }
       },
       "topological_metadata": {
@@ -201,13 +239,14 @@
         "enabled": true
       },
       "harmonicContent": {
-        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.15],
+        "overtones": [1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15],
         "complexity": "high"
       },
-      "fxCategories": ["ambient", "modulation"],
+      "fxCategories": ["ambient", "modulation", "special"],
       "soundGeneration": "digital",
       "theoryTuning": "microtonal",
-      "dynamicRange": "variable damping"
+      "dynamicRange": "variable",
+      "emotional": ["tense", "evolving", "surprising"]
     },
     "Arp_Plucky_Rhythmic": {
       "envelope": {
@@ -231,14 +270,23 @@
         "ai_control": true
       },
       "fx": {
-        "reverb": {
+        "delay": {
           "enabled": true,
-          "room_size": [0.2, 0.4],
-          "decay": [0.5, 1.5],
-          "wet_dry": [0.1, 0.3]
+          "time": [0.125, 0.25],
+          "feedback": [0.3, 0.5],
+          "wet_dry": [0.3, 0.5]
         },
-        "chorus": {
-          "enabled": false
+        "phaser": {
+          "enabled": true,
+          "rate": [1.0, 3.0],
+          "depth": [0.3, 0.6],
+          "feedback": [0.2, 0.4]
+        },
+        "eq": {
+          "enabled": true,
+          "high_gain": [2, 6],
+          "mid_gain": [0, 3],
+          "low_gain": [-3, 0]
         }
       },
       "topological_metadata": {
@@ -254,10 +302,11 @@
         "overtones": [1.0, 0.4, 0.2, 0.1, 0.05],
         "complexity": "medium"
       },
-      "fxCategories": [],
+      "fxCategories": ["modulation", "filtering"],
       "soundGeneration": "digital",
       "theoryTuning": "equal",
-      "dynamicRange": "moderate damping"
+      "dynamicRange": "moderate",
+      "emotional": ["rhythmic", "playful"]
     },
     "Drone_Airy_Ambient": {
       "envelope": {
@@ -287,8 +336,17 @@
           "decay": [8.0, 15.0],
           "wet_dry": [0.6, 0.8]
         },
-        "chorus": {
-          "enabled": false
+        "delay": {
+          "enabled": true,
+          "time": [0.5, 2.0],
+          "feedback": [0.4, 0.7],
+          "wet_dry": [0.3, 0.5]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [-6, -2],
+          "mid_gain": [-3, 0],
+          "high_gain": [-9, -6]
         }
       },
       "topological_metadata": {
@@ -304,113 +362,312 @@
         "overtones": [1.0, 0.3, 0.1, 0.05],
         "complexity": "low"
       },
-      "fxCategories": ["ambient"],
+      "fxCategories": ["ambient", "filtering"],
       "soundGeneration": "digital",
       "theoryTuning": "equal",
-      "dynamicRange": "very high damping"
+      "dynamicRange": "highly compressed",
+      "emotional": ["sustained", "ethereal"]
     },
-    "Percussion_Sharp_Driving": {
+    "Juno106_WarmVintage": {
       "envelope": {
-        "attack": [0.001, 0.01],
-        "decay": [0.05, 0.2],
-        "sustain": [0.0, 0.1],
-        "release": [0.1, 0.5],
+        "attack": [0.5, 1.2],
+        "decay": [0.6, 1.0],
+        "sustain": [0.7, 0.9],
+        "release": [1.2, 2.5],
         "ai_control": true
       },
       "oscillator": {
-        "type": "noise_burst",
-        "frequency_range": [80, 200],
-        "detune": [0.0, 0.01],
+        "type": "sawtooth_vintage",
+        "detune": [0.02, 0.04],
+        "phase": [0.0, 0.1],
         "ai_control": true
       },
       "filter": {
-        "type": "high_pass",
-        "cutoff": [100, 300],
-        "resonance": [0.2, 0.5],
-        "envelope_mod": [0.8, 1.0],
+        "type": "juno_lowpass",
+        "cutoff": [800, 1500],
+        "resonance": [0.3, 0.6],
+        "envelope_mod": [0.4, 0.7],
         "ai_control": true
       },
       "fx": {
-        "reverb": {
-          "enabled": true,
-          "room_size": [0.1, 0.3],
-          "decay": [0.2, 0.8],
-          "wet_dry": [0.1, 0.2]
-        },
-        "chorus": {
-          "enabled": false
-        }
-      },
-      "topological_metadata": {
-        "damping": "low",
-        "spectral_complexity": "high",
-        "manifold_position": "rhythmic accent"
-      },
-      "transientDetail": {
-        "intensity": [0.8, 1.0],
-        "enabled": true
-      },
-      "harmonicContent": {
-        "overtones": [1.0, 0.2, 0.1, 0.05, 0.02],
-        "complexity": "low"
-      },
-      "fxCategories": [],
-      "soundGeneration": "digital",
-      "theoryTuning": "atonal",
-      "dynamicRange": "low damping"
-    },
-    "Strings_Lush_Emotional": {
-      "envelope": {
-        "attack": [0.8, 1.5],
-        "decay": [1.2, 2.0],
-        "sustain": [0.8, 0.95],
-        "release": [3.0, 6.0],
-        "ai_control": true
-      },
-      "oscillator": {
-        "type": "sawtooth_ensemble",
-        "voices": [4, 8],
-        "detune": [0.01, 0.03],
-        "spread": [0.2, 0.5],
-        "ai_control": true
-      },
-      "filter": {
-        "type": "low_pass",
-        "cutoff": [1000, 2500],
-        "resonance": [0.2, 0.4],
-        "envelope_mod": [0.3, 0.5],
-        "ai_control": true
-      },
-      "fx": {
-        "reverb": {
-          "enabled": true,
-          "room_size": [0.6, 0.8],
-          "decay": [3.0, 6.0],
-          "wet_dry": [0.4, 0.6]
-        },
         "chorus": {
           "enabled": true,
-          "rate": [0.8, 1.5],
-          "depth": [0.2, 0.4]
+          "rate": [0.5, 1.2],
+          "depth": [0.6, 0.8],
+          "wet_dry": [0.8, 1.0]
+        },
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.4, 0.6],
+          "decay": [2.0, 4.0],
+          "wet_dry": [0.3, 0.5]
+        },
+        "compressor": {
+          "enabled": true,
+          "ratio": [2.0, 3.0],
+          "attack": [5, 15],
+          "release": [100, 300]
         }
       },
       "topological_metadata": {
         "damping": "moderate",
-        "spectral_complexity": "high",
-        "manifold_position": "emotional peak"
+        "spectral_complexity": "medium",
+        "manifold_position": "vintage pad region"
       },
       "transientDetail": {
         "intensity": [0.2, 0.3],
         "enabled": true
       },
       "harmonicContent": {
-        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.15, 0.1],
-        "complexity": "high"
+        "overtones": [1.0, 0.6, 0.4, 0.25, 0.15, 0.1],
+        "complexity": "medium"
       },
-      "fxCategories": ["ambient", "modulation"],
+      "fxCategories": ["modulation", "ambient"],
+      "soundGeneration": "analog",
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate",
+      "emotional": ["warm", "nostalgic"]
+    },
+    "TB303_AcidLine": {
+      "envelope": {
+        "attack": [0.005, 0.01],
+        "decay": [0.1, 0.3],
+        "sustain": [0.5, 0.7],
+        "release": [0.15, 0.25],
+        "ai_control": true
+      },
+      "oscillator": {
+        "type": "sawtooth_303",
+        "detune": [0.0, 0.005],
+        "phase": [0.0, 0.02],
+        "ai_control": true
+      },
+      "filter": {
+        "type": "tb303_lowpass",
+        "cutoff": [300, 1200],
+        "resonance": [0.7, 0.95],
+        "envelope_mod": [0.8, 1.0],
+        "ai_control": true
+      },
+      "fx": {
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.5, 0.8],
+          "tone": [0.3, 0.6],
+          "wet_dry": [0.7, 0.9]
+        },
+        "compressor": {
+          "enabled": true,
+          "ratio": [6.0, 10.0],
+          "attack": [1, 3],
+          "release": [20, 50]
+        },
+        "eq": {
+          "enabled": true,
+          "low_gain": [3, 8],
+          "mid_gain": [0, 4],
+          "high_gain": [-3, 2]
+        }
+      },
+      "topological_metadata": {
+        "damping": "low",
+        "spectral_complexity": "medium",
+        "manifold_position": "acid bass foundation"
+      },
+      "transientDetail": {
+        "intensity": [0.6, 0.8],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.4, 0.2, 0.1, 0.05],
+        "complexity": "medium"
+      },
+      "fxCategories": ["distortion", "dynamics"],
       "soundGeneration": "digital",
       "theoryTuning": "equal",
-      "dynamicRange": "moderate damping"
+      "dynamicRange": "expanded",
+      "emotional": ["aggressive", "hypnotic"]
+    },
+    "DX7_ElectricPiano": {
+      "envelope": {
+        "attack": [0.02, 0.05],
+        "decay": [0.4, 0.8],
+        "sustain": [0.3, 0.6],
+        "release": [0.8, 1.5],
+        "ai_control": true
+      },
+      "oscillator": {
+        "type": "fm_operators",
+        "modulation_index": [3.0, 6.0],
+        "carrier_ratio": [1.0, 2.0],
+        "detune": [0.01, 0.03],
+        "ai_control": true
+      },
+      "filter": {
+        "type": "high_pass",
+        "cutoff": [200, 800],
+        "resonance": [0.1, 0.3],
+        "envelope_mod": [0.2, 0.4],
+        "ai_control": true
+      },
+      "fx": {
+        "chorus": {
+          "enabled": true,
+          "rate": [0.3, 0.8],
+          "depth": [0.2, 0.4],
+          "wet_dry": [0.4, 0.6]
+        },
+        "phaser": {
+          "enabled": true,
+          "rate": [0.2, 0.6],
+          "depth": [0.3, 0.5],
+          "feedback": [0.1, 0.3]
+        },
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.3, 0.5],
+          "decay": [1.5, 3.0],
+          "wet_dry": [0.2, 0.4]
+        }
+      },
+      "topological_metadata": {
+        "damping": "moderate",
+        "spectral_complexity": "high",
+        "manifold_position": "digital electric piano"
+      },
+      "transientDetail": {
+        "intensity": [0.3, 0.5],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.7, 0.5, 0.3, 0.2, 0.15, 0.1],
+        "complexity": "high"
+      },
+      "fxCategories": ["modulation", "ambient"],
+      "soundGeneration": "digital",
+      "theoryTuning": "equal",
+      "dynamicRange": "moderate",
+      "emotional": ["bright", "metallic"]
+    },
+    "Minimoog_RetroLead": {
+      "envelope": {
+        "attack": [0.03, 0.08],
+        "decay": [0.15, 0.3],
+        "sustain": [0.7, 0.9],
+        "release": [0.2, 0.4],
+        "ai_control": true
+      },
+      "oscillator": {
+        "type": "moog_oscillators",
+        "detune": [0.04, 0.08],
+        "phase": [0.0, 0.1],
+        "ai_control": true
+      },
+      "filter": {
+        "type": "moog_ladder",
+        "cutoff": [800, 2000],
+        "resonance": [0.4, 0.8],
+        "envelope_mod": [0.6, 0.9],
+        "ai_control": true
+      },
+      "fx": {
+        "overdrive": {
+          "enabled": true,
+          "gain": [0.2, 0.5],
+          "tone": [0.5, 0.8],
+          "wet_dry": [0.3, 0.6]
+        },
+        "delay": {
+          "enabled": true,
+          "time": [0.2, 0.4],
+          "feedback": [0.3, 0.5],
+          "wet_dry": [0.2, 0.4]
+        },
+        "phaser": {
+          "enabled": true,
+          "rate": [0.5, 1.5],
+          "depth": [0.2, 0.5],
+          "feedback": [0.2, 0.4]
+        }
+      },
+      "topological_metadata": {
+        "damping": "low",
+        "spectral_complexity": "medium",
+        "manifold_position": "analog lead classic"
+      },
+      "transientDetail": {
+        "intensity": [0.4, 0.6],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.6, 0.4, 0.3, 0.2, 0.1],
+        "complexity": "medium"
+      },
+      "fxCategories": ["distortion", "modulation"],
+      "soundGeneration": "analog",
+      "theoryTuning": "equal",
+      "dynamicRange": "expanded",
+      "emotional": ["fat", "warm"]
+    },
+    "Chaotic_Experimental": {
+      "envelope": {
+        "attack": [0.1, 0.8],
+        "decay": [0.2, 1.5],
+        "sustain": [0.3, 0.8],
+        "release": [0.5, 3.0],
+        "ai_control": true
+      },
+      "oscillator": {
+        "type": "chaos_generator",
+        "detune": [0.1, 0.3],
+        "phase": [0.0, 1.0],
+        "ai_control": true
+      },
+      "filter": {
+        "type": "comb_filter",
+        "cutoff": [100, 5000],
+        "resonance": [0.6, 0.95],
+        "envelope_mod": [0.5, 1.0],
+        "ai_control": true
+      },
+      "fx": {
+        "ring_mod": {
+          "enabled": true,
+          "frequency": [30, 300],
+          "depth": [0.4, 0.8],
+          "wet_dry": [0.3, 0.7]
+        },
+        "bitcrusher": {
+          "enabled": true,
+          "bit_depth": [4, 12],
+          "sample_rate": [4000, 16000],
+          "wet_dry": [0.2, 0.6]
+        },
+        "glitch": {
+          "enabled": true,
+          "stutter_rate": [8, 32],
+          "gate_pattern": "random",
+          "wet_dry": [0.1, 0.4]
+        }
+      },
+      "topological_metadata": {
+        "damping": "chaotic",
+        "spectral_complexity": "extreme",
+        "manifold_position": "experimental chaos"
+      },
+      "transientDetail": {
+        "intensity": [0.3, 0.9],
+        "enabled": true
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05],
+        "complexity": "extreme"
+      },
+      "fxCategories": ["special", "distortion"],
+      "soundGeneration": "hybrid",
+      "theoryTuning": "microtonal",
+      "dynamicRange": "chaotic",
+      "emotional": ["chaotic", "unpredictable"]
     }
   }
 }

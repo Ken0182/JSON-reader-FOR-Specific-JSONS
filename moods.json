@@ -35,7 +35,8 @@
         "intensity": [0.1, 0.2],
         "enabled": true
       },
-      "dynamicRange": "compressed"
+      "dynamicRange": "compressed",
+      "fxCategories": ["ambient"]
     },
     "energetic": {
       "tempo_range": [120, 160],
@@ -66,7 +67,8 @@
         "intensity": [0.6, 0.8],
         "enabled": true
       },
-      "dynamicRange": "expanded"
+      "dynamicRange": "expanded",
+      "fxCategories": ["distortion", "dynamics"]
     },
     "melancholic": {
       "tempo_range": [50, 80],
@@ -97,7 +99,8 @@
         "intensity": [0.1, 0.3],
         "enabled": true
       },
-      "dynamicRange": "compressed"
+      "dynamicRange": "compressed",
+      "fxCategories": ["ambient", "modulation"]
     },
     "aggressive": {
       "tempo_range": [140, 180],
@@ -128,7 +131,8 @@
         "intensity": [0.8, 1.0],
         "enabled": true
       },
-      "dynamicRange": "expanded"
+      "dynamicRange": "expanded",
+      "fxCategories": ["distortion", "special"]
     },
     "mysterious": {
       "tempo_range": [70, 110],
@@ -159,7 +163,8 @@
         "intensity": [0.2, 0.4],
         "enabled": true
       },
-      "dynamicRange": "moderate"
+      "dynamicRange": "moderate",
+      "fxCategories": ["modulation", "special"]
     },
     "uplifting": {
       "tempo_range": [100, 140],
@@ -190,7 +195,8 @@
         "intensity": [0.4, 0.6],
         "enabled": true
       },
-      "dynamicRange": "moderate"
+      "dynamicRange": "moderate",
+      "fxCategories": ["modulation", "dynamics"]
     },
     "contemplative": {
       "tempo_range": [55, 85],
@@ -221,7 +227,8 @@
         "intensity": [0.05, 0.15],
         "enabled": true
       },
-      "dynamicRange": "highly compressed"
+      "dynamicRange": "highly compressed",
+      "fxCategories": ["ambient"]
     },
     "playful": {
       "tempo_range": [110, 150],
@@ -252,7 +259,8 @@
         "intensity": [0.3, 0.5],
         "enabled": true
       },
-      "dynamicRange": "moderate"
+      "dynamicRange": "moderate",
+      "fxCategories": ["modulation", "dynamics"]
     }
   }
 }

@@ -71,7 +71,7 @@
       "soundGeneration": "analog",
       "fxCategories": ["modulation", "temporal"],
       "theoryTuning": "equal",
-      "dynamicRange": "moderate damping"
+      "dynamicRange": "moderate"
     },
     "fm_digital": {
       "operators": {
@@ -84,19 +84,19 @@
         "operator_2": {
           "frequency_ratio": [0.5, 16.0],
           "level": [0.0, 1.0],
-          "modulation_index": [0.0, 8.0],
+          "modulation_index": [4.0, 8.0],
           "waveform": ["sine", "triangle", "square", "sawtooth"]
         },
         "operator_3": {
           "frequency_ratio": [0.5, 16.0],
           "level": [0.0, 1.0],
-          "modulation_index": [0.0, 8.0],
+          "modulation_index": [4.0, 8.0],
           "waveform": ["sine", "triangle", "square", "sawtooth"]
         },
         "operator_4": {
           "frequency_ratio": [0.5, 16.0],
           "level": [0.0, 1.0],
-          "modulation_index": [0.0, 8.0],
+          "modulation_index": [4.0, 8.0],
           "waveform": ["sine", "triangle", "square", "sawtooth"]
         }
       },
@@ -136,13 +136,13 @@
         "manifold_position": "digital synthesis peak"
       },
       "harmonicContent": {
-        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.15, 0.1],
+        "overtones": [1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.15, 0.1, 0.08, 0.06],
         "complexity": "high"
       },
       "soundGeneration": "digital",
       "fxCategories": ["ambient"],
-      "theoryTuning": "equal",
-      "dynamicRange": "low damping"
+      "theoryTuning": "microtonal",
+      "dynamicRange": "expanded"
     },
     "wavetable_modern": {
       "wavetables": {
@@ -214,13 +214,13 @@
         "manifold_position": "modern digital frontier"
       },
       "harmonicContent": {
-        "overtones": [1.0, 0.7, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1],
+        "overtones": [1.0, 0.7, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1, 0.08, 0.06],
         "complexity": "very high"
       },
       "soundGeneration": "digital",
       "fxCategories": ["modulation", "distortion"],
       "theoryTuning": "equal",
-      "dynamicRange": "variable damping"
+      "dynamicRange": "variable"
     },
     "granular_synthesis": {
       "grain_parameters": {
@@ -276,13 +276,13 @@
         "manifold_position": "experimental texture region"
       },
       "harmonicContent": {
-        "overtones": [1.0, 0.3, 0.1, 0.05, 0.02],
+        "overtones": [1.0, 0.3, 0.1],
         "complexity": "low"
       },
       "soundGeneration": "digital",
       "fxCategories": ["ambient", "temporal"],
       "theoryTuning": "microtonal",
-      "dynamicRange": "high damping"
+      "dynamicRange": "compressed"
     },
     "physical_modeling": {
       "string_parameters": {
@@ -332,33 +332,43 @@
       "soundGeneration": "physical_modeling",
       "fxCategories": ["ambient"],
       "theoryTuning": "just_intonation",
-      "dynamicRange": "natural damping"
+      "dynamicRange": "natural"
     },
     "additive_synthesis": {
       "harmonics": {
-        "fundamental": {
-          "frequency": [20, 4000],
-          "amplitude": [0.0, 1.0],
+        "partial_1": {
+          "frequency_ratio": 1.0,
+          "amplitude": [0.7, 1.0],
           "phase": [0.0, 6.28]
         },
         "partial_2": {
           "frequency_ratio": 2.0,
-          "amplitude": [0.0, 1.0],
+          "amplitude": [0.3, 0.7],
           "phase": [0.0, 6.28]
         },
         "partial_3": {
           "frequency_ratio": 3.0,
-          "amplitude": [0.0, 1.0],
+          "amplitude": [0.2, 0.5],
           "phase": [0.0, 6.28]
         },
         "partial_4": {
           "frequency_ratio": 4.0,
-          "amplitude": [0.0, 1.0],
+          "amplitude": [0.1, 0.3],
           "phase": [0.0, 6.28]
         },
         "partial_5": {
           "frequency_ratio": 5.0,
-          "amplitude": [0.0, 1.0],
+          "amplitude": [0.05, 0.25],
+          "phase": [0.0, 6.28]
+        },
+        "partial_6": {
+          "frequency_ratio": 6.0,
+          "amplitude": [0.02, 0.2],
+          "phase": [0.0, 6.28]
+        },
+        "partial_7": {
+          "frequency_ratio": 7.0,
+          "amplitude": [0.01, 0.15],
           "phase": [0.0, 6.28]
         }
       },
@@ -402,9 +412,123 @@
         "complexity": "high"
       },
       "soundGeneration": "digital",
-      "fxCategories": [],
+      "fxCategories": ["filtering"],
       "theoryTuning": "equal",
-      "dynamicRange": "precise damping"
+      "dynamicRange": "precise"
+    },
+    "aggressive_lead": {
+      "oscillators": {
+        "primary": {
+          "type": "supersaw",
+          "frequency_range": [80, 8000],
+          "detune_range": [-100, 100],
+          "spread": [0.1, 1.0],
+          "voices": [3, 7]
+        }
+      },
+      "filter": {
+        "type": "aggressive_lowpass",
+        "cutoff_range": [200, 8000],
+        "resonance_range": [0.3, 0.9],
+        "drive": [0.2, 1.0],
+        "slope": "24dB/oct"
+      },
+      "envelope": {
+        "attack": [0.001, 0.1],
+        "decay": [0.1, 0.5],
+        "sustain": [0.7, 1.0],
+        "release": [0.1, 1.0],
+        "curve_type": "exponential"
+      },
+      "effects": {
+        "distortion": {
+          "enabled": true,
+          "type": "overdrive",
+          "drive": [0.4, 1.0],
+          "tone": [0.3, 0.8]
+        },
+        "chorus": {
+          "enabled": true,
+          "rate": [1.0, 4.0],
+          "depth": [0.2, 0.6],
+          "feedback": [0.1, 0.4]
+        },
+        "compressor": {
+          "enabled": true,
+          "ratio": [3.0, 8.0],
+          "attack": [1, 10],
+          "release": [20, 200]
+        }
+      },
+      "topological_metadata": {
+        "damping": "low",
+        "spectral_complexity": "high",
+        "manifold_position": "aggressive lead region"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.25, 0.2],
+        "complexity": "high"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["distortion", "modulation"],
+      "theoryTuning": "microtonal",
+      "dynamicRange": "expanded"
+    },
+    "ambient_pad": {
+      "oscillators": {
+        "primary": {
+          "type": "filtered_noise",
+          "frequency_range": [40, 4000],
+          "filter_cutoff": [100, 2000],
+          "resonance": [0.1, 0.5]
+        },
+        "secondary": {
+          "type": "sine_ensemble",
+          "voices": [4, 12],
+          "detune": [0.01, 0.1],
+          "spread": [0.3, 1.0]
+        }
+      },
+      "filter": {
+        "type": "gentle_lowpass",
+        "cutoff_range": [200, 3000],
+        "resonance_range": [0.0, 0.3],
+        "slope": "12dB/oct"
+      },
+      "envelope": {
+        "attack": [2.0, 8.0],
+        "decay": [1.0, 4.0],
+        "sustain": [0.8, 1.0],
+        "release": [3.0, 12.0],
+        "curve_type": "logarithmic"
+      },
+      "effects": {
+        "reverb": {
+          "enabled": true,
+          "room_size": [0.7, 1.0],
+          "decay_time": [5.0, 20.0],
+          "wet_dry": [0.4, 0.8]
+        },
+        "delay": {
+          "enabled": true,
+          "time": [0.5, 2.0],
+          "feedback": [0.3, 0.7],
+          "wet_dry": [0.2, 0.5]
+        }
+      },
+      "topological_metadata": {
+        "damping": "very_high",
+        "spectral_complexity": "low",
+        "manifold_position": "ambient atmospheric region"
+      },
+      "harmonicContent": {
+        "overtones": [1.0, 0.4, 0.2, 0.1, 0.05],
+        "complexity": "low"
+      },
+      "soundGeneration": "digital",
+      "fxCategories": ["ambient", "temporal"],
+      "theoryTuning": "equal",
+      "dynamicRange": "highly compressed"
     }
   }
 }
