@@ -26,6 +26,19 @@
       "emotion": "supportive, steady",
       "topology": "mid-range damping, moderate complexity"
     },
+    "prechorus": {
+    "oscillator": ["fm", "wavetable"],
+    "adsr": {
+      "attack": [0.2, 0.4],
+      "decay": [0.3, 0.6],
+      "sustain": [0.5, 0.7],
+      "release": [0.5, 0.8]
+    },
+    "filter": "band-pass",
+    "fx": ["phaser", "ring modulation"],
+    "emotion": "tense, building",
+    "topology": "medium damping, increasing complexity"
+  },
     "chorus": {
       "oscillator": ["sawtooth", "pulse-width modulation"],
       "adsr": {
@@ -39,6 +52,19 @@
       "emotion": "energetic, bright",
       "topology": "low damping, rich spectra"
     },
+    "drop": {
+    "oscillator": ["sawtooth", "noise"],
+    "adsr": {
+      "attack": [0.01, 0.05],
+      "decay": [0.1, 0.3],
+      "sustain": [0.4, 0.6],
+      "release": [0.2, 0.4]
+    },
+    "filter": "high-pass",
+    "fx": ["distortion", "compression"],
+    "emotion": "intense, aggressive",
+    "topology": "low damping, high complexity"
+  },
     "bridge": {
       "oscillator": ["fm", "wavetable"],
       "adsr": {
