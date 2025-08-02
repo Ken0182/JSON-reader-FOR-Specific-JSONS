@@ -1,148 +1,291 @@
-#include "json.hpp"
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <string>
-#include <vector>
-#include <set>
-#include <algorithm>
-#include <optional>
+#include "pointing_index_system.h"
+#include "json_reader_system.h"
+#include "multi_dimensional_pointing_system.h"
+#include <nlohmann/json.hpp>
 #include <unordered_map>
-#include <regex>
+#include <unordered_set>
+#include <vector>
+#include <string>
 #include <cmath>
-#include <chrono>
-#include <sstream>
+#include <algorithm>
 
-using namespace std;
 using json = nlohmann::json;
 
-// Forward declarations
-class EmbeddingEngine;
-class PointingIndex;
-class SearchRanker;
-
-// Configuration entry with full metadata
-struct ConfigEntry {
-    string path;                    // e.g., "Classical_Nylon_Soft.adsr.attack"
-    string instrumentName;          // e.g., "Classical_Nylon_Soft"
-    string category;               // e.g., "guitar", "group"
-    string fieldType;              // e.g., "adsr", "oscillator", "effects"
-    json value;                    // The actual value
-    vector<string> tags;           // Extracted semantic tags
-    string explanation;            // Why this entry is relevant
-    vector<float> embedding;       // Vector representation
-    float boostScore = 1.0f;       // Learning-based boost/demote
-    map<string, string> metadata;  // Additional context
+struct IndexedEntry {
+    std::string id;
+    json entry;
+    std::vector<float> embedding;
+    std::unordered_map<std::string, float> dynamicVector;
+    ParsedId parsedId;
+    float vectorMagnitude = 0.0f;
 };
 
-// Search result with explainability
 struct SearchResult {
-    ConfigEntry entry;
-    float textScore = 0.0f;
-    float vectorScore = 0.0f;
+    IndexedEntry entry;
     float finalScore = 0.0f;
-    vector<string> matchReasons;   // Why this matched
-    vector<string> relatedPaths;   // Related suggestions
-    string explanation;            // Human-readable explanation
+    float semanticScore = 0.0f;
+    float vectorScore = 0.0f;
+    float idProximityScore = 0.0f;
+    std::vector<std::string> matchReasons;
+    bool isCreativeMatch = false;
 };
 
-// User interaction context
-struct UserContext {
-    vector<string> selectedPaths;
-    vector<string> excludedPaths;
-    vector<string> searchHistory;
-    map<string, float> preferences; // Learned preferences
-    string currentQuery;
-    string sessionId;
-};
-
-// Simple embedding engine (placeholder for real implementation)
-class EmbeddingEngine {
+class PointingIndexSystem {
 private:
-    map<string, vector<float>> wordEmbeddings;
-    map<string, vector<float>> cachedEmbeddings;
+    JsonReaderSystem* jsonReader;
+    MultiDimensionalPointingSystem* pointingSystem;
     
-public:
-    EmbeddingEngine() {
-        loadPretrainedEmbeddings();
-    }
+    // Dynamic registry for all properties
+    std::unordered_map<std::string, float> globalRegistry;
+    std::vector<std::string> registryKeys; // Ordered keys for consistent vectorization
     
-    void loadPretrainedEmbeddings() {
-        // Simulate loading pretrained embeddings
-        // In real implementation, load FastText/BERT embeddings
-        cout << "Loading pretrained embeddings..." << endl;
-        
-        // Example semantic embeddings for music terms
-        wordEmbeddings["warm"] = {0.8f, 0.6f, 0.3f, 0.9f, 0.2f};
-        wordEmbeddings["bright"] = {0.2f, 0.9f, 0.8f, 0.4f, 0.7f};
-        wordEmbeddings["aggressive"] = {0.9f, 0.3f, 0.8f, 0.1f, 0.6f};
-        wordEmbeddings["calm"] = {0.3f, 0.2f, 0.1f, 0.8f, 0.9f};
-        wordEmbeddings["guitar"] = {0.7f, 0.5f, 0.4f, 0.6f, 0.3f};
-        wordEmbeddings["bass"] = {0.9f, 0.2f, 0.3f, 0.7f, 0.4f};
-        wordEmbeddings["reverb"] = {0.4f, 0.7f, 0.6f, 0.5f, 0.8f};
-        wordEmbeddings["attack"] = {0.8f, 0.9f, 0.2f, 0.3f, 0.4f};
-        wordEmbeddings["sustain"] = {0.3f, 0.4f, 0.9f, 0.8f, 0.5f};
-        
-        cout << "Loaded " << wordEmbeddings.size() << " word embeddings." << endl;
-    }
+    // Indexed data structures
+    std::vector<IndexedEntry> allEntries;
+    std::unordered_map<std::string, std::vector<size_t>> textIndex; // property_value -> entry indices
+    std::unordered_map<std::string, std::vector<size_t>> categoryIndex; // category -> entry indices
+    std::unordered_map<std::string, size_t> idToIndex; // id -> entry index
     
-    vector<float> getEmbedding(const string& text) {
-        string key = toLowerCase(text);
+    // Pre-computed similarity matrices for fast lookup
+    std::vector<std::vector<float>> precomputedSimilarity;
+    
+    void initializeRegistry() {
+        // Core properties with weights (ordered by importance)
+        registryKeys = {
+            "harmonicRichness",      // 0.25 weight - perception importance
+            "transientSharpness",    // 0.20 weight - percussive characteristics  
+            "fxComplexity",          // 0.15 weight - processing complexity
+            "frequencyFocus",        // 0.20 weight - layering importance
+            "dynamicCompression",    // 0.20 weight - sustain characteristics
+            "tuningStability",       // 0.10 weight - dissonance factor
+            "soundGenMethod",        // 0.15 weight - semantic grouping
+            "spectralDensity",       // 0.15 weight - harmonic spread
+            "temporalEvolution",     // 0.10 weight - time-based changes
+            "spatialWidth",          // 0.08 weight - stereo characteristics
+            "energyLevel",           // 0.12 weight - overall intensity
+            "tonalWarmth"            // 0.10 weight - timbral character
+        };
         
-        if (cachedEmbeddings.find(key) != cachedEmbeddings.end()) {
-            return cachedEmbeddings[key];
+        // Initialize global registry with neutral values
+        for (const auto& key : registryKeys) {
+            globalRegistry[key] = 0.5f; // Neutral starting point
         }
-        
-        vector<float> embedding = computeTextEmbedding(text);
-        cachedEmbeddings[key] = embedding;
-        return embedding;
     }
     
-private:
-    string toLowerCase(const string& str) {
-        string result = str;
-        transform(result.begin(), result.end(), result.begin(), ::tolower);
-        return result;
-    }
-    
-    vector<float> computeTextEmbedding(const string& text) {
-        // Simple averaging of word embeddings
-        vector<float> result(5, 0.0f); // 5-dimensional embeddings
-        int wordCount = 0;
-        
-        stringstream ss(text);
-        string word;
-        while (ss >> word) {
-            word = toLowerCase(word);
-            word = regex_replace(word, regex("[^a-zA-Z]"), "");
-            
-            if (wordEmbeddings.find(word) != wordEmbeddings.end()) {
-                auto& wordEmb = wordEmbeddings[word];
-                for (size_t i = 0; i < result.size() && i < wordEmb.size(); ++i) {
-                    result[i] += wordEmb[i];
+    void extractPropertyVector(const json& entry, std::unordered_map<std::string, float>& vector) {
+        // Harmonic richness from harmonic content
+        if (entry.contains("harmonicContent")) {
+            auto complexity = entry["harmonicContent"].value("complexity", "unknown");
+            if (complexity == "low") vector["harmonicRichness"] = 0.25f;
+            else if (complexity == "medium" || complexity == "med") vector["harmonicRichness"] = 0.5f;
+            else if (complexity == "high") vector["harmonicRichness"] = 0.75f;
+            else if (complexity == "very high") vector["harmonicRichness"] = 0.9f;
+            else if (complexity == "extreme") vector["harmonicRichness"] = 1.0f;
+            else {
+                // Infer from overtones array
+                if (entry["harmonicContent"].contains("overtones")) {
+                    auto overtones = entry["harmonicContent"]["overtones"];
+                    if (overtones.is_array()) {
+                        float richness = std::min(1.0f, float(overtones.size()) / 8.0f);
+                        vector["harmonicRichness"] = richness;
+                    }
                 }
-                wordCount++;
             }
         }
         
-        if (wordCount > 0) {
-            for (float& val : result) {
-                val /= wordCount;
+        // Transient sharpness from transient detail and attack times
+        if (entry.contains("transientDetail") && entry["transientDetail"].contains("intensity")) {
+            auto intensity = entry["transientDetail"]["intensity"];
+            if (intensity.is_array() && intensity.size() >= 2) {
+                float avgIntensity = (intensity[0].get<float>() + intensity[1].get<float>()) / 2.0f;
+                vector["transientSharpness"] = avgIntensity;
+            }
+        } else if (entry.contains("envelope") && entry["envelope"].contains("attack")) {
+            // Infer from attack time (shorter = sharper)
+            auto attack = entry["envelope"]["attack"];
+            if (attack.is_array() && attack.size() >= 2) {
+                float avgAttack = (attack[0].get<float>() + attack[1].get<float>()) / 2.0f;
+                // Log scale: very short attack = high sharpness
+                vector["transientSharpness"] = std::max(0.0f, 1.0f - std::log10(avgAttack * 1000 + 1) / 4.0f);
             }
         }
         
-        return result;
+        // FX complexity from FX categories and enabled effects
+        float fxComplexity = 0.0f;
+        if (entry.contains("fxCategories") && entry["fxCategories"].is_array()) {
+            fxComplexity = std::min(1.0f, float(entry["fxCategories"].size()) / 5.0f);
+        } else if (entry.contains("fx") && entry["fx"].is_object()) {
+            int enabledCount = 0;
+            for (const auto& [key, fx] : entry["fx"].items()) {
+                if (fx.is_object() && fx.value("enabled", false)) {
+                    enabledCount++;
+                }
+            }
+            fxComplexity = std::min(1.0f, float(enabledCount) / 5.0f);
+        }
+        vector["fxComplexity"] = fxComplexity;
+        
+        // Frequency focus from frequency range
+        std::string freqRange = entry.value("frequencyRange", "mid");
+        if (freqRange == "low" || freqRange == "low-mid") vector["frequencyFocus"] = 0.2f;
+        else if (freqRange == "mid" || freqRange == "mid-high") vector["frequencyFocus"] = 0.5f;
+        else if (freqRange == "high") vector["frequencyFocus"] = 0.8f;
+        else if (freqRange == "full-spectrum" || freqRange == "full") vector["frequencyFocus"] = 1.0f;
+        else vector["frequencyFocus"] = 0.5f; // default mid
+        
+        // Dynamic compression from dynamic range
+        std::string dynRange = entry.value("dynamicRange", "moderate");
+        if (dynRange.find("compressed") != std::string::npos) vector["dynamicCompression"] = 0.8f;
+        else if (dynRange.find("expanded") != std::string::npos) vector["dynamicCompression"] = 0.2f;
+        else if (dynRange.find("moderate") != std::string::npos) vector["dynamicCompression"] = 0.5f;
+        else vector["dynamicCompression"] = 0.5f; // default
+        
+        // Tuning stability from theory tuning
+        std::string tuning = entry.value("theoryTuning", "equal");
+        if (tuning == "equal") vector["tuningStability"] = 1.0f;
+        else if (tuning == "just" || tuning == "just_intonation") vector["tuningStability"] = 0.9f;
+        else if (tuning == "microtonal" || tuning == "micro") vector["tuningStability"] = 0.3f;
+        else if (tuning == "atonal") vector["tuningStability"] = 0.1f;
+        else vector["tuningStability"] = 0.7f; // neutral
+        
+        // Sound generation method
+        std::string soundGen = entry.value("soundGeneration", "digital");
+        if (soundGen == "acoustic") vector["soundGenMethod"] = 0.2f;
+        else if (soundGen == "analog") vector["soundGenMethod"] = 0.4f;
+        else if (soundGen == "digital") vector["soundGenMethod"] = 0.6f;
+        else if (soundGen == "sample-based") vector["soundGenMethod"] = 0.8f;
+        else if (soundGen == "hybrid") vector["soundGenMethod"] = 1.0f;
+        else vector["soundGenMethod"] = 0.6f; // default digital
+        
+        // Spectral density from harmonic content and filter characteristics
+        float spectralDensity = vector.count("harmonicRichness") ? vector["harmonicRichness"] : 0.5f;
+        if (entry.contains("filter") && entry["filter"].contains("resonance")) {
+            auto resonance = entry["filter"]["resonance"];
+            if (resonance.is_array() && resonance.size() >= 2) {
+                float avgResonance = (resonance[0].get<float>() + resonance[1].get<float>()) / 2.0f;
+                spectralDensity = (spectralDensity + avgResonance) / 2.0f;
+            }
+        }
+        vector["spectralDensity"] = spectralDensity;
+        
+        // Temporal evolution from envelope characteristics
+        float temporalEvolution = 0.5f;
+        if (entry.contains("envelope")) {
+            const auto& env = entry["envelope"];
+            if (env.contains("attack") && env.contains("release")) {
+                // Longer envelopes = more evolution
+                float totalTime = 0.0f;
+                if (env["attack"].is_array()) {
+                    totalTime += (env["attack"][0].get<float>() + env["attack"][1].get<float>()) / 2.0f;
+                }
+                if (env["release"].is_array()) {
+                    totalTime += (env["release"][0].get<float>() + env["release"][1].get<float>()) / 2.0f;
+                }
+                temporalEvolution = std::min(1.0f, totalTime / 10.0f); // Normalize to 10 seconds max
+            }
+        }
+        vector["temporalEvolution"] = temporalEvolution;
+        
+        // Spatial width (inferred from instrument type and FX)
+        float spatialWidth = 0.5f;
+        if (entry.contains("fx")) {
+            if (entry["fx"].is_object()) {
+                if (entry["fx"].contains("reverb") && entry["fx"]["reverb"].value("enabled", false)) {
+                    spatialWidth += 0.3f;
+                }
+                if (entry["fx"].contains("delay") && entry["fx"]["delay"].value("enabled", false)) {
+                    spatialWidth += 0.2f;
+                }
+                if (entry["fx"].contains("chorus") && entry["fx"]["chorus"].value("enabled", false)) {
+                    spatialWidth += 0.2f;
+                }
+            }
+        }
+        vector["spatialWidth"] = std::min(1.0f, spatialWidth);
+        
+        // Energy level from transient sharpness and FX complexity
+        float energyLevel = (vector.count("transientSharpness") ? vector["transientSharpness"] : 0.5f) * 0.6f +
+                           (vector.count("fxComplexity") ? vector["fxComplexity"] : 0.5f) * 0.4f;
+        vector["energyLevel"] = energyLevel;
+        
+        // Tonal warmth (inferred from various characteristics)
+        float tonalWarmth = 0.5f;
+        if (entry.contains("emotional") && entry["emotional"].is_array()) {
+            for (const auto& emotion : entry["emotional"]) {
+                if (emotion.is_string()) {
+                    std::string emotionStr = emotion;
+                    if (emotionStr == "warm" || emotionStr == "soft") tonalWarmth += 0.3f;
+                    else if (emotionStr == "bright" || emotionStr == "sharp") tonalWarmth -= 0.2f;
+                    else if (emotionStr == "dark" || emotionStr == "deep") tonalWarmth += 0.1f;
+                }
+            }
+        }
+        vector["tonalWarmth"] = std::max(0.0f, std::min(1.0f, tonalWarmth));
+        
+        // Fill any missing values with neutral defaults
+        for (const auto& key : registryKeys) {
+            if (vector.find(key) == vector.end()) {
+                vector[key] = 0.5f; // Neutral default
+            }
+        }
     }
     
-public:
-    float computeSimilarity(const vector<float>& a, const vector<float>& b) {
+    void buildTextIndex() {
+        for (size_t i = 0; i < allEntries.size(); i++) {
+            const auto& entry = allEntries[i].entry;
+            
+            // Index FX categories
+            if (entry.contains("fxCategories") && entry["fxCategories"].is_array()) {
+                for (const auto& fx : entry["fxCategories"]) {
+                    if (fx.is_string()) {
+                        textIndex["fx:" + fx.get<std::string>()].push_back(i);
+                    }
+                }
+            }
+            
+            // Index sound generation
+            if (entry.contains("soundGeneration")) {
+                textIndex["soundGen:" + entry["soundGeneration"].get<std::string>()].push_back(i);
+            }
+            
+            // Index theory tuning
+            if (entry.contains("theoryTuning")) {
+                textIndex["tuning:" + entry["theoryTuning"].get<std::string>()].push_back(i);
+            }
+            
+            // Index frequency range
+            if (entry.contains("frequencyRange")) {
+                textIndex["freq:" + entry["frequencyRange"].get<std::string>()].push_back(i);
+            }
+            
+            // Index dynamic range
+            if (entry.contains("dynamicRange")) {
+                textIndex["dynamic:" + entry["dynamicRange"].get<std::string>()].push_back(i);
+            }
+            
+            // Index emotional tags
+            if (entry.contains("emotional") && entry["emotional"].is_array()) {
+                for (const auto& emotion : entry["emotional"]) {
+                    if (emotion.is_string()) {
+                        textIndex["emotion:" + emotion.get<std::string>()].push_back(i);
+                    }
+                }
+            }
+            
+            // Index type/category
+            if (entry.contains("type")) {
+                categoryIndex[entry["type"].get<std::string>()].push_back(i);
+            }
+        }
+    }
+    
+    float calculateVectorSimilarity(const std::vector<float>& a, const std::vector<float>& b) {
         if (a.size() != b.size()) return 0.0f;
         
         float dotProduct = 0.0f;
         float normA = 0.0f;
         float normB = 0.0f;
         
-        for (size_t i = 0; i < a.size(); ++i) {
+        for (size_t i = 0; i < a.size(); i++) {
             dotProduct += a[i] * b[i];
             normA += a[i] * a[i];
             normB += b[i] * b[i];
@@ -150,839 +293,394 @@ public:
         
         if (normA == 0.0f || normB == 0.0f) return 0.0f;
         
-        return dotProduct / (sqrt(normA) * sqrt(normB));
+        return dotProduct / (std::sqrt(normA) * std::sqrt(normB));
     }
-};
+    
+    float calculateIdProximity(const ParsedId& a, const ParsedId& b, 
+                             std::vector<std::string>& explanations) {
+        float proximityScore = 0.0f;
+        
+        // Transient proximity (most important for creative matching)
+        int transDiff = std::abs(a.trans_digit - b.trans_digit);
+        if (transDiff < 10) {
+            float score = 0.4f * (10 - transDiff) / 10.0f;
+            proximityScore += score;
+            explanations.push_back("Transient proximity ±" + std::to_string(transDiff));
+        }
+        
+        // Harmonic proximity
+        int harmDiff = std::abs(a.harm_digit - b.harm_digit);
+        if (harmDiff < 15) {
+            float score = 0.3f * (15 - harmDiff) / 15.0f;
+            proximityScore += score;
+            explanations.push_back("Harmonic proximity ±" + std::to_string(harmDiff));
+        }
+        
+        // FX proximity
+        int fxDiff = std::abs(a.fx_digit - b.fx_digit);
+        if (fxDiff < 20) {
+            float score = 0.2f * (20 - fxDiff) / 20.0f;
+            proximityScore += score;
+            explanations.push_back("FX complexity proximity ±" + std::to_string(fxDiff));
+        }
+        
+        // Prime compatibility for tuning
+        if (jsonReader) {
+            int gcd_val = gcd(a.tuning_prime, b.tuning_prime);
+            if (gcd_val > 1) {
+                proximityScore += 0.1f;
+                explanations.push_back("Prime tuning compatibility (GCD=" + std::to_string(gcd_val) + ")");
+            }
+        }
+        
+        return std::min(1.0f, proximityScore);
+    }
+    
+    int gcd(int a, int b) {
+        while (b != 0) {
+            int temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
 
-// Extended SKD with explanations and embeddings
-class SemanticKeywordDatabase {
-private:
-    json skdData;
-    EmbeddingEngine* embeddingEngine;
-    
 public:
-    SemanticKeywordDatabase(EmbeddingEngine* engine) : embeddingEngine(engine) {
-        loadExtendedSKD();
-    }
-    
-    void loadExtendedSKD() {
-        skdData = json::object();
-        
-        // Extended SKD with explanations and context
-        skdData["warm"] = {
-            {"category", "timbral"},
-            {"aliases", json::array({"soft", "mellow", "cozy"})},
-            {"score", 0.9},
-            {"explanation", "Produces soft, comfortable tones with rounded harmonics, ideal for intimate musical passages"},
-            {"context", json::array({"acoustic", "classical", "jazz"})},
-            {"opposites", json::array({"bright", "harsh", "cold"})}
-        };
-        
-        skdData["bright"] = {
-            {"category", "timbral"},
-            {"aliases", json::array({"shiny", "clear", "crisp"})},
-            {"score", 0.85},
-            {"explanation", "Creates clear, cutting tones with enhanced high frequencies, perfect for lead instruments"},
-            {"context", json::array({"electric", "lead", "pop"})},
-            {"opposites", json::array({"warm", "dull", "muffled"})}
-        };
-        
-        skdData["aggressive"] = {
-            {"category", "emotional"},
-            {"aliases", json::array({"intense", "fierce", "driving"})},
-            {"score", 0.9},
-            {"explanation", "Delivers powerful, assertive sounds with strong attack and presence for energetic sections"},
-            {"context", json::array({"rock", "metal", "electronic"})},
-            {"opposites", json::array({"calm", "gentle", "subtle"})}
-        };
-        
-        skdData["calm"] = {
-            {"category", "emotional"},
-            {"aliases", json::array({"peaceful", "relaxed", "serene"})},
-            {"score", 0.8},
-            {"explanation", "Produces soothing, tranquil sounds with gentle dynamics for reflective moments"},
-            {"context", json::array({"ambient", "classical", "meditation"})},
-            {"opposites", json::array({"aggressive", "energetic", "chaotic"})}
-        };
-        
-        skdData["attack"] = {
-            {"category", "parameter"},
-            {"aliases", json::array({"onset", "start", "initial"})},
-            {"score", 0.95},
-            {"explanation", "Controls how quickly a sound reaches full volume - fast for percussive, slow for pads"},
-            {"context", json::array({"envelope", "dynamics", "timing"})},
-            {"relatedParams", json::array({"decay", "sustain", "release"})}
-        };
-        
-        skdData["reverb"] = {
-            {"category", "effect"},
-            {"aliases", json::array({"echo", "space", "ambience"})},
-            {"score", 0.85},
-            {"explanation", "Adds spatial depth and ambience, simulating acoustic spaces from rooms to halls"},
-            {"context", json::array({"space", "depth", "atmosphere"})},
-            {"relatedEffects", json::array({"delay", "chorus", "hall"})}
-        };
-        
-        // Compute and cache embeddings for all entries
-        for (auto& [key, entry] : skdData.items()) {
-            string combinedText = key;
-            if (entry.contains("explanation")) {
-                combinedText += " " + entry["explanation"].get<string>();
-            }
-            if (entry.contains("aliases")) {
-                for (const auto& alias : entry["aliases"]) {
-                    combinedText += " " + alias.get<string>();
-                }
-            }
-            
-            entry["embedding"] = embeddingEngine->getEmbedding(combinedText);
-        }
-        
-        cout << "Loaded extended SKD with " << skdData.size() << " entries and embeddings." << endl;
-    }
-    
-    json getEntry(const string& key) {
-        string lowerKey = toLowerCase(key);
-        if (skdData.contains(lowerKey)) {
-            return skdData[lowerKey];
-        }
-        return json::object();
-    }
-    
-    vector<string> findRelatedTerms(const string& key, float threshold = 0.7f) {
-        vector<string> related;
-        auto keyEntry = getEntry(key);
-        
-        if (keyEntry.empty() || !keyEntry.contains("embedding")) {
-            return related;
-        }
-        
-        vector<float> keyEmbedding = keyEntry["embedding"];
-        
-        for (const auto& [term, entry] : skdData.items()) {
-            if (term == toLowerCase(key)) continue;
-            
-            if (entry.contains("embedding")) {
-                vector<float> termEmbedding = entry["embedding"];
-                float similarity = embeddingEngine->computeSimilarity(keyEmbedding, termEmbedding);
-                
-                if (similarity >= threshold) {
-                    related.push_back(term);
-                }
-            }
-        }
-        
-        return related;
-    }
-    
-private:
-    string toLowerCase(const string& str) {
-        string result = str;
-        transform(result.begin(), result.end(), result.begin(), ::tolower);
-        return result;
-    }
-};
-
-// Main Pointing Index System
-class PointingIndex {
-private:
-    vector<ConfigEntry> allEntries;
-    map<string, vector<size_t>> textIndex;     // word -> entry indices
-    map<string, vector<size_t>> pathIndex;    // path -> entry indices
-    map<string, vector<size_t>> categoryIndex; // category -> entry indices
-    EmbeddingEngine embeddingEngine;
-    SemanticKeywordDatabase skd;
-    json cleanConfig;
-    json referenceData;
-    
-public:
-    PointingIndex() : skd(&embeddingEngine) {
-        loadAllData();
+    PointingIndexSystem(JsonReaderSystem* reader, MultiDimensionalPointingSystem* pointing) 
+        : jsonReader(reader), pointingSystem(pointing) {
+        initializeRegistry();
         buildPointingIndex();
     }
     
-private:
-    void loadAllData() {
-        cout << "Loading all configuration data..." << endl;
-        
-        // Load clean config (actual renderable data)
-        ifstream configFile("clean_config.json");
-        if (configFile) {
-            configFile >> cleanConfig;
-            cout << "Loaded clean config with " << cleanConfig.size() << " instruments/groups." << endl;
-        }
-        
-        // Load reference data for vectorization/scoring
-        ifstream moodsFile("moods.json");
-        if (moodsFile) {
-            json moods;
-            moodsFile >> moods;
-            referenceData["moods"] = moods;
-        }
-        
-        ifstream synthFile("Synthesizer.json");
-        if (synthFile) {
-            json synth;
-            synthFile >> synth;
-            referenceData["synthesizer"] = synth;
-        }
-        
-        cout << "Loaded reference data for vectorization." << endl;
-    }
-    
     void buildPointingIndex() {
-        cout << "Building pointing index..." << endl;
-        auto startTime = chrono::high_resolution_clock::now();
+        // Load all entries from JSON reader
+        loadAllEntries();
         
-        allEntries.clear();
-        textIndex.clear();
-        pathIndex.clear();
-        categoryIndex.clear();
+        // Build text and category indices
+        buildTextIndex();
         
-        // Index clean config entries (actual renderable data)
-        indexConfigEntries();
+        // Pre-compute similarity matrix for frequently accessed pairs
+        precomputeSimilarities();
         
-        // Build text indexes
-        buildTextIndexes();
-        
-        auto endTime = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-        
-        cout << "Built pointing index with " << allEntries.size() << " entries in " 
-             << duration.count() << "ms." << endl;
+        std::cout << "Built pointing index with " << allEntries.size() << " entries" << std::endl;
+        std::cout << "Registry contains " << registryKeys.size() << " dynamic properties" << std::endl;
+        std::cout << "Text index covers " << textIndex.size() << " property values" << std::endl;
     }
     
-    void indexConfigEntries() {
-        for (const auto& [instrumentName, instrumentData] : cleanConfig.items()) {
-            if (!instrumentData.is_object()) continue;
-            
-            string category = determineCategory(instrumentName, instrumentData);
-            
-            // Index the instrument itself
-            ConfigEntry instrumentEntry;
-            instrumentEntry.path = instrumentName;
-            instrumentEntry.instrumentName = instrumentName;
-            instrumentEntry.category = category;
-            instrumentEntry.fieldType = "instrument";
-            instrumentEntry.value = instrumentData;
-            instrumentEntry.tags = extractTags(instrumentData);
-            instrumentEntry.explanation = generateExplanation(instrumentName, instrumentData);
-            instrumentEntry.embedding = embeddingEngine.getEmbedding(
-                instrumentName + " " + instrumentEntry.explanation
-            );
-            
-            allEntries.push_back(instrumentEntry);
-            
-            // Recursively index all fields
-            indexFieldsRecursively(instrumentName, category, "", instrumentData);
-        }
-    }
-    
-    void indexFieldsRecursively(const string& instrumentName, const string& category, 
-                               const string& currentPath, const json& data) {
-        if (data.is_object()) {
-            for (const auto& [key, value] : data.items()) {
-                string newPath = currentPath.empty() ? key : currentPath + "." + key;
-                string fullPath = instrumentName + "." + newPath;
-                
-                ConfigEntry entry;
-                entry.path = fullPath;
-                entry.instrumentName = instrumentName;
-                entry.category = category;
-                entry.fieldType = determineFieldType(key, value);
-                entry.value = value;
-                entry.tags = extractTags(value);
-                entry.explanation = generateFieldExplanation(key, value, instrumentName);
-                
-                // Add context from parent
-                string contextText = key + " " + entry.explanation;
-                if (data.contains("timbral")) {
-                    contextText += " " + data["timbral"].get<string>();
-                }
-                
-                entry.embedding = embeddingEngine.getEmbedding(contextText);
-                
-                allEntries.push_back(entry);
-                
-                // Recurse into nested objects
-                if (value.is_object()) {
-                    indexFieldsRecursively(instrumentName, category, newPath, value);
-                }
-            }
-        }
-    }
-    
-    string determineCategory(const string& name, const json& data) {
-        if (data.contains("guitarParams")) return "guitar";
-        if (data.contains("synthesisType")) return "group";
-        if (name.find("Bass") != string::npos) return "bass";
-        if (name.find("Lead") != string::npos) return "lead";
-        if (name.find("Pad") != string::npos) return "pad";
-        return "instrument";
-    }
-    
-    string determineFieldType(const string& key, const json& value) {
-        if (key == "adsr" || key == "envelope") return "envelope";
-        if (key == "oscillator") return "oscillator";
-        if (key == "filter") return "filter";
-        if (key == "effects" || key == "fx") return "effects";
-        if (key == "soundCharacteristics") return "characteristics";
-        if (key == "guitarParams") return "guitar_specific";
-        if (value.is_array()) return "array";
-        if (value.is_number()) return "parameter";
-        if (value.is_string()) return "property";
-        return "complex";
-    }
-    
-    vector<string> extractTags(const json& data) {
-        vector<string> tags;
+    void loadAllEntries() {
+        // Load from all JSON data sources
+        const auto& guitarData = jsonReader->getGuitarData();
+        const auto& groupData = jsonReader->getGroupData();
+        const auto& moodsData = jsonReader->getMoodsData();
+        const auto& structureData = jsonReader->getStructureData();
+        const auto& synthData = jsonReader->getSynthData();
         
-        if (data.is_object()) {
-            if (data.contains("timbral") && data["timbral"].is_string()) {
-                tags.push_back(data["timbral"].get<string>());
-            }
-            if (data.contains("material") && data["material"].is_string()) {
-                tags.push_back(data["material"].get<string>());
-            }
-            if (data.contains("dynamic") && data["dynamic"].is_string()) {
-                tags.push_back(data["dynamic"].get<string>());
-            }
-            if (data.contains("emotional") && data["emotional"].is_array()) {
-                for (const auto& emotion : data["emotional"]) {
-                    if (emotion.is_object() && emotion.contains("tag")) {
-                        tags.push_back(emotion["tag"].get<string>());
+        // Process guitar entries
+        if (guitarData.contains("groups")) {
+            for (const auto& [key, entry] : guitarData["groups"].items()) {
+                if (entry.contains("id")) {
+                    IndexedEntry indexed;
+                    indexed.id = entry["id"];
+                    indexed.entry = entry;
+                    indexed.parsedId = jsonReader->parseId(indexed.id);
+                    
+                    // Extract dynamic vector
+                    extractPropertyVector(entry, indexed.dynamicVector);
+                    
+                    // Convert to ordered vector
+                    indexed.embedding.reserve(registryKeys.size());
+                    float magnitude = 0.0f;
+                    for (const auto& key : registryKeys) {
+                        float value = indexed.dynamicVector[key];
+                        indexed.embedding.push_back(value);
+                        magnitude += value * value;
                     }
+                    indexed.vectorMagnitude = std::sqrt(magnitude);
+                    
+                    idToIndex[indexed.id] = allEntries.size();
+                    allEntries.push_back(indexed);
                 }
             }
-        } else if (data.is_string()) {
-            tags.push_back(data.get<string>());
         }
         
-        return tags;
+        // Process group entries
+        if (groupData.contains("groups")) {
+            for (const auto& [key, entry] : groupData["groups"].items()) {
+                if (entry.contains("id")) {
+                    IndexedEntry indexed;
+                    indexed.id = entry["id"];
+                    indexed.entry = entry;
+                    indexed.parsedId = jsonReader->parseId(indexed.id);
+                    
+                    extractPropertyVector(entry, indexed.dynamicVector);
+                    
+                    indexed.embedding.reserve(registryKeys.size());
+                    float magnitude = 0.0f;
+                    for (const auto& key : registryKeys) {
+                        float value = indexed.dynamicVector[key];
+                        indexed.embedding.push_back(value);
+                        magnitude += value * value;
+                    }
+                    indexed.vectorMagnitude = std::sqrt(magnitude);
+                    
+                    idToIndex[indexed.id] = allEntries.size();
+                    allEntries.push_back(indexed);
+                }
+            }
+        }
+        
+        // Continue for other data sources...
+        // (Similar processing for moods, structure, and synthesizer data)
     }
     
-    string generateExplanation(const string& name, const json& data) {
-        string explanation = "Instrument configuration for " + name;
+    void precomputeSimilarities() {
+        size_t n = allEntries.size();
+        precomputedSimilarity.resize(n, std::vector<float>(n, 0.0f));
         
-        if (data.contains("soundCharacteristics") && data["soundCharacteristics"].is_object()) {
-            const auto& chars = data["soundCharacteristics"];
-            if (chars.contains("timbral")) {
-                explanation += " with " + chars["timbral"].get<string>() + " timbral character";
-            }
-            if (chars.contains("dynamic")) {
-                explanation += " and " + chars["dynamic"].get<string>() + " dynamics";
-            }
-        }
-        
-        if (data.contains("synthesisType")) {
-            explanation += " using " + data["synthesisType"].get<string>() + " synthesis";
-        }
-        
-        return explanation;
-    }
-    
-    string generateFieldExplanation(const string& key, const json& value, const string& instrument) {
-        auto skdEntry = skd.getEntry(key);
-        if (!skdEntry.empty() && skdEntry.contains("explanation")) {
-            return skdEntry["explanation"].get<string>();
-        }
-        
-        // Generate context-aware explanations
-        if (key == "attack") {
-            return "Controls how quickly the sound reaches full volume when a note is triggered";
-        } else if (key == "decay") {
-            return "Sets how quickly the sound drops from peak to sustain level";
-        } else if (key == "sustain") {
-            return "Determines the level at which the sound is held while a note is pressed";
-        } else if (key == "release") {
-            return "Controls how quickly the sound fades when a note is released";
-        } else if (key == "cutoff") {
-            return "Sets the frequency above which the filter attenuates the signal";
-        } else if (key == "resonance") {
-            return "Adds emphasis at the filter cutoff frequency for more character";
-        } else if (key == "reverb") {
-            return "Adds spatial depth and ambience to simulate acoustic spaces";
-        } else if (key == "delay") {
-            return "Creates echo effects by repeating the signal with time offset";
-        }
-        
-        return "Parameter '" + key + "' for " + instrument;
-    }
-    
-    void buildTextIndexes() {
-        for (size_t i = 0; i < allEntries.size(); ++i) {
-            const auto& entry = allEntries[i];
-            
-            // Index path components
-            pathIndex[entry.path].push_back(i);
-            pathIndex[entry.instrumentName].push_back(i);
-            pathIndex[entry.fieldType].push_back(i);
-            
-            // Index category
-            categoryIndex[entry.category].push_back(i);
-            
-            // Index words from explanation and tags
-            indexWords(entry.explanation, i);
-            for (const string& tag : entry.tags) {
-                indexWords(tag, i);
-            }
-            
-            // Index JSON value text
-            if (entry.value.is_string()) {
-                indexWords(entry.value.get<string>(), i);
+        for (size_t i = 0; i < n; i++) {
+            precomputedSimilarity[i][i] = 1.0f;
+            for (size_t j = i + 1; j < n; j++) {
+                float similarity = calculateVectorSimilarity(
+                    allEntries[i].embedding, allEntries[j].embedding);
+                precomputedSimilarity[i][j] = similarity;
+                precomputedSimilarity[j][i] = similarity;
             }
         }
     }
     
-    void indexWords(const string& text, size_t entryIndex) {
-        stringstream ss(text);
-        string word;
-        while (ss >> word) {
-            // Clean and normalize word
-            word = regex_replace(word, regex("[^a-zA-Z0-9]"), "");
-            transform(word.begin(), word.end(), word.begin(), ::tolower);
-            
-            if (!word.empty()) {
-                textIndex[word].push_back(entryIndex);
-            }
+    std::vector<SearchResult> search(const std::string& queryId, 
+                                   const std::unordered_map<std::string, std::string>& filters = {},
+                                   int maxResults = 10) {
+        std::vector<SearchResult> results;
+        
+        // Find query entry
+        auto queryIt = idToIndex.find(queryId);
+        if (queryIt == idToIndex.end()) {
+            return results; // Empty if query not found
         }
-    }
-
-public:
-    // Search functionality
-    vector<SearchResult> search(const string& query, const UserContext& context, int maxResults = 10) {
-        cout << "\n=== SEARCH: \"" << query << "\" ===" << endl;
         
-        vector<SearchResult> results;
-        vector<float> queryEmbedding = embeddingEngine.getEmbedding(query);
+        size_t queryIndex = queryIt->second;
+        const IndexedEntry& queryEntry = allEntries[queryIndex];
         
-        for (size_t i = 0; i < allEntries.size(); ++i) {
-            const auto& entry = allEntries[i];
-            
-            // Skip excluded paths
-            if (find(context.excludedPaths.begin(), context.excludedPaths.end(), 
-                    entry.path) != context.excludedPaths.end()) {
-                continue;
-            }
+        // Score all other entries
+        for (size_t i = 0; i < allEntries.size(); i++) {
+            if (i == queryIndex) continue;
             
             SearchResult result;
-            result.entry = entry;
+            result.entry = allEntries[i];
             
-            // Text-based scoring
-            result.textScore = computeTextScore(query, entry);
+            // Apply pre-filters based on ID proximity
+            std::vector<std::string> idExplanations;
+            result.idProximityScore = calculateIdProximity(
+                queryEntry.parsedId, allEntries[i].parsedId, idExplanations);
             
-            // Vector-based scoring
-            result.vectorScore = embeddingEngine.computeSimilarity(queryEmbedding, entry.embedding);
+            // Skip if ID proximity is too low (efficiency filter)
+            if (result.idProximityScore < 0.1f) continue;
             
-            // Apply user preferences and learning
-            float userBoost = 1.0f;
-            if (context.preferences.find(entry.category) != context.preferences.end()) {
-                userBoost = context.preferences.at(entry.category);
+            // Vector similarity score
+            if (i < precomputedSimilarity.size() && queryIndex < precomputedSimilarity[i].size()) {
+                result.vectorScore = precomputedSimilarity[queryIndex][i];
+            } else {
+                result.vectorScore = calculateVectorSimilarity(
+                    queryEntry.embedding, allEntries[i].embedding);
             }
             
+            // Semantic scoring based on shared properties
+            result.semanticScore = calculateSemanticMatch(queryEntry.entry, allEntries[i].entry);
+            
             // Weighted final score
-            result.finalScore = (0.4f * result.textScore + 0.6f * result.vectorScore) 
-                              * entry.boostScore * userBoost;
+            result.finalScore = (result.vectorScore * 0.4f +
+                               result.semanticScore * 0.3f +
+                               result.idProximityScore * 0.3f);
             
-            // Generate match reasons
-            result.matchReasons = generateMatchReasons(query, entry, result);
+            // Add explanations
+            result.matchReasons.insert(result.matchReasons.end(), 
+                                     idExplanations.begin(), idExplanations.end());
             
-            // Find related paths
-            result.relatedPaths = findRelatedPaths(entry);
+            if (result.vectorScore > 0.7f) {
+                result.matchReasons.push_back("High vector similarity: " + 
+                                            std::to_string(result.vectorScore));
+            }
             
-            // Generate explanation
-            result.explanation = generateSearchExplanation(entry, result);
+            // Mark creative matches
+            if (result.idProximityScore > 0.3f && result.vectorScore > 0.6f) {
+                result.isCreativeMatch = true;
+                result.matchReasons.push_back("Creative match: ID proximity + vector similarity");
+            }
             
-            if (result.finalScore > 0.1f) { // Minimum threshold
+            // Apply filters
+            bool passesFilters = true;
+            for (const auto& [filterKey, filterValue] : filters) {
+                if (filterKey == "soundGeneration") {
+                    if (allEntries[i].entry.value("soundGeneration", "") != filterValue) {
+                        passesFilters = false;
+                        break;
+                    }
+                } else if (filterKey == "frequencyRange") {
+                    if (allEntries[i].entry.value("frequencyRange", "") != filterValue) {
+                        passesFilters = false;
+                        break;
+                    }
+                }
+                // Add more filter types as needed
+            }
+            
+            if (passesFilters && result.finalScore > 0.2f) {
                 results.push_back(result);
             }
         }
         
         // Sort by final score
-        sort(results.begin(), results.end(), 
-             [](const SearchResult& a, const SearchResult& b) {
-                 return a.finalScore > b.finalScore;
-             });
+        std::sort(results.begin(), results.end(),
+                 [](const SearchResult& a, const SearchResult& b) {
+                     return a.finalScore > b.finalScore;
+                 });
         
         // Limit results
         if (results.size() > maxResults) {
             results.resize(maxResults);
         }
         
-        // Log search results
-        logSearchResults(query, results);
-        
         return results;
     }
     
+    void addNewProperty(const std::string& propertyName, float defaultValue = 0.5f) {
+        // Add to registry if not exists
+        if (std::find(registryKeys.begin(), registryKeys.end(), propertyName) == registryKeys.end()) {
+            registryKeys.push_back(propertyName);
+            globalRegistry[propertyName] = defaultValue;
+            
+            // Re-index all entries with new property
+            reindexWithNewProperty(propertyName, defaultValue);
+            
+            std::cout << "Added new property: " << propertyName << std::endl;
+            std::cout << "Re-indexed " << allEntries.size() << " entries" << std::endl;
+        }
+    }
+    
 private:
-    float computeTextScore(const string& query, const ConfigEntry& entry) {
+    float calculateSemanticMatch(const json& a, const json& b) {
         float score = 0.0f;
-        string lowerQuery = toLowerCase(query);
         
-        // Exact path match
-        if (toLowerCase(entry.path).find(lowerQuery) != string::npos) {
-            score += 1.0f;
-        }
-        
-        // Instrument name match
-        if (toLowerCase(entry.instrumentName).find(lowerQuery) != string::npos) {
-            score += 0.8f;
-        }
-        
-        // Tag exact matches
-        for (const string& tag : entry.tags) {
-            if (toLowerCase(tag) == lowerQuery) {
-                score += 0.9f;
-            } else if (toLowerCase(tag).find(lowerQuery) != string::npos) {
-                score += 0.6f;
-            }
-        }
-        
-        // Explanation text match
-        if (toLowerCase(entry.explanation).find(lowerQuery) != string::npos) {
-            score += 0.5f;
-        }
-        
-        // SKD alias matching
-        auto skdEntry = skd.getEntry(lowerQuery);
-        if (!skdEntry.empty() && skdEntry.contains("aliases")) {
-            for (const auto& alias : skdEntry["aliases"]) {
-                string aliasStr = alias.get<string>();
-                for (const string& tag : entry.tags) {
-                    if (toLowerCase(tag) == toLowerCase(aliasStr)) {
-                        score += 0.7f;
-                    }
+        // Check shared FX categories
+        if (a.contains("fxCategories") && b.contains("fxCategories")) {
+            auto fxA = a["fxCategories"];
+            auto fxB = b["fxCategories"];
+            if (fxA.is_array() && fxB.is_array()) {
+                std::unordered_set<std::string> setA, setB;
+                for (const auto& fx : fxA) {
+                    if (fx.is_string()) setA.insert(fx);
+                }
+                for (const auto& fx : fxB) {
+                    if (fx.is_string()) setB.insert(fx);
+                }
+                
+                size_t intersection = 0;
+                for (const auto& fx : setA) {
+                    if (setB.count(fx)) intersection++;
+                }
+                
+                if (!setA.empty() && !setB.empty()) {
+                    score += 0.4f * float(intersection) / float(std::max(setA.size(), setB.size()));
                 }
             }
         }
         
-        return min(score, 2.0f); // Cap score
+        // Check same sound generation
+        if (a.value("soundGeneration", "") == b.value("soundGeneration", "") &&
+            !a.value("soundGeneration", "").empty()) {
+            score += 0.3f;
+        }
+        
+        // Check compatible frequency ranges
+        std::string freqA = a.value("frequencyRange", "");
+        std::string freqB = b.value("frequencyRange", "");
+        if (!freqA.empty() && !freqB.empty()) {
+            if (freqA == freqB) score += 0.1f;
+            else if (freqA == "full-spectrum" || freqB == "full-spectrum") score += 0.2f;
+        }
+        
+        // Check theory tuning compatibility
+        if (a.value("theoryTuning", "") == b.value("theoryTuning", "") &&
+            !a.value("theoryTuning", "").empty()) {
+            score += 0.2f;
+        }
+        
+        return std::min(1.0f, score);
     }
     
-    vector<string> generateMatchReasons(const string& query, const ConfigEntry& entry, 
-                                      const SearchResult& result) {
-        vector<string> reasons;
-        string lowerQuery = toLowerCase(query);
-        
-        if (result.textScore > 0.8f) {
-            reasons.push_back("Direct text match in " + entry.fieldType);
-        }
-        
-        if (result.vectorScore > 0.7f) {
-            reasons.push_back("High semantic similarity");
-        }
-        
-        for (const string& tag : entry.tags) {
-            if (toLowerCase(tag).find(lowerQuery) != string::npos) {
-                reasons.push_back("Tag match: '" + tag + "'");
+    void reindexWithNewProperty(const std::string& propertyName, float defaultValue) {
+        // Re-extract vectors for all entries
+        for (auto& indexed : allEntries) {
+            // Re-extract full property vector
+            indexed.dynamicVector.clear();
+            extractPropertyVector(indexed.entry, indexed.dynamicVector);
+            
+            // Rebuild embedding vector
+            indexed.embedding.clear();
+            indexed.embedding.reserve(registryKeys.size());
+            float magnitude = 0.0f;
+            for (const auto& key : registryKeys) {
+                float value = indexed.dynamicVector.count(key) ? indexed.dynamicVector[key] : defaultValue;
+                indexed.embedding.push_back(value);
+                magnitude += value * value;
             }
+            indexed.vectorMagnitude = std::sqrt(magnitude);
         }
         
-        if (toLowerCase(entry.category).find(lowerQuery) != string::npos) {
-            reasons.push_back("Category match: " + entry.category);
-        }
-        
-        return reasons;
+        // Re-compute similarity matrix
+        precomputeSimilarities();
     }
     
-    vector<string> findRelatedPaths(const ConfigEntry& entry) {
-        vector<string> related;
-        
-        // Find other entries from same instrument
-        for (const auto& other : allEntries) {
-            if (other.instrumentName == entry.instrumentName && 
-                other.path != entry.path && related.size() < 3) {
-                related.push_back(other.path);
-            }
-        }
-        
-        // Find entries with similar tags
-        for (const string& tag : entry.tags) {
-            auto relatedTerms = skd.findRelatedTerms(tag, 0.8f);
-            for (const string& term : relatedTerms) {
-                if (related.size() >= 5) break;
-                related.push_back("Related: " + term);
-            }
-        }
-        
-        return related;
-    }
-    
-    string generateSearchExplanation(const ConfigEntry& entry, const SearchResult& result) {
-        stringstream explanation;
-        
-        explanation << "Score: " << fixed << setprecision(2) << result.finalScore;
-        explanation << " (Text: " << result.textScore << ", Vector: " << result.vectorScore << ")";
-        explanation << " - " << entry.explanation;
-        
-        if (!result.matchReasons.empty()) {
-            explanation << " | Matches: ";
-            for (size_t i = 0; i < result.matchReasons.size(); ++i) {
-                if (i > 0) explanation << ", ";
-                explanation << result.matchReasons[i];
-            }
-        }
-        
-        return explanation.str();
-    }
-    
-    void logSearchResults(const string& query, const vector<SearchResult>& results) {
-        cout << "Found " << results.size() << " results for query: '" << query << "'" << endl;
-        
-        for (size_t i = 0; i < min((size_t)5, results.size()); ++i) {
-            const auto& result = results[i];
-            cout << (i + 1) << ". " << result.entry.path 
-                 << " (Score: " << fixed << setprecision(2) << result.finalScore << ")" << endl;
-            cout << "   " << result.explanation << endl;
-        }
-    }
-    
-    string toLowerCase(const string& str) {
-        string result = str;
-        transform(result.begin(), result.end(), result.begin(), ::tolower);
-        return result;
-    }
-
 public:
-    // Interactive operations
-    vector<SearchResult> moreLikeThis(const string& path, const UserContext& context) {
-        cout << "\n=== MORE LIKE: " << path << " ===" << endl;
-        
-        // Find the reference entry
-        const ConfigEntry* refEntry = nullptr;
-        for (const auto& entry : allEntries) {
-            if (entry.path == path) {
-                refEntry = &entry;
-                break;
-            }
-        }
-        
-        if (!refEntry) {
-            cout << "Reference entry not found: " << path << endl;
-            return {};
-        }
-        
-        // Build similarity query from reference entry
-        string similarityQuery = refEntry->explanation;
-        for (const string& tag : refEntry->tags) {
-            similarityQuery += " " + tag;
-        }
-        
-        return search(similarityQuery, context);
-    }
-    
-    void recordUserChoice(const string& path, bool positive, UserContext& context) {
-        cout << "\n=== LEARNING: " << path << " (" << (positive ? "BOOST" : "DEMOTE") << ") ===" << endl;
-        
-        // Update entry boost score
-        for (auto& entry : allEntries) {
-            if (entry.path == path) {
-                if (positive) {
-                    entry.boostScore = min(entry.boostScore + 0.1f, 2.0f);
-                    cout << "Boosted " << path << " to " << entry.boostScore << endl;
-                } else {
-                    entry.boostScore = max(entry.boostScore - 0.1f, 0.1f);
-                    cout << "Demoted " << path << " to " << entry.boostScore << endl;
-                }
-                break;
-            }
-        }
-        
-        // Update user preferences for category
-        for (const auto& entry : allEntries) {
-            if (entry.path == path) {
-                if (context.preferences.find(entry.category) == context.preferences.end()) {
-                    context.preferences[entry.category] = 1.0f;
-                }
-                
-                if (positive) {
-                    context.preferences[entry.category] = min(context.preferences[entry.category] + 0.05f, 1.5f);
-                } else {
-                    context.preferences[entry.category] = max(context.preferences[entry.category] - 0.05f, 0.5f);
-                }
-                
-                cout << "Updated " << entry.category << " preference to " 
-                     << context.preferences[entry.category] << endl;
-                break;
-            }
-        }
-    }
-    
+    // Diagnostic and analysis functions
     void printIndexStatistics() {
-        cout << "\n=== POINTING INDEX STATISTICS ===" << endl;
-        cout << "Total entries: " << allEntries.size() << endl;
-        cout << "Text index terms: " << textIndex.size() << endl;
-        cout << "Path index entries: " << pathIndex.size() << endl;
-        cout << "Categories: " << categoryIndex.size() << endl;
+        std::cout << "\n=== POINTING INDEX SYSTEM STATISTICS ===" << std::endl;
+        std::cout << "Total indexed entries: " << allEntries.size() << std::endl;
+        std::cout << "Registry properties: " << registryKeys.size() << std::endl;
+        std::cout << "Text index categories: " << textIndex.size() << std::endl;
+        std::cout << "Category index: " << categoryIndex.size() << std::endl;
         
-        map<string, int> categoryStats;
-        for (const auto& entry : allEntries) {
-            categoryStats[entry.category]++;
+        // Property distribution analysis
+        std::cout << "\nProperty value distributions:" << std::endl;
+        for (const auto& key : registryKeys) {
+            std::vector<float> values;
+            for (const auto& entry : allEntries) {
+                if (entry.dynamicVector.count(key)) {
+                    values.push_back(entry.dynamicVector.at(key));
+                }
+            }
+            
+            if (!values.empty()) {
+                std::sort(values.begin(), values.end());
+                float median = values[values.size() / 2];
+                float mean = std::accumulate(values.begin(), values.end(), 0.0f) / values.size();
+                std::cout << "  " << key << ": mean=" << mean << ", median=" << median << std::endl;
+            }
         }
         
-        cout << "Entries by category:" << endl;
-        for (const auto& [category, count] : categoryStats) {
-            cout << "  " << category << ": " << count << endl;
-        }
-        
-        cout << "SKD terms loaded: ";
-        auto relatedToWarm = skd.findRelatedTerms("warm");
-        cout << relatedToWarm.size() << " terms related to 'warm'" << endl;
-        
-        cout << "=================================" << endl;
+        std::cout << "===========================================" << std::endl;
     }
     
-    // Get clean config for rendering (only actual usable data)
-    json getCleanConfigForSynthesis() {
-        return cleanConfig;
+    json exportIndexedData() {
+        json export_data;
+        export_data["metadata"]["version"] = "4Z-Index-1.0";
+        export_data["metadata"]["total_entries"] = allEntries.size();
+        export_data["metadata"]["registry_size"] = registryKeys.size();
+        
+        export_data["registry_keys"] = registryKeys;
+        
+        json entries_array = json::array();
+        for (const auto& indexed : allEntries) {
+            json entry_data;
+            entry_data["id"] = indexed.id;
+            entry_data["embedding"] = indexed.embedding;
+            entry_data["dynamic_vector"] = indexed.dynamicVector;
+            entry_data["vector_magnitude"] = indexed.vectorMagnitude;
+            entries_array.push_back(entry_data);
+        }
+        export_data["indexed_entries"] = entries_array;
+        
+        return export_data;
     }
 };
-
-// Interactive session manager
-class PointingSession {
-private:
-    PointingIndex index;
-    UserContext context;
-    
-public:
-    PointingSession() {
-        context.sessionId = generateSessionId();
-        cout << "Started pointing session: " << context.sessionId << endl;
-    }
-    
-    void runInteractiveSession() {
-        cout << "\n=== POINTING INDEX INTERACTIVE SESSION ===" << endl;
-        cout << "Commands: search <query>, like <path>, exclude <path>, boost <path>, demote <path>, stats, config, quit" << endl;
-        
-        string input;
-        while (true) {
-            cout << "\n> ";
-            getline(cin, input);
-            
-            if (input.empty()) continue;
-            
-            vector<string> parts = splitCommand(input);
-            if (parts.empty()) continue;
-            
-            string command = parts[0];
-            
-            if (command == "quit" || command == "exit") {
-                break;
-            } else if (command == "search" && parts.size() > 1) {
-                string query = input.substr(7); // Skip "search "
-                auto results = index.search(query, context);
-                displaySearchResults(results);
-            } else if (command == "like" && parts.size() > 1) {
-                string path = parts[1];
-                auto results = index.moreLikeThis(path, context);
-                displaySearchResults(results);
-            } else if (command == "exclude" && parts.size() > 1) {
-                string path = parts[1];
-                context.excludedPaths.push_back(path);
-                cout << "Excluded: " << path << endl;
-            } else if (command == "boost" && parts.size() > 1) {
-                string path = parts[1];
-                index.recordUserChoice(path, true, context);
-            } else if (command == "demote" && parts.size() > 1) {
-                string path = parts[1];
-                index.recordUserChoice(path, false, context);
-            } else if (command == "stats") {
-                index.printIndexStatistics();
-                printUserStats();
-            } else if (command == "config") {
-                cout << "Clean config available for synthesis with " 
-                     << index.getCleanConfigForSynthesis().size() << " instruments/groups." << endl;
-            } else {
-                cout << "Unknown command. Try: search, like, exclude, boost, demote, stats, config, quit" << endl;
-            }
-        }
-    }
-    
-private:
-    string generateSessionId() {
-        auto now = chrono::system_clock::now();
-        auto time_t = chrono::system_clock::to_time_t(now);
-        stringstream ss;
-        ss << "session_" << time_t;
-        return ss.str();
-    }
-    
-    vector<string> splitCommand(const string& input) {
-        vector<string> parts;
-        stringstream ss(input);
-        string part;
-        while (ss >> part) {
-            parts.push_back(part);
-        }
-        return parts;
-    }
-    
-    void displaySearchResults(const vector<SearchResult>& results) {
-        if (results.empty()) {
-            cout << "No results found." << endl;
-            return;
-        }
-        
-        cout << "\n--- SEARCH RESULTS ---" << endl;
-        for (size_t i = 0; i < results.size(); ++i) {
-            const auto& result = results[i];
-            cout << (i + 1) << ". " << result.entry.path << endl;
-            cout << "   Category: " << result.entry.category 
-                 << " | Type: " << result.entry.fieldType << endl;
-            cout << "   Score: " << fixed << setprecision(2) << result.finalScore
-                 << " (Text: " << result.textScore << ", Vector: " << result.vectorScore << ")" << endl;
-            cout << "   Explanation: " << result.explanation << endl;
-            
-            if (!result.matchReasons.empty()) {
-                cout << "   Match reasons: ";
-                for (size_t j = 0; j < result.matchReasons.size(); ++j) {
-                    if (j > 0) cout << ", ";
-                    cout << result.matchReasons[j];
-                }
-                cout << endl;
-            }
-            
-            if (!result.relatedPaths.empty()) {
-                cout << "   Related: ";
-                for (size_t j = 0; j < min((size_t)3, result.relatedPaths.size()); ++j) {
-                    if (j > 0) cout << ", ";
-                    cout << result.relatedPaths[j];
-                }
-                cout << endl;
-            }
-            cout << endl;
-        }
-    }
-    
-    void printUserStats() {
-        cout << "\n--- USER SESSION STATS ---" << endl;
-        cout << "Session ID: " << context.sessionId << endl;
-        cout << "Selected paths: " << context.selectedPaths.size() << endl;
-        cout << "Excluded paths: " << context.excludedPaths.size() << endl;
-        cout << "Search history: " << context.searchHistory.size() << endl;
-        cout << "Learned preferences:" << endl;
-        
-        for (const auto& [category, preference] : context.preferences) {
-            cout << "  " << category << ": " << fixed << setprecision(2) << preference << endl;
-        }
-    }
-};
-
-int main() {
-    cout << "Pointing Index System - Advanced Configuration Search & Suggestion" << endl;
-    cout << "=================================================================" << endl;
-    
-    try {
-        PointingSession session;
-        session.runInteractiveSession();
-        
-        cout << "\nSession ended. Thank you!" << endl;
-        
-    } catch (const exception& e) {
-        cerr << "Error: " << e.what() << endl;
-        return 1;
-    }
-    
-    return 0;
-}
