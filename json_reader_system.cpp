@@ -1,11 +1,18 @@
-#include "json_reader_system.h"
-#include <nlohmann/json.hpp>
-#include <fstream>
+#include "json.hpp"
+#include "ParsedId.h"
 #include <iostream>
-#include <cmath>
+#include <fstream>
+#include <map>
+#include <string>
+#include <vector>
+#include <set>
 #include <algorithm>
+#include <optional>
+#include <cmath>
 #include <numeric>
+#include <cassert>
 
+using namespace std;
 using json = nlohmann::json;
 
 // Helper function to check if a JSON value is effectively empty
@@ -35,18 +42,6 @@ struct SectionMapping {
     bool useDynamicGate = false;
     float gateThreshold = 0.0f;
     float gateDecaySec = 0.0f;
-};
-
-// 4Z ID Structure
-struct ParsedId {
-    int dim;
-    int trans_digit;
-    int harm_digit;
-    int fx_digit;
-    int tuning_prime;
-    int damp_digit;
-    int freq_digit;
-    char type;
 };
 
 // Main JSON Reader System class
@@ -127,8 +122,20 @@ private:
         // First try transientDetail
         if (entry.contains("transientDetail") && entry["transientDetail"].contains("intensity")) {
             auto intensity = entry["transientDetail"]["intensity"];
-            if (intensity.is_array() && intensity.size() >= 2) {
-                return (intensity[0].get<float>() + intensity[1].get<float>()) / 2.0f;
+            if (intensity.is_array()) {
+                // Handle empty array - return category default
+                if (intensity.empty()) {
+                    if (categoryAverages.count(category) && categoryAverages[category].count("transientSharpness")) {
+                        return categoryAverages[category]["transientSharpness"];
+                    }
+                    return 0.5f; // NA default
+                }
+                
+                if (intensity.size() >= 2) {
+                    return (intensity[0].get<float>() + intensity[1].get<float>()) / 2.0f;
+                } else if (intensity.size() == 1) {
+                    return intensity[0].get<float>();
+                }
             } else if (intensity.is_number()) {
                 return intensity.get<float>();
             }
@@ -137,8 +144,19 @@ private:
         // Fallback: infer from attack_noise
         if (entry.contains("attack_noise") && entry["attack_noise"].contains("intensity")) {
             auto intensity = entry["attack_noise"]["intensity"];
-            if (intensity.is_array() && intensity.size() >= 2) {
-                return (intensity[0].get<float>() + intensity[1].get<float>()) / 2.0f;
+            if (intensity.is_array()) {
+                if (intensity.empty()) {
+                    if (categoryAverages.count(category) && categoryAverages[category].count("transientSharpness")) {
+                        return categoryAverages[category]["transientSharpness"];
+                    }
+                    return 0.5f;
+                }
+                
+                if (intensity.size() >= 2) {
+                    return (intensity[0].get<float>() + intensity[1].get<float>()) / 2.0f;
+                } else if (intensity.size() == 1) {
+                    return intensity[0].get<float>();
+                }
             } else if (intensity.is_number()) {
                 return intensity.get<float>();
             }
@@ -149,8 +167,19 @@ private:
             auto attack = entry["envelope"]["attack"];
             float avg_attack = 0.0f;
             
-            if (attack.is_array() && attack.size() >= 2) {
-                avg_attack = (attack[0].get<float>() + attack[1].get<float>()) / 2.0f;
+            if (attack.is_array()) {
+                if (attack.empty()) {
+                    if (categoryAverages.count(category) && categoryAverages[category].count("transientSharpness")) {
+                        return categoryAverages[category]["transientSharpness"];
+                    }
+                    return 0.5f;
+                }
+                
+                if (attack.size() >= 2) {
+                    avg_attack = (attack[0].get<float>() + attack[1].get<float>()) / 2.0f;
+                } else if (attack.size() == 1) {
+                    avg_attack = attack[0].get<float>();
+                }
             } else if (attack.is_number()) {
                 avg_attack = attack.get<float>();
             }
@@ -183,6 +212,14 @@ private:
             if (entry["harmonicContent"].contains("overtones")) {
                 auto overtones = entry["harmonicContent"]["overtones"];
                 if (overtones.is_array()) {
+                    // If overtones.empty(), return category avg*99
+                    if (overtones.empty()) {
+                        if (categoryAverages.count(category) && categoryAverages[category].count("harmonicRichness")) {
+                            return static_cast<int>(categoryAverages[category]["harmonicRichness"] * 99);
+                        }
+                        return 50; // Default medium if no category avg
+                    }
+                    
                     int len = overtones.size();
                     // K-means style: len<3=25 low, 3-6=50 med, >6=75 high
                     if (len < 3) {
@@ -202,6 +239,13 @@ private:
         if (entry.contains("harmonics") && entry["harmonics"].contains("vibe_set")) {
             auto vibe_set = entry["harmonics"]["vibe_set"];
             if (vibe_set.is_array()) {
+                if (vibe_set.empty()) {
+                    if (categoryAverages.count(category) && categoryAverages[category].count("harmonicRichness")) {
+                        return static_cast<int>(categoryAverages[category]["harmonicRichness"] * 99);
+                    }
+                    return 50;
+                }
+                
                 int len = vibe_set.size();
                 // K-means style classification
                 if (len < 3) {
@@ -358,6 +402,11 @@ private:
         int dim = determineDim(entry, entryType);
         std::string category = determineCategory(entry);
         
+        // Handle unknown category default
+        if (category == "unknown" || category.empty()) {
+            category = "instrument";
+        }
+        
         // Extract and quantize properties with fallbacks
         float trans_avg = extractTransientIntensity(entry, category);
         int trans_digit = quantizeTransients(trans_avg);
@@ -368,12 +417,40 @@ private:
         int damp_digit = extractDynamicRange(entry);
         int freq_digit = extractFrequencyRange(entry);
         
+        // Add assertions for validation
+        assert(trans_digit >= 0 && trans_digit <= 99);
+        assert(harm_digit >= 0 && harm_digit <= 99);
+        assert(fx_digit >= 0 && fx_digit <= 99);
+        assert(tuning_prime >= 2 && tuning_prime <= 11);
+        assert(damp_digit >= 0 && damp_digit <= 99);
+        assert(freq_digit >= 0 && freq_digit <= 99);
+        
         // Concatenate attributes
         std::string attrs = formatAttributes(trans_digit, harm_digit, fx_digit, 
                                        tuning_prime, damp_digit, freq_digit);
         
         char type = entryType[0]; // i/g/x/m/s
-        return std::to_string(dim) + "." + attrs + type;
+        std::string id = std::to_string(dim) + "." + attrs + type;
+        
+        // Registry sync: Update category averages for learning
+        if (categoryAverages.count(category)) {
+            if (categoryAverages[category].count("transientSharpness")) {
+                categoryAverages[category]["transientSharpness"] = 
+                    (categoryAverages[category]["transientSharpness"] + trans_avg) / 2.0f;
+            } else {
+                categoryAverages[category]["transientSharpness"] = trans_avg;
+            }
+            
+            float harm_normalized = static_cast<float>(harm_digit) / 99.0f;
+            if (categoryAverages[category].count("harmonicRichness")) {
+                categoryAverages[category]["harmonicRichness"] = 
+                    (categoryAverages[category]["harmonicRichness"] + harm_normalized) / 2.0f;
+            } else {
+                categoryAverages[category]["harmonicRichness"] = harm_normalized;
+            }
+        }
+        
+        return id;
     }
     
     std::string determineCategory(const json& entry) {
@@ -856,6 +933,54 @@ public:
         std::cout << "\nMock entry with scalar intensity:" << std::endl;
         std::string scalarId = generateId(mockScalar, "instrument");
         std::cout << "Generated scalar ID: " << scalarId << std::endl;
+        
+        // Test empty array handling
+        json mockEmpty = {
+            {"transientDetail", {
+                {"intensity", json::array()} // Empty array
+            }}
+        };
+        
+        std::cout << "\nMock entry with empty array:" << std::endl;
+        float emptyResult = extractTransientIntensity(mockEmpty, "pad");
+        std::cout << "Expected: " << categoryAverages["pad"]["transientSharpness"] << " (pad category default)" << std::endl;
+        std::cout << "Actual: " << emptyResult << std::endl;
+        
+        // Assert the empty array test
+        assert(std::abs(emptyResult - categoryAverages["pad"]["transientSharpness"]) < 0.001f);
+        std::cout << "✓ PASS: Empty array handling returns category default" << std::endl;
+        
+        // Test empty overtones array
+        json mockEmptyOvertones = {
+            {"harmonicContent", {
+                {"overtones", json::array()} // Empty overtones
+            }}
+        };
+        
+        int emptyHarmonics = extractHarmonicComplexity(mockEmptyOvertones, "pad");
+        int expectedHarmonics = static_cast<int>(categoryAverages["pad"]["harmonicRichness"] * 99);
+        std::cout << "\nEmpty overtones test:" << std::endl;
+        std::cout << "Expected: " << expectedHarmonics << " (pad category avg * 99)" << std::endl;
+        std::cout << "Actual: " << emptyHarmonics << std::endl;
+        
+        assert(emptyHarmonics == expectedHarmonics);
+        std::cout << "✓ PASS: Empty overtones array returns category avg * 99" << std::endl;
+        
+        // Test ParsedId validation and toString
+        ParsedId validId;
+        validId.dim = 3;
+        validId.trans_digit = 85;
+        validId.harm_digit = 50;
+        validId.fx_digit = 25;
+        validId.tuning_prime = 7;
+        validId.damp_digit = 60;
+        validId.freq_digit = 75;
+        validId.type = 'i';
+        
+        std::cout << "\nTesting ParsedId validation and toString:" << std::endl;
+        std::cout << "Valid ID: " << validId.toString() << std::endl;
+        assert(validId.isValid());
+        std::cout << "✓ PASS: ParsedId validation and toString working" << std::endl;
         
         std::cout << "=== MOCK TESTING COMPLETE ===" << std::endl;
     }

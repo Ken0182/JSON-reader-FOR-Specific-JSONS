@@ -546,6 +546,12 @@ private:
             explanations.push_back("Neutral tuning compatibility");
         }
         
+        // Dimensional compatibility - add dim match +0.02 if same
+        if (a.dim == b.dim) {
+            idScore += 0.02f;
+            explanations.push_back("Same dimensional focus");
+        }
+        
         // Digit proximity scoring
         int trans_diff = abs(a.trans_digit - b.trans_digit);
         if (trans_diff < 10) {
@@ -568,13 +574,10 @@ private:
             explanations.push_back("FX complexity proximity ±" + to_string(fx_diff));
         }
         
-        // Dimensional compatibility
-        if (a.dim == b.dim) {
-            idScore += 0.02f;
-            explanations.push_back("Same dimensional focus");
-        }
+        // Cap idScore = min(1.0f, idScore)
+        idScore = min(1.0f, idScore);
         
-        return min(1.0f, idScore);
+        return idScore;
     }
     
     void extractPropertyVector(const json& config, unordered_map<string, float>& props) {
@@ -623,24 +626,40 @@ private:
         cout << "Built compatibility graph with " << compatibilityGraph.size() << " nodes" << endl;
     }
     
-    string buildRationale(const MultiDimensionalResult& result) {
-        string rationale = "Score: " + to_string(result.overallScore);
+    void buildCompatibilityGraphEnhanced() {
+        cout << "Building enhanced compatibility graph..." << endl;
         
-        for (const string& strength : result.strengths) {
-            rationale += "\n" + strength;
+        for (size_t i = 0; i < configDatabase.size(); i++) {
+            for (size_t j = i + 1; j < configDatabase.size(); j++) {
+                auto result = analyzeCompatibility(configDatabase[i], configDatabase[j]);
+                
+                // Parse IDs for compatibility check
+                ParsedId idA = parseId(configDatabase[i].zId);
+                ParsedId idB = parseId(configDatabase[j].zId);
+                vector<string> tmpExplanations;
+                float idCompat = calculateIdCompatibility(idA, idB, tmpExplanations);
+                
+                // Check if idCompatible: GCD>1 or transient diff<10
+                int gcd_val = calculateGcd(idA.tuning_prime, idB.tuning_prime);
+                int trans_diff = abs(idA.trans_digit - idB.trans_digit);
+                bool idCompatible = (gcd_val > 1 || trans_diff < 10);
+                
+                // Add edge if compatibility > 0.5 or ID compatibility > 0.3 or idCompatible
+                if (result.overallScore > 0.5f || idCompat > 0.3f || idCompatible) {
+                    compatibilityGraph[configDatabase[i].id].push_back(configDatabase[j].id);
+                    compatibilityGraph[configDatabase[j].id].push_back(configDatabase[i].id);
+                }
+            }
         }
         
-        if (result.isCreativeMatch) {
-            rationale += " [Creative]";
-        }
-        
-        return rationale;
+        cout << "Built enhanced compatibility graph with " << compatibilityGraph.size() << " nodes" << endl;
     }
 
 public:
     MultiDimensionalPointingSystem() {
         loadConfigDatabase();
-        buildCompatibilityGraph();
+        // Add graph building: In loadConfigDatabase(), for each pair if idCompatible, add to compatibilityGraph
+        buildCompatibilityGraphEnhanced();
     }
     
     void loadConfigDatabase() {
@@ -940,15 +959,22 @@ public:
         // Scoring: Cap overall <=1.0f
         result.overallScore = min(1.0f, result.overallScore);
         
-        // Creative compatibility logic: only +0.05 if overall<0.7 (avoid overboost)
-        if (result.idScore > 0.3f && 
-            (result.semanticScore > 0.8f || result.technicalScore > 0.8f) &&
-            (result.musicalRoleScore < 0.6f || result.layeringScore < 0.6f) &&
-            result.overallScore < 0.7f) {
-            result.overallScore += 0.05f; // Creative boost (capped)
+        // Creative compatibility logic: prevent over-boost (cap +0.05 total) and explain only if >0.05 contrib
+        float creativeBoost = 0.0f;
+        bool hasCreativeConditions = (result.idScore > 0.3f && 
+                                     (result.semanticScore > 0.8f || result.technicalScore > 0.8f) &&
+                                     (result.musicalRoleScore < 0.6f || result.layeringScore < 0.6f));
+        
+        if (hasCreativeConditions && result.overallScore < 0.7f) {
+            creativeBoost = min(0.05f, 1.0f - result.overallScore); // Cap at +0.05 or remaining to 1.0
+            result.overallScore += creativeBoost;
             result.overallScore = min(1.0f, result.overallScore); // Ensure cap
             result.isCreativeMatch = true;
-            result.strengths.push_back("Unexpected valid due to prop synergy");
+            
+            // Explain only if >0.05 contribution
+            if (creativeBoost >= 0.05f) {
+                result.strengths.push_back("Unexpected valid due to prop synergy");
+            }
         }
         
         result.isRecommended = result.overallScore >= 0.7f && result.technicalDetails.isCompatible;
@@ -1157,9 +1183,28 @@ public:
         json suggestions = json::array();
         for (const auto& entry : configDatabase) {
             json suggestion;
-            suggestion["id"] = entry.id;
+            suggestion["id"] = entry.zId; // Include ID
+            suggestion["name"] = entry.id;
             suggestion["category"] = entry.category;
             suggestion["role"] = entry.musicalRole.primaryRole;
+            
+            // For flat mode, include IDs/rationale in suggestions array
+            if (!configDatabase.empty()) {
+                // Use first entry as mock reference for rationale
+                MultiDimensionalResult mockResult;
+                mockResult.overallScore = 0.7f; // Default score for flat mode
+                mockResult.semanticScore = 0.6f;
+                mockResult.technicalScore = 0.8f;
+                mockResult.musicalRoleScore = 0.7f;
+                mockResult.layeringScore = 0.6f;
+                mockResult.idScore = 0.5f;
+                mockResult.strengths.push_back("Flat arrangement suggestion");
+                
+                suggestion["rationale"] = buildRationaleWithId(mockResult, configDatabase[0], entry);
+            } else {
+                suggestion["rationale"] = "Default suggestion for " + entry.category;
+            }
+            
             suggestions.push_back(suggestion);
         }
         
@@ -1205,9 +1250,9 @@ public:
         return results;
     }
     
-    // Test creative matching
+    // Test creative matching with enhanced assertions
     void testCreativeMatching() {
-        cout << "\n=== TESTING CREATIVE MATCHING ===" << endl;
+        cout << "\n=== TESTING ENHANCED CREATIVE MATCHING ===" << endl;
         
         // Mock enhanced config entries for testing
         EnhancedConfigEntry mockA, mockB;
@@ -1223,8 +1268,13 @@ public:
         MultiDimensionalResult result = analyzeCompatibility(mockA, mockB);
         
         cout << "Mock test: idScore=" << result.idScore << ", roleScore=" << result.musicalRoleScore << endl;
+        cout << "Overall score=" << result.overallScore << endl;
         cout << "Creative match expected if idScore>0.3 && role<0.6" << endl;
         cout << "Result: " << (result.isCreativeMatch ? "CREATIVE MATCH DETECTED" : "Standard match") << endl;
+        
+        // Add assert(result.overallScore <=1.0f)
+        assert(result.overallScore <= 1.0f);
+        cout << "✓ PASS: Overall score capped at 1.0" << endl;
         
         if (result.idScore > 0.3f && result.musicalRoleScore < 0.6f && result.isCreativeMatch) {
             cout << "✓ PASS: Creative matching logic working" << endl;
@@ -1232,7 +1282,29 @@ public:
             cout << "✗ INFO: Creative conditions not met or not triggered" << endl;
         }
         
-        cout << "=== CREATIVE MATCHING TEST COMPLETE ===" << endl;
+        // Test GCD (mockA.tuning_prime=3, mockB=6 → GCD=3>1 boost)
+        cout << "\nTesting GCD compatibility:" << endl;
+        EnhancedConfigEntry mockGcdA, mockGcdB;
+        mockGcdA.zId = "3.5050305i"; // tuning_prime = 3
+        mockGcdB.zId = "3.5050605i"; // tuning_prime = 6, GCD(3,6) = 3 > 1
+        
+        ParsedId parsedGcdA = parseId(mockGcdA.zId);
+        ParsedId parsedGcdB = parseId(mockGcdB.zId);
+        vector<string> gcdExplanations;
+        float gcdScore = calculateIdCompatibility(parsedGcdA, parsedGcdB, gcdExplanations);
+        
+        cout << "GCD test: tuning_prime A=" << parsedGcdA.tuning_prime 
+             << ", B=" << parsedGcdB.tuning_prime << endl;
+        cout << "GCD=" << calculateGcd(parsedGcdA.tuning_prime, parsedGcdB.tuning_prime) << endl;
+        cout << "ID compatibility score: " << gcdScore << endl;
+        
+        if (gcdScore >= 0.1f) { // Should get +0.1 for GCD>1
+            cout << "✓ PASS: GCD>1 provides compatibility boost" << endl;
+        } else {
+            cout << "✗ FAIL: GCD compatibility not detected" << endl;
+        }
+        
+        cout << "=== ENHANCED CREATIVE MATCHING TEST COMPLETE ===" << endl;
     }
     
     void printSystemStatistics() {

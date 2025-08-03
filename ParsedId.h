@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <numeric>
 #include <cmath>
+#include <iostream>
+#include <cassert>
+#include <iomanip>
+#include <sstream>
 
 // 4Z ID Structure - shared across all systems
 struct ParsedId {
@@ -17,25 +21,65 @@ struct ParsedId {
     int freq_digit = 50;
     char type = 'g';
     
-    // Validation helper
+    // Enhanced validation with assertions
     bool isValid() const {
-        return (dim >= 1 && dim <= 4) &&
-               (trans_digit >= 0 && trans_digit <= 99) &&
-               (harm_digit >= 0 && harm_digit <= 99) &&
-               (fx_digit >= 0 && fx_digit <= 99) &&
-               (tuning_prime >= 2 && tuning_prime <= 11) &&
-               (damp_digit >= 0 && damp_digit <= 99) &&
-               (freq_digit >= 0 && freq_digit <= 99) &&
-               (type == 'i' || type == 'g' || type == 'x' || type == 'm' || type == 's');
+        // Dimension validation
+        assert(dim >= 1 && dim <= 4);
+        if (!(dim >= 1 && dim <= 4)) return false;
+        
+        // Digit range validations
+        assert(trans_digit >= 0 && trans_digit <= 99);
+        if (!(trans_digit >= 0 && trans_digit <= 99)) return false;
+        
+        assert(harm_digit >= 0 && harm_digit <= 99);
+        if (!(harm_digit >= 0 && harm_digit <= 99)) return false;
+        
+        assert(fx_digit >= 0 && fx_digit <= 99);
+        if (!(fx_digit >= 0 && fx_digit <= 99)) return false;
+        
+        assert(damp_digit >= 0 && damp_digit <= 99);
+        if (!(damp_digit >= 0 && damp_digit <= 99)) return false;
+        
+        assert(freq_digit >= 0 && freq_digit <= 99);
+        if (!(freq_digit >= 0 && freq_digit <= 99)) return false;
+        
+        // Prime validation
+        assert(tuning_prime >= 2 && tuning_prime <= 11);
+        if (!(tuning_prime >= 2 && tuning_prime <= 11)) return false;
+        
+        // Type validation
+        assert(type == 'i' || type == 'g' || type == 'x' || type == 'm' || type == 's');
+        if (!(type == 'i' || type == 'g' || type == 'x' || type == 'm' || type == 's')) return false;
+        
+        return true;
+    }
+    
+    // Debug string representation
+    std::string toString() const {
+        return std::to_string(dim) + "." + formatAttrs() + type;
+    }
+    
+private:
+    std::string formatAttrs() const {
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(2) << trans_digit
+           << std::setfill('0') << std::setw(2) << harm_digit
+           << std::setfill('0') << std::setw(2) << fx_digit
+           << tuning_prime
+           << std::setfill('0') << std::setw(2) << damp_digit
+           << std::setfill('0') << std::setw(2) << freq_digit;
+        return ss.str();
     }
 };
 
-// Shared utility functions
+// Enhanced safe string to integer conversion with logging
 inline int safeStoi(const std::string& str, int defaultValue = 50) {
     try {
         int value = std::stoi(str);
         return std::max(0, std::min(99, value)); // Cap to 0-99
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+        std::cerr << "Warning: Failed to convert '" << str << "' to integer: " 
+                  << e.what() << " (using default " << defaultValue << ")" << std::endl;
         return defaultValue;
     }
 }

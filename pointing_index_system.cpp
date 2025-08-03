@@ -14,6 +14,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <cassert> // Added for assert
 
 using namespace std;
 using json = nlohmann::json;
@@ -338,17 +339,83 @@ private:
         {"bass", {{"harmonicRichness", 0.4f}, {"transientSharpness", 0.7f}}}
     };
     
+    // Reindexing throttle
+    chrono::steady_clock::time_point lastReindexTime;
+    bool reindexPending = false;
+    
 public:
     PointingIndex() : skd(&embeddingEngine) {
+        lastReindexTime = chrono::steady_clock::now();
         initializeRegistry();
         loadAllData();
         buildPointingIndex();
     }
     
 private:
+    void triggerReindexIfNeeded() {
+        auto now = chrono::steady_clock::now();
+        auto timeSinceLastReindex = chrono::duration_cast<chrono::seconds>(now - lastReindexTime);
+        
+        // Reindexing: If new prop added, call buildPointingIndex() (but throttle if frequent)
+        if (reindexPending && timeSinceLastReindex.count() >= 30) { // Throttle to max once per 30 seconds
+            cout << "Performing throttled reindex due to new properties..." << endl;
+            buildPointingIndex();
+            lastReindexTime = now;
+            reindexPending = false;
+        } else if (reindexPending) {
+            cout << "Reindex pending but throttled (last reindex " << timeSinceLastReindex.count() << "s ago)" << endl;
+        }
+    }
+    
     void initializeRegistry() {
-        for (const auto& key : registryKeys) {
-            registry[key] = 0.5f; // Neutral default
+        // Load from JSON if exists
+        ifstream registryFile("registry.json");
+        if (registryFile) {
+            json savedRegistry;
+            registryFile >> savedRegistry;
+            
+            cout << "Loading registry from registry.json..." << endl;
+            
+            // Load saved values
+            if (savedRegistry.contains("properties") && savedRegistry["properties"].is_object()) {
+                for (const auto& [key, value] : savedRegistry["properties"].items()) {
+                    if (value.is_number()) {
+                        registry[key] = value.get<float>();
+                    }
+                }
+            }
+            
+            // Load saved keys order
+            if (savedRegistry.contains("keys") && savedRegistry["keys"].is_array()) {
+                registryKeys.clear();
+                for (const auto& key : savedRegistry["keys"]) {
+                    if (key.is_string()) {
+                        registryKeys.push_back(key.get<string>());
+                    }
+                }
+            }
+            
+            cout << "Loaded " << registry.size() << " properties from saved registry" << endl;
+        } else {
+            // Initialize with defaults
+            cout << "No saved registry found, initializing with defaults..." << endl;
+            for (const auto& key : registryKeys) {
+                registry[key] = 0.5f; // Neutral default
+            }
+        }
+    }
+    
+    void saveRegistry() {
+        json registryJson;
+        registryJson["properties"] = registry;
+        registryJson["keys"] = registryKeys;
+        registryJson["lastUpdated"] = chrono::duration_cast<chrono::seconds>(
+            chrono::system_clock::now().time_since_epoch()).count();
+        
+        ofstream outFile("registry.json");
+        if (outFile) {
+            outFile << registryJson.dump(2);
+            cout << "Saved registry with " << registry.size() << " properties" << endl;
         }
     }
     
@@ -456,11 +523,10 @@ private:
             // Recursively index all fields
             indexFieldsRecursively(instrumentName, category, "", instrumentData, newProp);
             
-            // Reindex if new properties were added
+            // Use throttled reindexing instead of immediate reindex
             if (newProp) {
-                cout << "Reindexing due to new properties..." << endl;
-                buildPointingIndex();
-                return; // Exit and restart indexing
+                reindexPending = true;
+                cout << "New properties added, reindex pending..." << endl;
             }
         }
     }
@@ -545,6 +611,8 @@ private:
     }
     
     void extractPropertyVector(const json& data, unordered_map<string, float>& props, const string& category) {
+        bool newPropsAdded = false;
+        
         // Extract harmonicRichness
         if (data.contains("harmonicContent")) {
             auto complexity = data["harmonicContent"].value("complexity", "unknown");
@@ -586,7 +654,21 @@ private:
             props["fxComplexity"] = min(1.0f, float(enabledCount) / 5.0f);
         }
         
-        // Add more property extractions...
+        // For new keys: scan data for numeric properties
+        if (data.is_object()) {
+            for (const auto& [key, value] : data.items()) {
+                if (value.is_number() && !registry.count(key)) {
+                    // New property found
+                    float defaultValue = inferDefault(category, key);
+                    registry[key] = defaultValue;
+                    registryKeys.push_back(key);
+                    props[key] = value.get<float>();
+                    newPropsAdded = true;
+                    cout << "Auto-discovered new property: " << key << " = " << defaultValue << endl;
+                }
+            }
+        }
+        
         // Fill missing values with category defaults or global registry
         for (const auto& key : registryKeys) {
             if (!props.count(key)) {
@@ -596,6 +678,11 @@ private:
                     props[key] = registry[key];
                 }
             }
+        }
+        
+        // Save registry if new properties were added
+        if (newPropsAdded) {
+            saveRegistry();
         }
     }
     
@@ -797,6 +884,27 @@ private:
             if (entry.value.is_string()) {
                 indexWords(entry.value.get<string>(), i);
             }
+            
+            // Index fxCategories as words
+            if (entry.value.contains("fxCategories") && entry.value["fxCategories"].is_array()) {
+                for (const auto& fx : entry.value["fxCategories"]) {
+                    if (fx.is_string()) {
+                        string fxStr = fx.get<string>();
+                        indexWords(fxStr, i);
+                        // Also index individual fx words
+                        textIndex[toLowerCase(fxStr)].push_back(i);
+                    }
+                }
+            }
+            
+            // Index other array fields that might contain searchable terms
+            if (entry.value.contains("tags") && entry.value["tags"].is_array()) {
+                for (const auto& tag : entry.value["tags"]) {
+                    if (tag.is_string()) {
+                        indexWords(tag.get<string>(), i);
+                    }
+                }
+            }
         }
     }
     
@@ -824,9 +932,11 @@ public:
         // Check if query is an ID (matches pattern)
         regex idPattern(R"(\d\.\d{5,6}[igxms])");
         if (regex_match(query, idPattern)) {
-            // ID-based search
+            // For ID queries, parse query as ParsedId; filterByIdProximity(query_parsed)
             ParsedId parsedQuery = parseId(query);
             vector<size_t> candidates = filterByIdProximity(parsedQuery);
+            
+            cout << "ID query detected, found " << candidates.size() << " proximity candidates" << endl;
             
             for (size_t i : candidates) {
                 const auto& entry = allEntries[i];
@@ -838,7 +948,7 @@ public:
                 result.idProximityScore = calculateIdProximity(parsedQuery, entry.parsedId, idExplanations);
                 result.matchReasons = idExplanations;
                 
-                // Light semantic and vector scoring
+                // Light semantic and vector scoring for ID queries
                 vector<float> queryEmbedding = embeddingEngine.getEmbedding(query);
                 result.vectorScore = embeddingEngine.computeSimilarity(queryEmbedding, entry.embedding);
                 result.textScore = 0.1f; // Minimal for ID search
@@ -1186,9 +1296,16 @@ public:
         cout << "=================================" << endl;
     }
     
-    // Test partial data handling
+    // Test partial data handling with enhanced validation
     void testPartialDataHandling() {
-        cout << "\n=== TESTING PARTIAL DATA HANDLING ===" << endl;
+        cout << "\n=== TESTING ENHANCED PARTIAL DATA HANDLING ===" << endl;
+        
+        // Add registry print
+        cout << "Current registry state:" << endl;
+        for (const auto& [key, value] : registry) {
+            cout << "  " << key << ": " << fixed << setprecision(3) << value << endl;
+        }
+        cout << "Registry keys count: " << registryKeys.size() << endl;
         
         // Mock entry with partial harmonics (len=2→med0.5)
         json mockEntry = {
@@ -1203,7 +1320,7 @@ public:
         unordered_map<string, float> testProps;
         extractPropertyVector(mockEntry, testProps, "pad");
         
-        cout << "Mock entry with partial harmonics (len=2):" << endl;
+        cout << "\nMock entry with partial harmonics (len=2):" << endl;
         cout << "Expected harmonicRichness: " << categoryDefaults["pad"]["harmonicRichness"] << " (pad category default)" << endl;
         cout << "Actual harmonicRichness: " << testProps["harmonicRichness"] << endl;
         
@@ -1211,7 +1328,7 @@ public:
         cout << "Actual transientSharpness: " << testProps["transientSharpness"] << endl;
         
         // Test registry vector appending
-        vector<float> mockEmbedding = {0.5f, 0.5f, 0.5f}; // Base embedding
+        vector<float> mockEmbedding = {0.5f, 0.5f, 0.5f}; // Base embedding (3 elements)
         
         // Append registry values (sorted for consistency)
         vector<string> sortedKeys = registryKeys;
@@ -1226,6 +1343,11 @@ public:
         
         cout << "Final embedding length: " << mockEmbedding.size() << " (3 base + " << sortedKeys.size() << " registry)" << endl;
         
+        // Assert vector size = registry size + base
+        size_t expectedSize = 3 + registry.size(); // 3 base + registry properties
+        assert(mockEmbedding.size() == expectedSize);
+        cout << "✓ PASS: Vector size matches expected (base + registry)" << endl;
+        
         if (testProps["harmonicRichness"] == categoryDefaults["pad"]["harmonicRichness"]) {
             cout << "✓ PASS: Partial harmonic data inferred from category default" << endl;
         } else {
@@ -1238,7 +1360,49 @@ public:
             cout << "✗ INFO: Transient inference may need refinement" << endl;
         }
         
-        cout << "=== PARTIAL DATA TESTING COMPLETE ===" << endl;
+        // Test new property auto-add
+        cout << "\nTesting new property auto-add:" << endl;
+        size_t initialRegistrySize = registry.size();
+        
+        json mockNewProp = {
+            {"newTestProperty", 0.6f},
+            {"harmonicContent", {
+                {"complexity", "medium"}
+            }}
+        };
+        
+        unordered_map<string, float> newPropTest;
+        extractPropertyVector(mockNewProp, newPropTest, "lead");
+        
+        // Assert new property was added
+        if (registry.count("newTestProperty")) {
+            assert(abs(registry["newTestProperty"] - 0.5f) < 0.1f); // Should use inferDefault
+            cout << "✓ PASS: New property auto-added to registry with default value" << endl;
+        } else {
+            cout << "✗ FAIL: New property not added to registry" << endl;
+        }
+        
+        if (registry.size() > initialRegistrySize) {
+            cout << "✓ PASS: Registry size increased from " << initialRegistrySize 
+                 << " to " << registry.size() << endl;
+        }
+        
+        // Test ID proximity search
+        cout << "\nTesting ID proximity search:" << endl;
+        string testIdQuery = "3.492534i";
+        ParsedId queryId = parseId(testIdQuery);
+        vector<size_t> proximateCandidates = filterByIdProximity(queryId);
+        
+        cout << "ID proximity search for '" << testIdQuery << "' found " 
+             << proximateCandidates.size() << " candidates" << endl;
+        
+        if (proximateCandidates.size() > 0) {
+            cout << "✓ PASS: ID proximity filtering working" << endl;
+        } else {
+            cout << "✗ INFO: No proximity candidates found (may be expected if no similar IDs)" << endl;
+        }
+        
+        cout << "=== ENHANCED PARTIAL DATA TESTING COMPLETE ===" << endl;
     }
     
     // Get clean config for rendering (only actual usable data)
