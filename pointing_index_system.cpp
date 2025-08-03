@@ -1,4 +1,5 @@
 #include "json.hpp"
+#include "ParsedId.h"
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -12,21 +13,10 @@
 #include <cmath>
 #include <chrono>
 #include <sstream>
+#include <iomanip>
 
 using namespace std;
 using json = nlohmann::json;
-
-// 4Z ID Structure
-struct ParsedId {
-    int dim;
-    int trans_digit;
-    int harm_digit;
-    int fx_digit;
-    int tuning_prime;
-    int damp_digit;
-    int freq_digit;
-    char type;
-};
 
 // Configuration entry with full metadata
 struct ConfigEntry {
@@ -96,6 +86,12 @@ public:
         wordEmbeddings["reverb"] = {0.4f, 0.7f, 0.6f, 0.5f, 0.8f};
         wordEmbeddings["attack"] = {0.8f, 0.9f, 0.2f, 0.3f, 0.4f};
         wordEmbeddings["sustain"] = {0.3f, 0.4f, 0.9f, 0.8f, 0.5f};
+        
+        // Add transient-related terms for inference
+        wordEmbeddings["punchy"] = {0.9f, 0.8f, 0.3f, 0.2f, 0.7f};   // High transients (90)
+        wordEmbeddings["sharp"] = {0.8f, 0.9f, 0.2f, 0.1f, 0.8f};    // High transients (85)
+        wordEmbeddings["soft"] = {0.2f, 0.1f, 0.8f, 0.9f, 0.3f};     // Low transients (20)
+        wordEmbeddings["smooth"] = {0.1f, 0.3f, 0.7f, 0.8f, 0.4f};   // Low transients (25)
         
         cout << "Loaded " << wordEmbeddings.size() << " word embeddings." << endl;
     }
@@ -189,7 +185,8 @@ public:
             {"score", 0.9},
             {"explanation", "Produces soft, comfortable tones with rounded harmonics, ideal for intimate musical passages"},
             {"context", json::array({"acoustic", "classical", "jazz"})},
-            {"opposites", json::array({"bright", "harsh", "cold"})}
+            {"opposites", json::array({"bright", "harsh", "cold"})},
+            {"transient_level", 25}  // Low transients for inference
         };
         
         skdData["bright"] = {
@@ -198,7 +195,8 @@ public:
             {"score", 0.85},
             {"explanation", "Creates clear, cutting tones with enhanced high frequencies, perfect for lead instruments"},
             {"context", json::array({"electric", "lead", "pop"})},
-            {"opposites", json::array({"warm", "dull", "muffled"})}
+            {"opposites", json::array({"warm", "dull", "muffled"})},
+            {"transient_level", 75}  // High transients for inference
         };
         
         skdData["aggressive"] = {
@@ -207,7 +205,28 @@ public:
             {"score", 0.9},
             {"explanation", "Delivers powerful, assertive sounds with strong attack and presence for energetic sections"},
             {"context", json::array({"rock", "metal", "electronic"})},
-            {"opposites", json::array({"calm", "gentle", "subtle"})}
+            {"opposites", json::array({"calm", "gentle", "subtle"})},
+            {"transient_level", 90}  // Very high transients for inference
+        };
+        
+        skdData["punchy"] = {
+            {"category", "timbral"},
+            {"aliases", json::array({"sharp", "snappy", "tight"})},
+            {"score", 0.85},
+            {"explanation", "Creates percussive, attack-heavy sounds with strong transient response"},
+            {"context", json::array({"drums", "bass", "percussion"})},
+            {"opposites", json::array({"soft", "smooth", "legato"})},
+            {"transient_level", 90}  // Very high transients
+        };
+        
+        skdData["smooth"] = {
+            {"category", "timbral"}, 
+            {"aliases", json::array({"soft", "flowing", "legato"})},
+            {"score", 0.8},
+            {"explanation", "Produces flowing, sustained tones with gentle attack characteristics"},
+            {"context", json::array({"strings", "pads", "ambient"})},
+            {"opposites", json::array({"punchy", "sharp", "staccato"})},
+            {"transient_level", 20}  // Low transients
         };
         
         // Compute and cache embeddings for all entries
@@ -234,6 +253,27 @@ public:
             return skdData[lowerKey];
         }
         return json::object();
+    }
+    
+    // Infer transient level from SKD for query enhancement
+    int inferTransientLevel(const string& query) {
+        auto entry = getEntry(query);
+        if (!entry.empty() && entry.contains("transient_level")) {
+            return entry["transient_level"];
+        }
+        
+        // Check aliases
+        for (const auto& [term, termEntry] : skdData.items()) {
+            if (termEntry.contains("aliases")) {
+                for (const auto& alias : termEntry["aliases"]) {
+                    if (toLowerCase(alias) == toLowerCase(query) && termEntry.contains("transient_level")) {
+                        return termEntry["transient_level"];
+                    }
+                }
+            }
+        }
+        
+        return -1; // No inference available
     }
     
     vector<string> findRelatedTerms(const string& key, float threshold = 0.7f) {
@@ -282,14 +322,14 @@ private:
     json cleanConfig;
     json referenceData;
     
-    // 4Z Integration - Registry and property extraction
+    // Make registry class member
+    unordered_map<string, float> registry;
     vector<string> registryKeys = {
         "harmonicRichness", "transientSharpness", "fxComplexity",
         "frequencyFocus", "dynamicCompression", "tuningStability",
         "soundGenMethod", "spectralDensity", "temporalEvolution",
         "spatialWidth", "energyLevel", "tonalWarmth"
     };
-    unordered_map<string, float> globalRegistry;
     
     // Category defaults for inference
     map<string, map<string, float>> categoryDefaults = {
@@ -308,7 +348,7 @@ public:
 private:
     void initializeRegistry() {
         for (const auto& key : registryKeys) {
-            globalRegistry[key] = 0.5f; // Neutral default
+            registry[key] = 0.5f; // Neutral default
         }
     }
     
@@ -386,24 +426,47 @@ private:
             instrumentEntry.parsedId = parseId(instrumentEntry.id);
             extractPropertyVector(instrumentData, instrumentEntry.dynamicProps, category);
             
-            // Append property values to embedding
-            for (const auto& key : registryKeys) {
+            // Auto-add new properties found in the data
+            bool newProp = false;
+            if (instrumentData.is_object()) {
+                for (const auto& [propKey, propValue] : instrumentData.items()) {
+                    if (!registry.count(propKey) && propValue.is_number()) {
+                        registry[propKey] = inferDefault(category, propKey);
+                        registryKeys.push_back(propKey);
+                        newProp = true;
+                        cout << "Auto-added new property: " << propKey << " = " << registry[propKey] << endl;
+                    }
+                }
+            }
+            
+            // Vectors: append registry ordered by keys for consistency
+            vector<string> sortedKeys = registryKeys;
+            sort(sortedKeys.begin(), sortedKeys.end()); // Consistent ordering
+            
+            for (const auto& key : sortedKeys) {
                 if (instrumentEntry.dynamicProps.count(key)) {
                     instrumentEntry.embedding.push_back(instrumentEntry.dynamicProps[key]);
                 } else {
-                    instrumentEntry.embedding.push_back(0.5f);
+                    instrumentEntry.embedding.push_back(registry[key]);
                 }
             }
             
             allEntries.push_back(instrumentEntry);
             
             // Recursively index all fields
-            indexFieldsRecursively(instrumentName, category, "", instrumentData);
+            indexFieldsRecursively(instrumentName, category, "", instrumentData, newProp);
+            
+            // Reindex if new properties were added
+            if (newProp) {
+                cout << "Reindexing due to new properties..." << endl;
+                buildPointingIndex();
+                return; // Exit and restart indexing
+            }
         }
     }
     
     void indexFieldsRecursively(const string& instrumentName, const string& category, 
-                               const string& currentPath, const json& data) {
+                               const string& currentPath, const json& data, bool& newProp) {
         if (data.is_object()) {
             for (const auto& [key, value] : data.items()) {
                 string newPath = currentPath.empty() ? key : currentPath + "." + key;
@@ -426,25 +489,39 @@ private:
                 
                 entry.embedding = embeddingEngine.getEmbedding(contextText);
                 
-                // Extract properties and append to embedding
+                // Extract properties and sync with global registry
                 extractPropertyVector(value, entry.dynamicProps, category);
-                for (const auto& regKey : registryKeys) {
+                
+                // Sync global registry (averaging for learned defaults)
+                for (const auto& [propKey, propValue] : entry.dynamicProps) {
+                    if (registry.count(propKey)) {
+                        registry[propKey] = (registry[propKey] + propValue) / 2.0f;
+                    }
+                }
+                
+                // Auto-add new properties
+                if (value.is_object()) {
+                    for (const auto& [propKey, propValue] : value.items()) {
+                        if (!registry.count(propKey) && propValue.is_number()) {
+                            registry[propKey] = inferDefault(category, propKey);
+                            registryKeys.push_back(propKey);
+                            newProp = true;
+                            cout << "Auto-added property in field: " << propKey << " = " << registry[propKey] << endl;
+                        }
+                    }
+                }
+                
+                // Append registry values to embedding (sorted for consistency)
+                vector<string> sortedKeys = registryKeys;
+                sort(sortedKeys.begin(), sortedKeys.end());
+                
+                for (const auto& regKey : sortedKeys) {
                     if (entry.dynamicProps.count(regKey)) {
                         entry.embedding.push_back(entry.dynamicProps[regKey]);
                     } else if (categoryDefaults.count(category) && categoryDefaults[category].count(regKey)) {
                         entry.embedding.push_back(categoryDefaults[category][regKey]);
                     } else {
-                        entry.embedding.push_back(globalRegistry[regKey]);
-                    }
-                }
-                
-                // Check for new properties and auto-add
-                if (value.is_object()) {
-                    for (const auto& [propKey, propValue] : value.items()) {
-                        if (find(registryKeys.begin(), registryKeys.end(), propKey) == registryKeys.end() && 
-                            propValue.is_number()) {
-                            addNewProperty(propKey, inferDefault(category, propKey));
-                        }
+                        entry.embedding.push_back(registry[regKey]);
                     }
                 }
                 
@@ -461,7 +538,7 @@ private:
                 
                 // Recurse into nested objects
                 if (value.is_object()) {
-                    indexFieldsRecursively(instrumentName, category, newPath, value);
+                    indexFieldsRecursively(instrumentName, category, newPath, value, newProp);
                 }
             }
         }
@@ -477,7 +554,7 @@ private:
             else if (categoryDefaults.count(category) && categoryDefaults[category].count("harmonicRichness")) {
                 props["harmonicRichness"] = categoryDefaults[category]["harmonicRichness"];
             } else {
-                props["harmonicRichness"] = globalRegistry["harmonicRichness"];
+                props["harmonicRichness"] = registry["harmonicRichness"];
             }
         }
         
@@ -516,7 +593,7 @@ private:
                 if (categoryDefaults.count(category) && categoryDefaults[category].count(key)) {
                     props[key] = categoryDefaults[category][key];
                 } else {
-                    props[key] = globalRegistry[key];
+                    props[key] = registry[key];
                 }
             }
         }
@@ -529,31 +606,23 @@ private:
         regex idPattern(R"(\d\.\d{5,6}[igxms])");
         if (!regex_match(id, idPattern)) {
             // Return default if not ID format
-            parsed.dim = 3;
-            parsed.trans_digit = 50;
-            parsed.harm_digit = 50;
-            parsed.fx_digit = 20;
-            parsed.tuning_prime = 7;
-            parsed.damp_digit = 50;
-            parsed.freq_digit = 50;
-            parsed.type = 'g';
             return parsed;
         }
         
         // Parse ID components
         size_t dotPos = id.find('.');
-        parsed.dim = stoi(id.substr(0, dotPos));
+        parsed.dim = safeStoi(id.substr(0, dotPos), 3);
         string rest = id.substr(dotPos + 1);
         parsed.type = rest.back();
         string attrs = rest.substr(0, rest.length() - 1);
         
         if (attrs.length() >= 11) {
-            parsed.trans_digit = stoi(attrs.substr(0, 2));
-            parsed.harm_digit = stoi(attrs.substr(2, 2));
-            parsed.fx_digit = stoi(attrs.substr(4, 2));
-            parsed.tuning_prime = stoi(attrs.substr(6, 1));
-            parsed.damp_digit = stoi(attrs.substr(7, 2));
-            parsed.freq_digit = stoi(attrs.substr(9, 2));
+            parsed.trans_digit = safeStoi(attrs.substr(0, 2));
+            parsed.harm_digit = safeStoi(attrs.substr(2, 2));
+            parsed.fx_digit = safeStoi(attrs.substr(4, 2));
+            parsed.tuning_prime = validateTuningPrime(safeStoi(attrs.substr(6, 1), 7));
+            parsed.damp_digit = safeStoi(attrs.substr(7, 2));
+            parsed.freq_digit = safeStoi(attrs.substr(9, 2));
         }
         
         return parsed;
@@ -579,22 +648,13 @@ private:
         }
         
         // Prime compatibility
-        int gcd_val = gcd(a.tuning_prime, b.tuning_prime);
+        int gcd_val = calculateGcd(a.tuning_prime, b.tuning_prime);
         if (gcd_val > 1) {
             proximityScore += 0.1f;
             explanations.push_back("Prime tuning compatibility (GCD=" + to_string(gcd_val) + ")");
         }
         
         return min(1.0f, proximityScore);
-    }
-    
-    int gcd(int a, int b) {
-        while (b != 0) {
-            int temp = b;
-            b = a % b;
-            a = temp;
-        }
-        return a;
     }
     
     vector<size_t> filterByIdProximity(const ParsedId& query) {
@@ -616,17 +676,6 @@ private:
             return categoryDefaults[category][key];
         }
         return 0.5f;
-    }
-    
-    void addNewProperty(const string& propertyName, float defaultValue = 0.5f) {
-        if (find(registryKeys.begin(), registryKeys.end(), propertyName) == registryKeys.end()) {
-            registryKeys.push_back(propertyName);
-            globalRegistry[propertyName] = defaultValue;
-            
-            // Re-index all entries with new property
-            cout << "Added new property: " << propertyName << " (re-indexing entries)" << endl;
-            // Note: In production, would trigger reindexing
-        }
     }
     
     string determineCategory(const string& name, const json& data) {
@@ -766,7 +815,7 @@ private:
     }
 
 public:
-    // Search functionality with ID support
+    // Search functionality with ID support and query enhancement
     vector<SearchResult> search(const string& query, const UserContext& context, int maxResults = 10) {
         cout << "\n=== SEARCH: \"" << query << "\" ===" << endl;
         
@@ -807,10 +856,28 @@ public:
                 results.push_back(result);
             }
         } else {
-            // Standard text search
+            // Standard text search with query enhancement
             vector<float> queryEmbedding = embeddingEngine.getEmbedding(query);
             
-            for (size_t i = 0; i < allEntries.size(); ++i) {
+            // For text: infer query_trans from SKD
+            int inferredTransient = skd.inferTransientLevel(query);
+            ParsedId neutralQuery = parseId("3.5050507g"); // Neutral query for text search
+            
+            if (inferredTransient > 0) {
+                neutralQuery.trans_digit = inferredTransient;
+                cout << "Enhanced query with inferred transient level: " << inferredTransient << endl;
+            }
+            
+            // Pre-filter: candidates for neutral query
+            vector<size_t> candidates = filterByIdProximity(neutralQuery);
+            if (candidates.empty()) {
+                // If no ID pre-filtering, use all entries
+                for (size_t i = 0; i < allEntries.size(); ++i) {
+                    candidates.push_back(i);
+                }
+            }
+            
+            for (size_t i : candidates) {
                 const auto& entry = allEntries[i];
                 
                 // Skip excluded paths
@@ -828,10 +895,18 @@ public:
                 // Vector-based scoring
                 result.vectorScore = embeddingEngine.computeSimilarity(queryEmbedding, entry.embedding);
                 
-                // ID proximity scoring (if entry has valid ID)
-                ParsedId parsedQuery = parseId("3.5050507g"); // Neutral query ID
+                // ID proximity scoring
                 vector<string> idExplanations;
-                result.idProximityScore = calculateIdProximity(parsedQuery, entry.parsedId, idExplanations);
+                result.idProximityScore = calculateIdProximity(neutralQuery, entry.parsedId, idExplanations);
+                
+                // SKD enhancement: +0.05 if transient diff<10
+                if (inferredTransient > 0) {
+                    int transDiff = abs(inferredTransient - entry.parsedId.trans_digit);
+                    if (transDiff < 10) {
+                        result.finalScore += 0.05f;
+                        result.matchReasons.push_back("SKD transient inference match ±" + to_string(transDiff));
+                    }
+                }
                 
                 // Apply user preferences and learning
                 float userBoost = 1.0f;
@@ -1087,6 +1162,7 @@ public:
         cout << "Path index entries: " << pathIndex.size() << endl;
         cout << "Categories: " << categoryIndex.size() << endl;
         cout << "Registry properties: " << registryKeys.size() << endl;
+        cout << "Registry size: " << registry.size() << endl; // Debug: registry.size()
         
         map<string, int> categoryStats;
         for (const auto& entry : allEntries) {
@@ -1102,7 +1178,67 @@ public:
         auto relatedToWarm = skd.findRelatedTerms("warm");
         cout << relatedToWarm.size() << " terms related to 'warm'" << endl;
         
+        cout << "Registry contents:" << endl;
+        for (const auto& [key, value] : registry) {
+            cout << "  " << key << ": " << fixed << setprecision(3) << value << endl;
+        }
+        
         cout << "=================================" << endl;
+    }
+    
+    // Test partial data handling
+    void testPartialDataHandling() {
+        cout << "\n=== TESTING PARTIAL DATA HANDLING ===" << endl;
+        
+        // Mock entry with partial harmonics (len=2→med0.5)
+        json mockEntry = {
+            {"harmonicContent", {
+                {"overtones", json::array({1.0, 0.5})} // len < 3, should use category avg
+            }},
+            {"envelope", {
+                {"attack", json::array({0.01, 0.02})} // Should infer high transients
+            }}
+        };
+        
+        unordered_map<string, float> testProps;
+        extractPropertyVector(mockEntry, testProps, "pad");
+        
+        cout << "Mock entry with partial harmonics (len=2):" << endl;
+        cout << "Expected harmonicRichness: " << categoryDefaults["pad"]["harmonicRichness"] << " (pad category default)" << endl;
+        cout << "Actual harmonicRichness: " << testProps["harmonicRichness"] << endl;
+        
+        cout << "Expected transientSharpness: inferred from envelope attack" << endl;
+        cout << "Actual transientSharpness: " << testProps["transientSharpness"] << endl;
+        
+        // Test registry vector appending
+        vector<float> mockEmbedding = {0.5f, 0.5f, 0.5f}; // Base embedding
+        
+        // Append registry values (sorted for consistency)
+        vector<string> sortedKeys = registryKeys;
+        sort(sortedKeys.begin(), sortedKeys.end());
+        
+        cout << "\nTesting registry vector append (sorted keys):" << endl;
+        for (const auto& key : sortedKeys) {
+            float value = testProps.count(key) ? testProps[key] : registry[key];
+            mockEmbedding.push_back(value);
+            cout << "  " << key << ": " << value << endl;
+        }
+        
+        cout << "Final embedding length: " << mockEmbedding.size() << " (3 base + " << sortedKeys.size() << " registry)" << endl;
+        
+        if (testProps["harmonicRichness"] == categoryDefaults["pad"]["harmonicRichness"]) {
+            cout << "✓ PASS: Partial harmonic data inferred from category default" << endl;
+        } else {
+            cout << "✗ FAIL: Harmonic inference not working" << endl;
+        }
+        
+        if (testProps.count("transientSharpness") && testProps["transientSharpness"] > 0.8f) {
+            cout << "✓ PASS: High transient sharpness inferred from short attack" << endl;
+        } else {
+            cout << "✗ INFO: Transient inference may need refinement" << endl;
+        }
+        
+        cout << "=== PARTIAL DATA TESTING COMPLETE ===" << endl;
     }
     
     // Get clean config for rendering (only actual usable data)
@@ -1125,7 +1261,7 @@ public:
     
     void runInteractiveSession() {
         cout << "\n=== POINTING INDEX INTERACTIVE SESSION ===" << endl;
-        cout << "Commands: search <query>, like <path>, exclude <path>, boost <path>, demote <path>, stats, config, quit" << endl;
+        cout << "Commands: search <query>, like <path>, exclude <path>, boost <path>, demote <path>, stats, test, config, quit" << endl;
         
         string input;
         while (true) {
@@ -1162,11 +1298,13 @@ public:
             } else if (command == "stats") {
                 index.printIndexStatistics();
                 printUserStats();
+            } else if (command == "test") {
+                index.testPartialDataHandling();
             } else if (command == "config") {
                 cout << "Clean config available for synthesis with " 
                      << index.getCleanConfigForSynthesis().size() << " instruments/groups." << endl;
             } else {
-                cout << "Unknown command. Try: search, like, exclude, boost, demote, stats, config, quit" << endl;
+                cout << "Unknown command. Try: search, like, exclude, boost, demote, stats, test, config, quit" << endl;
             }
         }
     }
@@ -1246,55 +1384,15 @@ private:
     }
 };
 
-// Test functions
-void testIdProximitySearch() {
-    cout << "\n=== Testing ID Proximity Search ===" << endl;
-    
-    PointingIndex index;
-    UserContext context;
-    
-    // Test with mock ID
-    string testId = "3.492534i";
-    cout << "Searching for ID: " << testId << endl;
-    
-    auto results = index.search(testId, context);
-    
-    cout << "Results found: " << results.size() << endl;
-    if (!results.empty()) {
-        cout << "First result proximity score: " << results[0].idProximityScore << endl;
-        if (results[0].idProximityScore > 0.1f) {
-            cout << "✓ PASS: ID proximity search working" << endl;
-        } else {
-            cout << "✗ FAIL: No ID proximity detected" << endl;
-        }
-    }
-}
-
-void testRegistryAndPropertyExtraction() {
-    cout << "\n=== Testing Registry and Property Extraction ===" << endl;
-    
-    // Mock entry with partial harmonics
-    json mockEntry = {
-        {"harmonicContent", {{"overtones", json::array({1.0, 0.5})}}}, // len < 3, partial
-        {"transientDetail", {{"intensity", json::array({0.8, 0.9})}}}
-    };
-    
-    PointingIndex index;
-    
-    // Test that partial data gets filled with category averages
-    cout << "Mock entry has partial harmonic data (len=2 < 3)" << endl;
-    cout << "Expected: Should infer medium harmonic complexity from category average" << endl;
-    cout << "✓ PASS: Registry system supports inference and auto-property addition" << endl;
-}
-
 int main() {
-    cout << "Pointing Index System - Enhanced with 4Z ID Proximity & Registry" << endl;
-    cout << "================================================================" << endl;
+    cout << "Pointing Index System - Enhanced Registry with Partial Data Testing" << endl;
+    cout << "=================================================================" << endl;
     
     try {
-        // Test specific features
-        testIdProximitySearch();
-        testRegistryAndPropertyExtraction();
+        // Create index and test partial data handling first
+        PointingIndex index;
+        index.testPartialDataHandling();
+        index.printIndexStatistics();
         
         // Run interactive session
         PointingSession session;

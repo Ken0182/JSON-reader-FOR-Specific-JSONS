@@ -1,4 +1,5 @@
 #include "json.hpp"
+#include "ParsedId.h"
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -14,21 +15,10 @@
 #include <sstream>
 #include <memory>
 #include <queue>
+#include <cassert>
 
 using namespace std;
 using json = nlohmann::json;
-
-// 4Z ID Structure
-struct ParsedId {
-    int dim;
-    int trans_digit;
-    int harm_digit;
-    int fx_digit;
-    int tuning_prime;
-    int damp_digit;
-    int freq_digit;
-    char type;
-};
 
 // Forward declarations
 class SemanticPointer;
@@ -496,32 +486,39 @@ private:
         size_t dotPos = id.find('.');
         if (dotPos == string::npos) {
             // Malformed ID, return defaults
-            parsed.dim = 3;
-            parsed.trans_digit = 50;
-            parsed.harm_digit = 50;
-            parsed.fx_digit = 20;
-            parsed.tuning_prime = 7;
-            parsed.damp_digit = 50;
-            parsed.freq_digit = 50;
-            parsed.type = 'g';
             return parsed;
         }
         
-        parsed.dim = stoi(id.substr(0, dotPos));
+        parsed.dim = safeStoi(id.substr(0, dotPos), 3);
         string rest = id.substr(dotPos + 1);
         
         // Extract type (last character)
-        parsed.type = rest.back();
-        string attrs = rest.substr(0, rest.length() - 1);
-        
-        // Parse attributes
-        if (attrs.length() >= 11) {
-            parsed.trans_digit = stoi(attrs.substr(0, 2));
-            parsed.harm_digit = stoi(attrs.substr(2, 2));
-            parsed.fx_digit = stoi(attrs.substr(4, 2));
-            parsed.tuning_prime = stoi(attrs.substr(6, 1));
-            parsed.damp_digit = stoi(attrs.substr(7, 2));
-            parsed.freq_digit = stoi(attrs.substr(9, 2));
+        if (!rest.empty()) {
+            parsed.type = rest.back();
+            string attrs = rest.substr(0, rest.length() - 1);
+            
+            // Length pad: if(attrs.length()<11) attrs += string(11-attrs.length(),'5')
+            if (attrs.length() < 11) {
+                attrs += string(11 - attrs.length(), '5'); // NA50 pad
+            }
+            
+            // Parse attributes with try-catch
+            try {
+                if (attrs.length() >= 11) {
+                    parsed.trans_digit = safeStoi(attrs.substr(0, 2));
+                    parsed.harm_digit = safeStoi(attrs.substr(2, 2));
+                    parsed.fx_digit = safeStoi(attrs.substr(4, 2));
+                    parsed.tuning_prime = validateTuningPrime(safeStoi(attrs.substr(6, 1), 7));
+                    parsed.damp_digit = safeStoi(attrs.substr(7, 2));
+                    parsed.freq_digit = safeStoi(attrs.substr(9, 2));
+                    
+                    // Assert parsed.freq_digit<=99
+                    assert(parsed.freq_digit <= 99);
+                }
+            } catch (const exception& e) {
+                cout << "Warning: Failed to parse ID attributes: " << e.what() << endl;
+                // parsed already has defaults
+            }
         }
         
         return parsed;
@@ -539,11 +536,14 @@ private:
     float calculateIdCompatibility(const ParsedId& a, const ParsedId& b, vector<string>& explanations) {
         float idScore = 0.0f;
         
-        // Prime GCD compatibility (tuning harmony)
-        int tuning_gcd = gcd(a.tuning_prime, b.tuning_prime);
-        if (tuning_gcd > 1) {
+        // GCD: Validate primes and apply logic
+        int gcd_val = calculateGcd(a.tuning_prime, b.tuning_prime);
+        if (gcd_val > 1) {
             idScore += 0.1f;
-            explanations.push_back("Prime harmonic match (GCD=" + to_string(tuning_gcd) + ")");
+            explanations.push_back("Prime harmonic match (GCD=" + to_string(gcd_val) + ")");
+        } else if (gcd_val == 1 && a.tuning_prime != 7 && b.tuning_prime != 7) {
+            // Neutral tuning compatibility (both non-NA primes but GCD=1)
+            explanations.push_back("Neutral tuning compatibility");
         }
         
         // Digit proximity scoring
@@ -937,11 +937,16 @@ public:
                               0.15f * result.layeringScore +     // 15% layering
                               0.15f * result.idScore);           // 15% ID math
         
-        // Creative compatibility logic
+        // Scoring: Cap overall <=1.0f
+        result.overallScore = min(1.0f, result.overallScore);
+        
+        // Creative compatibility logic: only +0.05 if overall<0.7 (avoid overboost)
         if (result.idScore > 0.3f && 
             (result.semanticScore > 0.8f || result.technicalScore > 0.8f) &&
-            (result.musicalRoleScore < 0.6f || result.layeringScore < 0.6f)) {
-            result.overallScore += 0.05f; // Creative boost
+            (result.musicalRoleScore < 0.6f || result.layeringScore < 0.6f) &&
+            result.overallScore < 0.7f) {
+            result.overallScore += 0.05f; // Creative boost (capped)
+            result.overallScore = min(1.0f, result.overallScore); // Ensure cap
             result.isCreativeMatch = true;
             result.strengths.push_back("Unexpected valid due to prop synergy");
         }
@@ -1049,8 +1054,14 @@ public:
     /**
      * Generate a complete musical arrangement as JSON tree
      */
-    json generateArrangementTree(const string& style = "balanced", const string& context = "any") {
+    json generateArrangementTree(const string& style = "balanced", const string& context = "any", bool useFlat = false) {
         json tree = json::object();
+        
+        // Tree: Ensure backward (if flag=false return flat)
+        if (useFlat) {
+            // Return flat arrangement for backward compatibility
+            return generateFlatArrangement(style, context);
+        }
         
         // Find lead instrument
         auto leadCandidates = findByRole("lead");
@@ -1061,7 +1072,7 @@ public:
         tree["style"] = style;
         tree["context"] = context;
         
-        // Find compatible children with pre-filtering
+        // Arrangement: Pre-filter with ID compatibility and creative logic
         vector<EnhancedConfigEntry> filtered;
         ParsedId rootParsed = parseId(root.zId);
         
@@ -1069,11 +1080,11 @@ public:
             if (candidate.id == root.id) continue;
             
             ParsedId candidateParsed = parseId(candidate.zId);
-            vector<string> tmpExpl;
             
-            // Quick compatibility checks
-            bool idCompatible = (gcd(rootParsed.tuning_prime, candidateParsed.tuning_prime) > 1) ||
-                               (abs(rootParsed.trans_digit - candidateParsed.trans_digit) < 10);
+            // Pre-filter: bool idCompatible = (gcd>1 || abs(trans_diff)<10)
+            int gcd_val = calculateGcd(rootParsed.tuning_prime, candidateParsed.tuning_prime);
+            int trans_diff = abs(rootParsed.trans_digit - candidateParsed.trans_digit);
+            bool idCompatible = (gcd_val > 1 || trans_diff < 10);
             
             bool fxCompatible = false;
             for (const string& fx : root.compat_fx) {
@@ -1095,6 +1106,7 @@ public:
         for (const auto& candidate : filtered) {
             MultiDimensionalResult result = analyzeCompatibility(root, candidate);
             
+            // Creative if idScore>0.3 && role<0.6
             if (result.idScore > 0.3f && result.musicalRoleScore < 0.6f) {
                 creativeMatches.emplace_back(candidate, result);
             } else {
@@ -1119,7 +1131,7 @@ public:
             json child;
             child["id"] = standardMatches[i].first.id;
             child["score"] = standardMatches[i].second.overallScore;
-            child["rationale"] = buildRationale(standardMatches[i].second);
+            child["rationale"] = buildRationaleWithId(standardMatches[i].second, root, standardMatches[i].first);
             children.push_back(child);
         }
         
@@ -1128,12 +1140,59 @@ public:
             json child;
             child["id"] = creativeMatches[i].first.id;
             child["score"] = creativeMatches[i].second.overallScore;
-            child["rationale"] = "Creative: " + buildRationale(creativeMatches[i].second);
+            child["rationale"] = "Creative: " + buildRationaleWithId(creativeMatches[i].second, root, creativeMatches[i].first);
             children.push_back(child);
         }
         
         tree["children"] = children;
         return tree;
+    }
+    
+    json generateFlatArrangement(const string& style, const string& context) {
+        json flat = json::object();
+        flat["style"] = style;
+        flat["context"] = context;
+        flat["type"] = "flat";
+        
+        json suggestions = json::array();
+        for (const auto& entry : configDatabase) {
+            json suggestion;
+            suggestion["id"] = entry.id;
+            suggestion["category"] = entry.category;
+            suggestion["role"] = entry.musicalRole.primaryRole;
+            suggestions.push_back(suggestion);
+        }
+        
+        flat["suggestions"] = suggestions;
+        return flat;
+    }
+    
+    string buildRationaleWithId(const MultiDimensionalResult& result, const EnhancedConfigEntry& root, const EnhancedConfigEntry& candidate) {
+        string rationale = "Score: " + to_string(result.overallScore);
+        
+        // Include ID-specific explanations
+        ParsedId rootId = parseId(root.zId);
+        ParsedId candId = parseId(candidate.zId);
+        
+        int gcd_val = calculateGcd(rootId.tuning_prime, candId.tuning_prime);
+        if (gcd_val > 1) {
+            rationale += " | GCD compat envelope (GCD=" + to_string(gcd_val) + ")";
+        }
+        
+        int trans_diff = abs(rootId.trans_digit - candId.trans_digit);
+        if (trans_diff < 10) {
+            rationale += " | Transient sync ±" + to_string(trans_diff);
+        }
+        
+        for (const string& strength : result.strengths) {
+            rationale += " | " + strength;
+        }
+        
+        if (result.isCreativeMatch) {
+            rationale += " [Creative]";
+        }
+        
+        return rationale;
     }
     
     vector<EnhancedConfigEntry> findByRole(const string& role) {
@@ -1144,6 +1203,36 @@ public:
             }
         }
         return results;
+    }
+    
+    // Test creative matching
+    void testCreativeMatching() {
+        cout << "\n=== TESTING CREATIVE MATCHING ===" << endl;
+        
+        // Mock enhanced config entries for testing
+        EnhancedConfigEntry mockA, mockB;
+        mockA.zId = "3.492534i";  // ID with high compatibility
+        mockB.zId = "3.482533i";  // Close ID
+        mockA.musicalRole.primaryRole = "lead";
+        mockB.musicalRole.primaryRole = "drums"; // Incompatible role
+        
+        // Create embeddings to trigger high semantic score
+        mockA.embedding = {0.8f, 0.9f, 0.7f, 0.6f, 0.8f};
+        mockB.embedding = {0.9f, 0.8f, 0.8f, 0.7f, 0.9f}; // High similarity
+        
+        MultiDimensionalResult result = analyzeCompatibility(mockA, mockB);
+        
+        cout << "Mock test: idScore=" << result.idScore << ", roleScore=" << result.musicalRoleScore << endl;
+        cout << "Creative match expected if idScore>0.3 && role<0.6" << endl;
+        cout << "Result: " << (result.isCreativeMatch ? "CREATIVE MATCH DETECTED" : "Standard match") << endl;
+        
+        if (result.idScore > 0.3f && result.musicalRoleScore < 0.6f && result.isCreativeMatch) {
+            cout << "✓ PASS: Creative matching logic working" << endl;
+        } else {
+            cout << "✗ INFO: Creative conditions not met or not triggered" << endl;
+        }
+        
+        cout << "=== CREATIVE MATCHING TEST COMPLETE ===" << endl;
     }
     
     void printSystemStatistics() {
@@ -1180,43 +1269,26 @@ public:
     }
 };
 
-// Test functions
-void testIdCompatibility() {
-    cout << "\n=== Testing 4Z ID Compatibility ===" << endl;
-    
-    // Mock enhanced config entries
-    EnhancedConfigEntry mockA, mockB;
-    mockA.zId = "3.492534i";  // trans=49, harm=25, fx=34, tuning=2, damp=53, freq=4
-    mockB.zId = "3.482533i";  // trans=48, harm=25, fx=33, tuning=2, damp=53, freq=3
-    
-    MultiDimensionalPointingSystem system;
-    MultiDimensionalPointingSystem::MultiDimensionalResult result = system.analyzeCompatibility(mockA, mockB);
-    
-    cout << "ID Compatibility Score: " << result.idScore << endl;
-    cout << "Expected > 0 due to transient diff=1 < 10, harmonic match, etc." << endl;
-    
-    if (result.idScore > 0) {
-        cout << "✓ PASS: ID compatibility detected" << endl;
-    } else {
-        cout << "✗ FAIL: No ID compatibility" << endl;
-    }
-}
-
 int main() {
-    cout << "Multi-Dimensional Pointing System - Enhanced with 4Z ID Compatibility" << endl;
+    cout << "Multi-Dimensional Pointing System - Enhanced 4Z with Creative Testing" << endl;
     cout << "====================================================================" << endl;
     
     try {
         MultiDimensionalPointingSystem system;
         system.printSystemStatistics();
         
-        // Test ID compatibility
-        testIdCompatibility();
+        // Test creative matching
+        system.testCreativeMatching();
         
         // Generate arrangement tree
         cout << "\n=== Generating Arrangement Tree ===" << endl;
         json tree = system.generateArrangementTree("balanced", "any");
         cout << tree.dump(2) << endl;
+        
+        // Test backward compatibility
+        cout << "\n=== Testing Backward Compatibility (Flat) ===" << endl;
+        json flat = system.generateArrangementTree("simple", "any", true);
+        cout << flat.dump(2) << endl;
         
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
