@@ -20,23 +20,22 @@ using namespace audio_config;
  */
 void printWelcome() {
     std::cout << R"(
-╔════════════════════════════════════════════════════════════════╗
-║          Multi-Dimensional Audio Configuration System          ║
-║                     Professional Edition v1.0                 ║
-╚════════════════════════════════════════════════════════════════╝
+============================================================
+ Multi-Dimensional Audio Configuration System - Console View
+============================================================
 
-🎵 4D Pointing Dimensions:
-   • Semantic: Embedding/tag similarity (FastText 100D)
-   • Technical: Sample rate, plugin format, envelope compatibility  
-   • Musical Role: Lead, bass, pad, FX classification
-   • Layering: Frequency, stereo, prominence analysis
+4D Pointing Dimensions:
+  - Semantic: Embedding/tag similarity (FastText 100D)
+  - Technical: Sample rate, plugin format, envelope compatibility
+  - Musical Role: Lead, bass, pad, FX classification
+  - Layering: Frequency, stereo, prominence analysis
 
-🎯 Key Features:
-   • Real-world DAW compatibility validation
-   • AI-driven configuration assembly
-   • Comprehensive explainability
-   • Interactive CLI with learning
-   
+Key Features:
+  - Real-world DAW compatibility validation
+  - AI-driven configuration assembly
+  - Explainable recommendations
+  - Interactive CLI with learning
+
 Type 'help' for commands or 'examples' for usage patterns.
 )" << std::endl;
 }
@@ -63,7 +62,7 @@ int main(int /* argc */, char* /* argv */[]) {
         // Run interactive CLI
         system->runInteractiveCLI();
         
-        std::cout << "\n🎵 Thank you for using the Multi-Dimensional Audio Configuration System!" << std::endl;
+        std::cout << "\nThank you for using the Multi-Dimensional Audio Configuration System." << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "❌ Fatal error: " << e.what() << std::endl;

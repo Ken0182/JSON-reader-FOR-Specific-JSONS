@@ -442,6 +442,7 @@ private:
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
+    void handleCompleteCommand(const std::vector<std::string>& args);
     
     // Helper methods
     void loadConfigurationDatabase(const std::string& configPath);
