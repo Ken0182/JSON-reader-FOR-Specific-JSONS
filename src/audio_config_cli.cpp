@@ -275,11 +275,13 @@ bool AudioConfigSystem::generateSynthesisConfiguration(const std::string& output
 void AudioConfigSystem::runInteractiveCLI() {
     std::string input;
     
-    std::cout << "\n🎹 Welcome to the Interactive CLI!" << std::endl;
+    std::cout << "\n============================================================" << std::endl;
+    std::cout << "  Interactive Console - Multi-Dimensional Audio Config CLI" << std::endl;
+    std::cout << "============================================================\n" << std::endl;
     std::cout << "Type 'help' for available commands or 'examples' for usage patterns.\n" << std::endl;
     
     while (true) {
-        std::cout << "🎵 > ";
+        std::cout << "> ";
         std::getline(std::cin, input);
         
         if (input.empty()) continue;
@@ -292,7 +294,7 @@ void AudioConfigSystem::runInteractiveCLI() {
         
         try {
             if (command == "quit" || command == "exit") {
-                std::cout << "👋 Goodbye!" << std::endl;
+                std::cout << "Goodbye!" << std::endl;
                 break;
             } else if (command == "help") {
                 handleHelpCommand(tokens);
@@ -314,12 +316,14 @@ void AudioConfigSystem::runInteractiveCLI() {
                 handleStatsCommand(tokens);
             } else if (command == "generate" || command == "suggest_config") {
                 handleGenerateCommand(tokens);
+            } else if (command == "complete") {
+                handleCompleteCommand(tokens);
             } else {
-                std::cout << "❓ Unknown command: " << command << std::endl;
+                std::cout << "Unknown command: " << command << std::endl;
                 std::cout << "Type 'help' for available commands." << std::endl;
             }
         } catch (const std::exception& e) {
-            std::cerr << "❌ Command error: " << e.what() << std::endl;
+            std::cerr << "Command error: " << e.what() << std::endl;
         }
     }
 }
@@ -337,7 +341,8 @@ void AudioConfigSystem::handleSearchCommand(const std::vector<std::string>& args
         query += args[i];
     }
     
-    std::cout << "\n🔍 Searching for: \"" << query << "\"" << std::endl;
+    std::cout << "\n=== SEARCH ===" << std::endl;
+    std::cout << "Query: \"" << query << "\"" << std::endl;
     
     auto results = searchConfigurations(query, 10);
     
@@ -355,8 +360,8 @@ void AudioConfigSystem::handleSearchCommand(const std::vector<std::string>& args
         std::cout << std::endl;
     }
     
-    std::cout << "\n💡 Use 'select <config_id>' to add to your selection" << std::endl;
-    std::cout << "💡 Use 'boost <config_id>' if you like a result" << std::endl;
+    std::cout << "\nHint: Use 'select <config_id>' to add to your selection" << std::endl;
+    std::cout << "Hint: Use 'boost <config_id>' if you like a result" << std::endl;
 }
 
 void AudioConfigSystem::handleSelectCommand(const std::vector<std::string>& args) {
@@ -374,12 +379,12 @@ void AudioConfigSystem::handleSelectCommand(const std::vector<std::string>& args
     }
     
     userContext_.selectConfig(configId);
-    std::cout << "✅ Selected: " << configId << std::endl;
+        std::cout << "Selected: " << configId << std::endl;
     
     // Show compatibility with existing selections
     const auto& selectedConfigs = userContext_.getSelectedConfigs();
     if (selectedConfigs.size() > 1) {
-        std::cout << "\n🔗 Compatibility with existing selections:" << std::endl;
+        std::cout << "\nCompatibility with existing selections:" << std::endl;
         
         for (const auto& otherConfigId : selectedConfigs) {
             if (otherConfigId == configId) continue;
@@ -389,9 +394,9 @@ void AudioConfigSystem::handleSelectCommand(const std::vector<std::string>& args
             
             auto compatibility = pointer_->analyzeCompatibility(*config, *otherConfig);
             
-            std::cout << "  • " << otherConfigId << ": " 
+            std::cout << "  - " << otherConfigId << ": " 
                       << std::fixed << std::setprecision(2) << compatibility.overallScore
-                      << (compatibility.isRecommended ? " ✅" : " ⚠️") << std::endl;
+                      << (compatibility.isRecommended ? " (recommended)" : " (check details)") << std::endl;
         }
     }
 }
@@ -411,7 +416,7 @@ void AudioConfigSystem::handleBoostCommand(const std::vector<std::string>& args)
     }
     
     userContext_.recordPositiveChoice(configId);
-    std::cout << "👍 Boosted: " << configId << " (future searches will prefer similar configurations)" << std::endl;
+    std::cout << "Boosted: " << configId << " (future searches will prefer similar configurations)" << std::endl;
 }
 
 void AudioConfigSystem::handleDemoteCommand(const std::vector<std::string>& args) {
@@ -429,7 +434,7 @@ void AudioConfigSystem::handleDemoteCommand(const std::vector<std::string>& args
     }
     
     userContext_.recordNegativeChoice(configId);
-    std::cout << "👎 Demoted: " << configId << " (future searches will avoid similar configurations)" << std::endl;
+    std::cout << "Demoted: " << configId << " (future searches will avoid similar configurations)" << std::endl;
 }
 
 void AudioConfigSystem::handleExcludeCommand(const std::vector<std::string>& args) {
@@ -440,7 +445,7 @@ void AudioConfigSystem::handleExcludeCommand(const std::vector<std::string>& arg
     
     const std::string& configId = args[1];
     userContext_.excludeConfig(configId);
-    std::cout << "🚫 Excluded: " << configId << " (will not appear in future searches)" << std::endl;
+    std::cout << "Excluded: " << configId << " (will not appear in future searches)" << std::endl;
 }
 
 void AudioConfigSystem::handleListCommand(const std::vector<std::string>& args) {
@@ -452,7 +457,7 @@ void AudioConfigSystem::handleListCommand(const std::vector<std::string>& args) 
         return;
     }
     
-    std::cout << "\n📋 Selected Configurations (" << selectedConfigs.size() << "):" << std::endl;
+    std::cout << "\n--- SELECTED CONFIGURATIONS (" << selectedConfigs.size() << ") ---" << std::endl;
     
     for (size_t i = 0; i < selectedConfigs.size(); ++i) {
         const auto& configId = selectedConfigs[i];
@@ -465,13 +470,13 @@ void AudioConfigSystem::handleListCommand(const std::vector<std::string>& args) 
         }
     }
     
-    std::cout << "\n💡 Use 'generate output.json' to create synthesis configuration" << std::endl;
+    std::cout << "\nHint: Use 'generate output.json' to create synthesis configuration" << std::endl;
 }
 
 void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args) {
-    std::cout << "\n📊 System Statistics:" << std::endl;
-    std::cout << "  • Total configurations: " << configurations_.size() << std::endl;
-    std::cout << "  • Selected configurations: " << userContext_.getSelectedConfigs().size() << std::endl;
+    std::cout << "\n=== MULTI-DIMENSIONAL POINTING SYSTEM STATISTICS ===" << std::endl;
+    std::cout << "Total configurations: " << configurations_.size() << std::endl;
+    std::cout << "Selected configurations: " << userContext_.getSelectedConfigs().size() << std::endl;
     
     // Count by musical role
     std::map<MusicalRole, int> roleCounts;
@@ -479,7 +484,7 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
         roleCounts[config->getMusicalRole().primaryRole]++;
     }
     
-    std::cout << "\n🎼 By Musical Role:" << std::endl;
+    std::cout << "\nBy Musical Role:" << std::endl;
     for (const auto& [role, count] : roleCounts) {
         std::string roleName;
         switch (role) {
@@ -492,14 +497,14 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
             case MusicalRole::FX: roleName = "FX"; break;
             default: roleName = "Unknown"; break;
         }
-        std::cout << "  • " << roleName << ": " << count << std::endl;
+            std::cout << "  - " << roleName << ": " << count << std::endl;
     }
     
-    std::cout << "\n⚙️  Scoring Weights:" << std::endl;
-    std::cout << "  • Semantic: " << weights_.semantic << std::endl;
-    std::cout << "  • Technical: " << weights_.technical << std::endl;
-    std::cout << "  • Musical Role: " << weights_.musicalRole << std::endl;
-    std::cout << "  • Layering: " << weights_.layering << std::endl;
+    std::cout << "\nScoring Weights:" << std::endl;
+    std::cout << "  Semantic: " << weights_.semantic << std::endl;
+    std::cout << "  Technical: " << weights_.technical << std::endl;
+    std::cout << "  Musical Role: " << weights_.musicalRole << std::endl;
+    std::cout << "  Layering: " << weights_.layering << std::endl;
 }
 
 void AudioConfigSystem::handleGenerateCommand(const std::vector<std::string>& args) {
@@ -508,10 +513,10 @@ void AudioConfigSystem::handleGenerateCommand(const std::vector<std::string>& ar
         outputPath = args[1];
     }
     
-    std::cout << "\n🎵 Generating synthesis configuration..." << std::endl;
+    std::cout << "\nGenerating synthesis configuration..." << std::endl;
     
     if (generateSynthesisConfiguration(outputPath)) {
-        std::cout << "Configuration generated successfully!" << std::endl;
+        std::cout << "Configuration generated successfully." << std::endl;
         
         // Validate the generated configuration
         std::vector<std::shared_ptr<AudioConfig>> selectedConfigs;
@@ -523,103 +528,96 @@ void AudioConfigSystem::handleGenerateCommand(const std::vector<std::string>& ar
         }
         
         auto validation = ConfigGenerator::validateConfigChain(selectedConfigs);
-        std::cout << "\n🔍 Configuration Validation:" << std::endl;
+        std::cout << "\nConfiguration Validation:" << std::endl;
         printCompatibilityResult(validation);
     }
 }
 
+void AudioConfigSystem::handleCompleteCommand(const std::vector<std::string>& /*args*/) {
+    // Print a compact summary banner for the Complete Pointing System (old console style)
+    std::cout << "\n============================================================" << std::endl;
+    std::cout << "                Complete Pointing System" << std::endl;
+    std::cout << "============================================================" << std::endl;
+    std::cout << "1) Pointing Index System           - Search, learning, explainability" << std::endl;
+    std::cout << "   File: pointing_index_system.cpp" << std::endl;
+    std::cout << "2) Multi-Dimensional Pointing      - Assembly & compatibility (4D)" << std::endl;
+    std::cout << "   File: multi_dimensional_pointing_system.cpp" << std::endl;
+    std::cout << "\nShared Foundation: clean_config.json, reference data, embedding engine" << std::endl;
+}
+
 void AudioConfigSystem::handleHelpCommand(const std::vector<std::string>& args) {
     std::cout << R"(
-🎹 Multi-Dimensional Audio Configuration System - Help
+=== HELP ===
 
-📖 Available Commands:
-
-🔍 SEARCH & DISCOVERY:
+COMMANDS:
   search <query>          - Search configurations by semantic similarity
-                           Example: search warm aggressive guitar
-  
-📋 SELECTION & MANAGEMENT:
   select <config_id>      - Add configuration to your selection
   list                    - Show selected configurations
-  
-🎯 LEARNING & PREFERENCES:
   boost <config_id>       - Mark as preferred (improves future suggestions)
   demote <config_id>      - Mark as disliked (reduces future suggestions)
   exclude <config_id>     - Exclude from all future searches
-  
-⚙️  GENERATION & OUTPUT:
   generate [filename]     - Generate synthesis-ready configuration
   suggest_config [file]   - Alias for generate command
-  
-📊 INFORMATION:
   stats                   - Show system statistics and user preferences
+  complete                - Show Complete Pointing System summary
   help                    - Show this help message
   examples                - Show usage examples and patterns
-  
-🚪 EXIT:
   quit / exit             - Exit the application
 
-💡 Tips:
-  • Use semantic terms: "warm", "aggressive", "bright", "calm"
-  • Musical roles: "lead", "bass", "pad", "arp", "chord"
-  • Technical terms: "attack", "reverb", "filter", "envelope"
-  • Combine multiple terms for better results
+TIPS:
+  - Use semantic terms: "warm", "aggressive", "bright", "calm"
+  - Musical roles: "lead", "bass", "pad", "arp", "chord"
+  - Technical terms: "attack", "reverb", "filter", "envelope"
+  - Combine multiple terms for better results
 )" << std::endl;
 }
 
 void AudioConfigSystem::handleExamplesCommand(const std::vector<std::string>& args) {
     std::cout << R"(
-🎯 Usage Examples & Patterns:
+=== USAGE EXAMPLES ===
 
-🔍 SEMANTIC SEARCH EXAMPLES:
-  search warm guitar          - Find warm-sounding guitar configurations
-  search aggressive bass      - Find aggressive bass sounds
-  search bright lead          - Find bright lead instruments
-  search calm pad reverb      - Find calming pad sounds with reverb
-  search vintage analog       - Find vintage-style analog instruments
+SEMANTIC SEARCH EXAMPLES:
+  search warm guitar
+  search aggressive bass
+  search bright lead
+  search calm pad reverb
+  search vintage analog
 
-🎼 WORKFLOW EXAMPLES:
+WORKFLOW EXAMPLES:
+  # Lead + Bass + Pad combination
+  search lead bright
+  select Lead_Bright_Energetic
+  search bass punchy
+  select Bass_Classic_MoogPunch
+  search pad warm
+  select Pad_Warm_Calm
+  generate my_track.json
 
-1️⃣ Building a Lead + Bass + Pad combination:
-   search lead bright
-   select Lead_Bright_Energetic
-   search bass punchy
-   select Bass_Classic_MoogPunch  
-   search pad warm
-   select Pad_Warm_Calm
-   generate my_track.json
+  # Explore and refine
+  search guitar acoustic
+  boost Acoustic_Warm_Fingerstyle
+  demote Classical_Nylon_Soft
+  search guitar acoustic
 
-2️⃣ Exploring and refining results:
-   search guitar acoustic
-   boost Acoustic_Warm_Fingerstyle    # I like this one
-   demote Classical_Nylon_Soft        # Not what I want
-   search guitar acoustic             # Re-search with updated preferences
+  # Genre-specific
+  search electronic aggressive
+  search jazz warm smooth
+  search ambient calm ethereal
 
-3️⃣ Building genre-specific configurations:
-   search electronic aggressive       # For electronic music
-   search jazz warm smooth           # For jazz arrangements  
-   search ambient calm ethereal      # For ambient textures
+MULTI-DIMENSIONAL MATCHING:
+  - Semantic: term similarity and embeddings
+  - Technical: sample rates, plugin formats, compatibility
+  - Musical Role: lead/bass/pad roles and combinations
+  - Layering: frequency ranges, stereo placement, arrangement
 
-🎯 MULTI-DIMENSIONAL MATCHING:
-The system considers 4 dimensions simultaneously:
-  • Semantic: Term similarity and embeddings
-  • Technical: Sample rates, plugin formats, compatibility
-  • Musical Role: Lead/bass/pad function and typical combinations  
-  • Layering: Frequency ranges, stereo placement, arrangement
+ITERATIVE REFINEMENT:
+  search warm
+  boost Pad_Warm_Calm
+  exclude Bass_DigitalGrowl
+  search warm
 
-🔄 ITERATIVE REFINEMENT:
-  search warm                    # Initial broad search
-  boost Pad_Warm_Calm           # Learn preferences
-  exclude Bass_DigitalGrowl     # Remove unwanted results
-  search warm                   # Refined results based on learning
-
-📊 SCORING BREAKDOWN:
-Each suggestion shows:
-  • Overall compatibility score (0.0-1.0)
-  • Individual dimension scores
-  • Specific reasons for compatibility
-  • Warnings about potential conflicts
-  • Suggestions for improvements
+SCORING BREAKDOWN:
+  Each suggestion shows overall score, per-dimension scores, reasons, warnings, and tips.
 )" << std::endl;
 }
 
