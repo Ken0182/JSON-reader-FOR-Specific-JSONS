@@ -438,6 +438,7 @@ void AudioConfigSystem::handleExcludeCommand(const std::vector<std::string>& arg
 }
 
 void AudioConfigSystem::handleListCommand(const std::vector<std::string>& args) {
+    (void)args; // Unused parameter
     const auto& selectedConfigs = userContext_.getSelectedConfigs();
     
     if (selectedConfigs.empty()) {
@@ -463,6 +464,7 @@ void AudioConfigSystem::handleListCommand(const std::vector<std::string>& args) 
 }
 
 void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args) {
+    (void)args; // Unused parameter
     std::cout << "\n=== SYSTEM STATISTICS ===" << std::endl;
     std::cout << "Total configurations: " << configurations_.size() << std::endl;
     std::cout << "Selected configurations: " << userContext_.getSelectedConfigs().size() << std::endl;
@@ -518,6 +520,7 @@ void AudioConfigSystem::handleGenerateCommand(const std::vector<std::string>& ar
 }
 
 void AudioConfigSystem::handleHelpCommand(const std::vector<std::string>& args) {
+    (void)args; // Unused parameter
     std::cout << R"(
 Multi-Dimensional Audio Configuration System - Help
 ====================================================
@@ -558,6 +561,7 @@ Tips:
 }
 
 void AudioConfigSystem::handleExamplesCommand(const std::vector<std::string>& args) {
+    (void)args; // Unused parameter
     std::cout << R"(
 Usage Examples & Patterns
 =========================
