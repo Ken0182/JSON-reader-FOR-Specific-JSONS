@@ -6,7 +6,7 @@ This project now supports cross-platform builds including Windows with MINGW32/M
 
 You need:
 - **MINGW32/MINGW64** or **MSYS2** environment
-- **g++** compiler (included with MINGW/MSYS2)
+- **g++** compiler with C++17 support (included with MINGW/MSYS2)
 - **make** utility (included with MINGW/MSYS2)
 
 ## Quick Start
@@ -23,14 +23,17 @@ You need:
    make
    ```
 
-4. Run the application:
+4. Run the application (NEW v1.1: Works from any directory!):
    ```bash
+   # From repository root
    make run
-   ```
    
-   Or run directly:
-   ```bash
+   # Or run directly
    ./build/audio_config_system.exe
+   
+   # Or from build/ directory (auto-detects paths!)
+   cd build
+   ./audio_config_system.exe
    ```
 
 ## Available Make Targets
@@ -70,16 +73,27 @@ make
 
 ## Running the Application
 
-Once built, you can:
+Once built, you can run from multiple locations (v1.1 auto-detection):
 
-1. **Interactive mode:**
+1. **Interactive mode (from root):**
    ```bash
    ./build/audio_config_system.exe
    ```
 
-2. **With specific config:**
+2. **From build/ directory (NEW!):**
    ```bash
-   ./build/audio_config_system.exe config/weights.json
+   cd build
+   ./audio_config_system.exe
+   ```
+
+3. **With custom resource paths:**
+   ```bash
+   ./build/audio_config_system.exe --weights config/weights.json --config data/clean_config.json
+   ```
+
+4. **Show help:**
+   ```bash
+   ./build/audio_config_system.exe --help
    ```
 
 ## Notes

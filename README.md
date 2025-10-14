@@ -48,7 +48,7 @@ Single Consolidated Binary: audio_config_system
 ## Quick Start
 
 ### Prerequisites
-- **g++** with C++17 support
+- **g++** with C++17 support (including `<filesystem>`)
 - **make** utility
 - **curl** (for downloading dependencies)
 
@@ -63,9 +63,34 @@ cd multi-dimensional-audio-system
 make setup
 make
 
-# Run the application
+# Run the application (works from any directory!)
 make run
+
+# Or run directly from repository root
+./build/audio_config_system
+
+# Or run from build/ directory
+cd build && ./audio_config_system
 ```
+
+### NEW in v1.1: Auto-Detection & CLI Overrides
+
+The system now automatically detects resource paths! Works from:
+- Repository root directory
+- Build directory (`cd build && ./audio_config_system`)
+- Any location with custom paths
+
+```bash
+# Show help and options
+./build/audio_config_system --help
+
+# Use custom resource paths
+./build/audio_config_system \
+  --weights /path/to/weights.json \
+  --config /path/to/clean_config.json
+```
+
+See `STARTUP_BUGFIX.md` for complete details on the path auto-detection system.
 
 ### Windows Users (MINGW/MSYS2)
 
@@ -76,17 +101,32 @@ See `WINDOWS_BUILD.md` for detailed Windows build instructions.
 make clean
 make
 
-# Run
+# Run from anywhere - auto-detection works!
 ./build/audio_config_system.exe
+cd build && ./audio_config_system.exe
 ```
 
 ## Usage
 
 ### Interactive CLI
 
+The system can be launched from multiple locations (auto-detection handles paths):
+
 ```bash
+# From repository root
 ./build/audio_config_system
+
+# From build/ directory (NEW in v1.1!)
+cd build && ./audio_config_system
+
+# With custom paths
+./build/audio_config_system --weights custom/weights.json --config custom/config.json
+
+# Show help
+./build/audio_config_system --help
 ```
+
+All methods produce the same output:
 
 ```
 Multi-Dimensional Audio Configuration System
