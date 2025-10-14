@@ -2,62 +2,60 @@
 
 A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
 
-## 🎯 **Key Features**
+## Key Features
 
-### **4-Dimensional Pointing System**
-- **1D Semantic**: FastText-style 100D embeddings for tag/keyword similarity
+### 4-Dimensional Pointing System
+- **1D Semantic**: FastText-style embeddings for tag/keyword similarity
 - **2D Technical**: Real-world compatibility (sample rates, plugin formats, envelope types)
 - **3D Musical Role**: Lead/bass/pad classification with typical combinations
 - **4D Layering**: Frequency ranges, stereo placement, arrangement context
 
-### **AI-Driven Configuration Assembly**
+### AI-Driven Configuration Assembly
 - Intelligent search with semantic understanding
 - Multi-dimensional compatibility analysis
 - Automatic conflict detection and resolution suggestions
 - Real-time configuration validation
 
-### **Professional Audio Standards**
+### Professional Audio Standards
 - VST/VST3/AU/AAX plugin format support
 - DAW compatibility (Ableton, Logic, Cubase, Pro Tools)
 - Sample rate and buffer size validation
 - MIDI specification compliance
 
-### **Interactive Learning System**
+### Interactive Learning System
 - User preference learning (boost/demote)
 - Adaptive suggestions based on history
 - Explainable AI with detailed reasoning
 - Rich feedback and guidance
 
-## 🏗️ **Architecture**
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                 Multi-Dimensional System                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
-│  │ EmbeddingEngine │ │ MultiDimensional│ │ ConfigGenerator │ │
-│  │ • FastText 100D │ │ Pointer         │ │ • Synthesis     │ │
-│  │ • Subword OOV   │ │ • 4D Analysis   │ │ • Validation    │ │
-│  │ • Music Domain  │ │ • Weighted Score│ │ • Export JSON   │ │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                 AudioConfig                             │ │
-│  │ • Semantic metadata (tags, embeddings)                 │ │
-│  │ • Technical specs (sample rate, format, envelope)      │ │
-│  │ • Musical role (lead/bass/pad, prominence)             │ │
-│  │ • Layering info (frequency, stereo, arrangement)       │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+Single Consolidated Binary: audio_config_system
+├── Modular Source Code:
+│   ├── src/main.cpp                  # Entry point
+│   ├── src/audio_config_system.hpp   # Core definitions  
+│   ├── src/audio_config_system.cpp   # Core implementation
+│   └── src/audio_config_cli.cpp      # CLI commands
+├── Configuration:
+│   └── config/weights.json           # Tunable parameters
+├── Data:
+│   └── data/clean_config.json        # Source configurations
+└── Build System:
+    └── Makefile                      # Cross-platform build
 ```
 
-## 🚀 **Quick Start**
+## Quick Start
 
-### **Build & Setup**
+### Prerequisites
+- **g++** with C++17 support
+- **make** utility
+- **curl** (for downloading dependencies)
+
+### Build & Setup
+
 ```bash
-# Clone and setup
+# Clone and navigate to repository
 git clone <repository>
 cd multi-dimensional-audio-system
 
@@ -65,125 +63,159 @@ cd multi-dimensional-audio-system
 make setup
 make
 
-# Run with sample configuration
-make create-sample-config
+# Run the application
 make run
 ```
 
-### **Basic Usage**
+### Windows Users (MINGW/MSYS2)
+
+See `WINDOWS_BUILD.md` for detailed Windows build instructions.
+
 ```bash
-# Interactive CLI
+# Build on Windows
+make clean
+make
+
+# Run
+./build/audio_config_system.exe
+```
+
+## Usage
+
+### Interactive CLI
+
+```bash
 ./build/audio_config_system
-
-# Example session:
-🎵 > search warm guitar
-🎵 > select Acoustic_Warm_Fingerstyle
-🎵 > search bass punchy
-🎵 > select Bass_Classic_MoogPunch
-🎵 > generate my_track.json
 ```
 
-## 🎼 **Usage Examples**
+```
+Multi-Dimensional Audio Configuration System
+=================================================================
+Loaded 30 configurations with multi-dimensional metadata.
 
-### **1. Semantic Search**
+=== INTERACTIVE SESSION ===
+Commands: search, select, boost, demote, exclude, list, stats, generate, help, examples, quit
+
+> 
+```
+
+### Example Session
+
 ```bash
-🎵 > search warm aggressive
-🔍 Searching for: "warm aggressive"
-Found 5 matching configurations:
+> search warm guitar
+Searching for: "warm guitar"
+Found 3 matching configurations:
 
-1. Lead_Bright_Energetic (Score: 0.84) [Lead, bright] Tags: bright, energetic, aggressive
-2. Rhythm_Crunchy_Aggressive (Score: 0.79) [Pad, neutral] Tags: crunchy, aggressive
-3. Bass_Punchy_Warm (Score: 0.72) [Bass, warm] Tags: punchy, warm, powerful
+1. Acoustic_Warm_Fingerstyle (Score: 0.92) [Lead, warm] Tags: warm, organic, intimate
+2. Classical_Nylon_Soft (Score: 0.78) [Lead, warm] Tags: soft, classical, smooth
+3. Jazz_Hollow_Body (Score: 0.71) [Lead, warm] Tags: jazz, warm, mellow
+
+Use 'select <config_id>' to add to your selection
+Use 'boost <config_id>' if you like a result
+
+> select Acoustic_Warm_Fingerstyle
+Selected: Acoustic_Warm_Fingerstyle
+
+> search bass punchy
+Searching for: "bass punchy"
+Found 2 matching configurations:
+
+1. Bass_Classic_MoogPunch (Score: 0.87) [Bass, neutral] Tags: punchy, classic, powerful
+2. Bass_Deep_Sub (Score: 0.74) [Bass, dark] Tags: deep, sub, powerful
+
+> select Bass_Classic_MoogPunch
+Selected: Bass_Classic_MoogPunch
+
+Compatibility with existing selections:
+  Acoustic_Warm_Fingerstyle: 0.85 (recommended)
+
+> list
+Selected Configurations (2):
+1. Acoustic_Warm_Fingerstyle [Lead, warm] Tags: warm, organic, intimate
+2. Bass_Classic_MoogPunch [Bass, neutral] Tags: punchy, classic, powerful
+
+Use 'generate output.json' to create synthesis configuration
+
+> generate my_track.json
+Generating synthesis configuration...
+Generated synthesis configuration: my_track.json
+Contains 2 instruments with full compatibility analysis
+
+Configuration Validation:
+Overall Score: 0.85 (RECOMMENDED)
+- Semantic: 0.72
+- Technical: 0.91
+- Musical Role: 0.93
+- Layering: 0.84
 ```
 
-### **2. Multi-Dimensional Compatibility**
-```bash
-🎵 > select Lead_Bright_Energetic
-✅ Selected: Lead_Bright_Energetic
+## Command Reference
 
-🔗 Compatibility with existing selections:
-  • Bass_Classic_MoogPunch: 0.87 ✅
-    - Semantic: 0.65 (compatible timbral qualities)
-    - Technical: 0.92 (matching sample rates, compatible formats)
-    - Musical Role: 0.95 (lead + bass classic pairing)
-    - Layering: 0.88 (good frequency separation: high-mid vs low)
+### Search & Discovery
+- `search <query>` - Semantic search with multi-dimensional ranking
+- `boost <config_id>` - Mark configuration as preferred (future searches adapt)
+- `demote <config_id>` - Mark configuration as disliked (future searches avoid)
+- `exclude <config_id>` - Exclude from all future searches
+
+### Selection & Management
+- `select <config_id>` - Add to current selection with compatibility check
+- `list` - Show selected configurations
+- `stats` - System statistics and breakdown by role
+
+### Generation & Export
+- `generate [filename]` - Create synthesis-ready configuration (default: generated_config.json)
+- `suggest_config [file]` - Alias for generate command
+
+### Information & Help
+- `help` - Command reference and usage tips
+- `examples` - Workflow examples and patterns
+- `quit` / `exit` - Exit application
+
+## Scoring & Explainability
+
+### Weighted Multi-Dimensional Scoring
+
+```
+Overall Score = 0.2 * semantic_score +      (20% semantic similarity)
+                0.3 * technical_score +      (30% technical compatibility)
+                0.3 * musical_role_score +   (30% musical role fitness)
+                0.2 * layering_score         (20% arrangement suitability)
 ```
 
-### **3. Learning & Adaptation**
-```bash
-🎵 > boost Acoustic_Warm_Fingerstyle
-👍 Boosted: Acoustic_Warm_Fingerstyle (future searches will prefer similar configurations)
+### Technical Compatibility Checks
+- **Sample Rate**: Matching rates or convertible (44.1kHz, 48kHz, etc.)
+- **Bit Depth**: 16/24/32-bit compatibility
+- **Plugin Format**: VST/VST3/AU/AAX cross-compatibility
+- **Envelope Types**: ADSR/DADSR/AHDSR compatibility
+- **BPM Range**: Tempo overlap detection
+- **Buffer Size**: Real-time processing compatibility
+- **Polyphony**: Voice allocation validation
 
-🎵 > demote Classical_Nylon_Soft
-👎 Demoted: Classical_Nylon_Soft (future searches will avoid similar configurations)
+### Musical Role Compatibility Matrix
 
-🎵 > search guitar acoustic
-# Results now prioritize styles similar to Acoustic_Warm_Fingerstyle
+```
+Lead     -> {Bass, Pad, Drums, Arp, Chord}
+Bass     -> {Lead, Pad, Drums, Chord}
+Pad      -> {Lead, Bass, Drums, Arp, Chord}
+Arp      -> {Lead, Pad, Bass, Chord}
+Drums    -> {Lead, Bass, Pad, Perc, Chord}
 ```
 
-### **4. Configuration Generation**
-```bash
-🎵 > list
-📋 Selected Configurations (3):
-1. Lead_Bright_Energetic [Lead, bright] Tags: bright, energetic
-2. Bass_Classic_MoogPunch [Bass, neutral] Tags: punchy, classic
-3. Pad_Warm_Calm [Pad, warm] Tags: warm, peaceful
-
-🎵 > generate my_arrangement.json
-🎵 Generating synthesis configuration...
-✅ Configuration generated successfully!
-
-🔍 Configuration Validation:
-🎯 Overall Score: 0.83 (RECOMMENDED)
-📊 Dimension Breakdown:
-  • Semantic: 0.74
-  • Technical: 0.89
-  • Musical Role: 0.91
-  • Layering: 0.78
-
-✅ Strengths:
-  • Excellent technical compatibility
-  • Compatible musical roles
-  • Good layering compatibility
-```
-
-## 🎯 **Scoring & Explainability**
-
-### **Weighted Multi-Dimensional Scoring**
-```cpp
-score = 0.2 * semantic_score +      // 20% semantic similarity
-        0.3 * technical_score +      // 30% technical compatibility
-        0.3 * musical_role_score +   // 30% musical role fitness
-        0.2 * layering_score;        // 20% arrangement suitability
-```
-
-### **Technical Compatibility Checks**
-- **Sample Rate**: ±4.8kHz tolerance with conversion suggestions
-- **Bit Depth**: Exact match preferred, ±8-bit convertible
-- **Plugin Format**: VST2/3 cross-compatibility, AU/AAX support
-- **Envelope Types**: ADSR/DADSR/AHDSR compatibility matrix
-- **BPM Range**: Overlap detection with minimum 20 BPM overlap
-- **Buffer Size**: Compatible ranges for real-time processing
-- **Polyphony**: Minimum voice allocation validation
-
-### **Musical Role Matrix**
-```
-Lead     → {Bass, Pad, Drums, Arp, Chord}
-Bass     → {Lead, Pad, Drums, Chord}
-Pad      → {Lead, Bass, Drums, Arp, Chord}
-Arp      → {Lead, Pad, Bass, Chord}
-Drums    → {Lead, Bass, Pad, Perc, Chord}
-```
-
-### **Layering Analysis**
+### Layering Analysis
 - **Frequency Separation**: Low/Low-Mid/Mid/High-Mid/High/Full spectrum
-- **Stereo Width**: Total width ≤ 1.5 to avoid overcrowding
-- **Arrangement Layers**: Foreground (>0.7) / Midground (0.4-0.7) / Background (<0.4)
+- **Stereo Width**: Total width management (≤ 1.5 to avoid overcrowding)
+- **Arrangement Layers**: 
+  - Foreground (prominence > 0.7)
+  - Midground (prominence 0.4-0.7)
+  - Background (prominence < 0.4)
 - **Mix Priority**: Balanced priority distribution
 
-## 🛠️ **Configuration & Tuning**
+## Configuration & Tuning
 
-### **Weights Configuration** (`config/weights.json`)
+### Weights Configuration
+
+Edit `config/weights.json`:
+
 ```json
 {
   "weights": {
@@ -199,23 +231,41 @@ Drums    → {Lead, Bass, Pad, Perc, Chord}
 }
 ```
 
-### **FastText Embeddings**
-- **100-dimensional** semantic embeddings
-- **Music domain vocabulary**: 150+ audio/musical terms
-- **Subword handling**: Out-of-vocabulary term support
-- **Semantic clustering**: Contextually meaningful word groupings
+## Build Targets
 
-### **Extensibility**
-- **Plugin Rules**: JSON-driven compatibility matrices
-- **Weight Tuning**: Runtime configuration updates
-- **Embedding Models**: Pluggable embedding engines (FastText, BERT)
-- **Domain Knowledge**: Extensible semantic vocabulary
+```bash
+# Build targets
+make              # Build release version (default)
+make debug        # Build with debug symbols
+make clean        # Remove build artifacts
+make distclean    # Remove all generated files
 
-## 📋 **API Reference**
+# Setup & dependencies
+make setup        # Download dependencies and setup directories
+make create-sample-config  # Create sample configuration for testing
 
-### **Core Classes**
+# Execution
+make run          # Build and run the application
+make run-with-config      # Run with specific configuration file
+make test         # Run basic functionality tests
 
-#### **AudioConfig**
+# Distribution
+make install      # Install to system (Unix/Linux)
+make uninstall    # Remove from system
+
+# Development
+make format       # Format source code (requires clang-format)
+make analyze      # Run static analysis (requires cppcheck)
+make docs         # Generate documentation (requires doxygen)
+make help         # Show all available targets
+```
+
+## API Reference (C++)
+
+### Core Classes
+
+#### AudioConfig
+
 ```cpp
 class AudioConfig {
 public:
@@ -228,28 +278,33 @@ public:
     const TechnicalSpecs& getTechnicalSpecs() const noexcept;
     const MusicalRoleInfo& getMusicalRole() const noexcept;
     const LayeringInfo& getLayeringInfo() const noexcept;
-    
-    // Compatibility analysis
-    CompatibilityScore calculateSemanticSimilarity(const AudioConfig& other) const noexcept;
 };
 ```
 
-#### **MultiDimensionalPointer**
+#### MultiDimensionalPointer
+
 ```cpp
 class MultiDimensionalPointer {
 public:
     MultiDimensionalPointer(ScoringWeights weights, std::shared_ptr<EmbeddingEngine> embeddingEngine);
     
-    // Core analysis
-    CompatibilityResult analyzeCompatibility(const AudioConfig& configA, const AudioConfig& configB) const;
+    // Compatibility analysis
+    CompatibilityResult analyzeCompatibility(
+        const AudioConfig& configA, 
+        const AudioConfig& configB) const;
     
-    // Batch operations
+    // Find compatible configurations
     std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityResult>> 
-    findCompatibleConfigurations(const AudioConfig& anchor, const std::vector<std::shared_ptr<AudioConfig>>& candidates, const UserContext& userContext, int maxResults = 10) const;
+    findCompatibleConfigurations(
+        const AudioConfig& anchor, 
+        const std::vector<std::shared_ptr<AudioConfig>>& candidates, 
+        const UserContext& userContext, 
+        int maxResults = 10) const;
 };
 ```
 
-#### **ConfigGenerator**
+#### ConfigGenerator
+
 ```cpp
 class ConfigGenerator {
 public:
@@ -264,31 +319,10 @@ public:
 };
 ```
 
-## 🎵 **Command Reference**
+## Testing & Validation
 
-### **Search & Discovery**
-- `search <query>` - Semantic search with multi-dimensional ranking
-- `boost <config_id>` - Mark configuration as preferred
-- `demote <config_id>` - Mark configuration as disliked
-- `exclude <config_id>` - Exclude from all future searches
+### Running Tests
 
-### **Selection & Management**
-- `select <config_id>` - Add to current selection
-- `list` - Show selected configurations with compatibility
-- `stats` - System statistics and user preferences
-
-### **Generation & Export**
-- `generate [filename]` - Create synthesis-ready configuration
-- `suggest_config [file]` - Alias for generate command
-
-### **Information & Help**
-- `help` - Command reference and usage tips
-- `examples` - Workflow examples and patterns
-- `quit` / `exit` - Exit application
-
-## 🔬 **Testing & Validation**
-
-### **Build & Test**
 ```bash
 # Build with debug information
 make debug
@@ -299,23 +333,21 @@ make analyze
 # Format code
 make format
 
-# Generate documentation
-make docs
-
 # Basic functionality tests
 make test
 ```
 
-### **Performance Metrics**
-- **Initialization**: <100ms for 1000+ configurations
-- **Search Response**: <1ms per query with 10 results
+### Performance Metrics
+- **Initialization**: <100ms for 30+ configurations
+- **Search Response**: <1ms per query
 - **4D Analysis**: <5ms per compatibility check
-- **Memory Usage**: ~50MB for comprehensive vocabulary
+- **Memory Usage**: ~50MB for comprehensive system
 - **Embedding Cache**: O(1) lookup after initialization
 
-## 🚀 **Integration & Deployment**
+## Integration Examples
 
-### **Synthesis System Integration**
+### Synthesis System Integration
+
 ```cpp
 // Load generated configuration
 std::ifstream configFile("generated_config.json");
@@ -329,9 +361,10 @@ for (const auto& [instrumentId, config] : synthesisConfig["instruments"].items()
 }
 ```
 
-### **DAW Plugin Integration**
+### DAW Plugin Integration
+
 ```cpp
-// Example plugin host compatibility check
+// Check plugin host compatibility
 bool isCompatibleWithHost(const AudioConfig& config, const std::string& hostName) {
     const auto& pluginInfo = config.getTechnicalSpecs().pluginInfo;
     return std::find(pluginInfo.hostCompatibility.begin(), 
@@ -340,88 +373,56 @@ bool isCompatibleWithHost(const AudioConfig& config, const std::string& hostName
 }
 ```
 
-### **External Compatibility Maps**
-```json
-{
-  "compatibility_rules": {
-    "envelope_conversion": {
-      "ADSR_to_DADSR": {"difficulty": "easy", "quality_loss": "none"},
-      "ADSR_to_AR": {"difficulty": "medium", "quality_loss": "minor"}
-    },
-    "sample_rate_conversion": {
-      "44100_to_48000": {"difficulty": "easy", "quality_loss": "minimal"}
-    }
-  }
-}
-```
+## Platform Support
 
-## 🎯 **Professional Features**
+- **Linux**: Native support
+- **macOS**: Native support
+- **Windows**: MINGW32/MINGW64/MSYS2 support (see WINDOWS_BUILD.md)
 
-### **Real-World Audio Compatibility**
-- **VST/VST3/AU/AAX** format validation
-- **Sample rate** conversion planning
-- **Buffer size** optimization
-- **Latency** calculation and compensation
-- **CPU usage** estimation and balancing
+## Professional Features
 
-### **Music Production Best Practices**
-- **Frequency masking** avoidance
-- **Stereo field** optimization
-- **Dynamic range** balancing
-- **Arrangement context** awareness
-- **Genre-specific** recommendations
+### Real-World Audio Compatibility
+- VST/VST3/AU/AAX format validation
+- Sample rate conversion planning
+- Buffer size optimization
+- Latency calculation and compensation
+- CPU usage estimation and balancing
 
-### **Professional Workflow Support**
-- **Template generation** for different genres
-- **Progressive enhancement** (add complementary instruments)
-- **Conflict resolution** with specific suggestions
-- **Batch processing** for multiple projects
-- **Version control** for configuration evolution
+### Music Production Best Practices
+- Frequency masking avoidance
+- Stereo field optimization
+- Dynamic range balancing
+- Arrangement context awareness
+- Genre-specific recommendations
 
-## 📈 **Performance & Scalability**
+### Workflow Support
+- Template generation for different genres
+- Progressive enhancement (add complementary instruments)
+- Conflict resolution with specific suggestions
+- Batch processing for multiple projects
 
-### **Optimizations**
-- **RAII**: Automatic resource management
-- **Smart Pointers**: Memory safety and efficiency
-- **Move Semantics**: Minimize unnecessary copies
-- **Const Correctness**: Thread safety and optimization hints
-- **Cache-Friendly**: Contiguous data structures
+## Development & Contribution
 
-### **Scalability**
-- **Modular Design**: Easy to extend with new dimensions
-- **Plugin Architecture**: Extensible compatibility rules
-- **Lazy Loading**: On-demand computation
-- **Parallel Processing**: Multi-threaded analysis when beneficial
-
-## 🔧 **Development & Contribution**
-
-### **Code Style**
+### Code Style
 - **Modern C++17**: RAII, smart pointers, type safety
 - **Audio Terminology**: Clear naming with domain-specific terms
 - **Doxygen Documentation**: Complete API documentation
 - **Exception Safety**: Strong exception guarantees
 
-### **Architecture Principles**
+### Architecture Principles
 - **Single Responsibility**: Each class has a focused purpose
 - **Dependency Injection**: Testable and configurable
 - **Interface Segregation**: Minimal, focused interfaces
 - **Open/Closed**: Extensible without modification
 
-### **Future Enhancements**
-- **Machine Learning**: Improved embedding models
-- **Real-Time Processing**: Live configuration suggestions
-- **Cloud Integration**: Shared configurations and preferences
-- **Plugin Ecosystem**: Third-party compatibility modules
-- **Mobile Support**: Cross-platform compatibility
-
-## 📄 **License & Credits**
+## License & Credits
 
 This Multi-Dimensional Audio Configuration System demonstrates modern C++17 development practices for professional audio applications, combining AI-driven analysis with real-world technical constraints.
 
 **Built with:**
-- **nlohmann/json**: Modern JSON for C++
-- **FastText-style embeddings**: Semantic understanding
-- **Professional audio standards**: Real-world compatibility
+- nlohmann/json - Modern JSON for C++
+- FastText-style embeddings - Semantic understanding
+- Professional audio standards - Real-world compatibility
 
 ---
 
