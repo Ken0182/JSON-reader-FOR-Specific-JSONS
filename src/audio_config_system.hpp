@@ -2,7 +2,14 @@
  * @file audio_config_system.hpp
  * @brief Multi-Dimensional Audio Configuration System - Main Header
  * @author AI Assistant
- * @version 1.0
+ * @version 1.2
+ * 
+ * v1.2 Efficiency & Quality Upgrades:
+ * - Pre-normalized embeddings for faster similarity calculation
+ * - Cached tag sets for O(1) intersection (vs O(m·n) nested loops)
+ * - IDF-weighted tag boost with λ clamping
+ * - Proper score clamping to [0,1] range
+ * - Optional diagonal weighting for semantic dimensions
  */
 
 #pragma once
@@ -15,15 +22,17 @@
 #include <optional>
 #include <functional>
 #include <array>
+#include <cmath>
 #include "json.hpp"
 
 namespace audio_config {
 
 // Type aliases for clarity
 using ConfigId = std::string;
-using EmbeddingVector = std::array<float, 100>;  // 100D FastText embeddings
+using EmbeddingVector = std::array<float, 100>;  // 100D FastText embeddings (PRE-NORMALIZED)
 using ScoreWeight = float;
 using CompatibilityScore = float;
+using TagSet = std::unordered_set<std::string>;  // O(1) lookup for tag intersection
 
 /**
  * @brief Audio plugin format enumeration
@@ -150,8 +159,8 @@ public:
     [[nodiscard]] const nlohmann::json& getConfigData() const;
     
     // Mutators
-    void setSemanticTags(std::vector<std::string> tags) { semanticTags_ = std::move(tags); }
-    void setEmbedding(const EmbeddingVector& embedding) { embedding_ = embedding; }
+    void setSemanticTags(std::vector<std::string> tags);
+    void setEmbedding(const EmbeddingVector& embedding);  // Auto-normalizes
     void setTechnicalSpecs(TechnicalSpecs specs) { techSpecs_ = std::move(specs); }
     void setMusicalRole(MusicalRoleInfo role) { musicalRole_ = std::move(role); }
     void setLayeringInfo(LayeringInfo layering) { layeringInfo_ = std::move(layering); }
@@ -168,7 +177,8 @@ private:
     std::string name_;
     std::shared_ptr<nlohmann::json> configData_;
     std::vector<std::string> semanticTags_;
-    EmbeddingVector embedding_{};
+    TagSet tagSet_;  // Cached tag set for O(1) intersection
+    EmbeddingVector embedding_{};  // Pre-normalized at ingest
     TechnicalSpecs techSpecs_;
     MusicalRoleInfo musicalRole_;
     LayeringInfo layeringInfo_;
@@ -274,12 +284,31 @@ public:
     [[nodiscard]] EmbeddingVector getEmbedding(const std::string& text) const;
     
     /**
-     * @brief Calculate cosine similarity between embeddings
-     * @param a First embedding
-     * @param b Second embedding
+     * @brief Calculate cosine similarity between PRE-NORMALIZED embeddings
+     * @param a First embedding (must be normalized)
+     * @param b Second embedding (must be normalized)
      * @return Similarity score (0.0-1.0)
+     * @note O(d) for d dimensions; assumes unit vectors for efficiency
      */
     [[nodiscard]] static CompatibilityScore calculateSimilarity(const EmbeddingVector& a, const EmbeddingVector& b) noexcept;
+    
+    /**
+     * @brief Calculate weighted cosine similarity with diagonal weights
+     * @param a First embedding (normalized)
+     * @param b Second embedding (normalized)
+     * @param weights Diagonal weight vector (optional)
+     * @return Weighted similarity score (0.0-1.0)
+     */
+    [[nodiscard]] static CompatibilityScore calculateWeightedSimilarity(
+        const EmbeddingVector& a, 
+        const EmbeddingVector& b,
+        const EmbeddingVector* weights = nullptr) noexcept;
+    
+    /**
+     * @brief Normalize embedding to unit length (in-place)
+     * @param embedding Embedding to normalize
+     */
+    static void normalizeEmbedding(EmbeddingVector& embedding) noexcept;
     
     /**
      * @brief Find most similar words to given embedding
@@ -289,10 +318,25 @@ public:
      */
     [[nodiscard]] std::vector<std::pair<std::string, float>> findSimilarWords(
         const EmbeddingVector& embedding, int topK = 5) const;
+    
+    /**
+     * @brief Get tag IDF (inverse document frequency) for weighting
+     * @param tag Tag name
+     * @return IDF weight (higher = more discriminative)
+     */
+    [[nodiscard]] float getTagIDF(const std::string& tag) const noexcept;
+    
+    /**
+     * @brief Update tag document frequencies (call during initialization)
+     * @param allTags Vector of all tag sets from all configurations
+     */
+    void updateTagStatistics(const std::vector<std::vector<std::string>>& allTags);
 
 private:
     std::unordered_map<std::string, EmbeddingVector> wordEmbeddings_;
     std::unordered_map<std::string, EmbeddingVector> subwordEmbeddings_;
+    std::unordered_map<std::string, float> tagIDF_;  // IDF weights for tags
+    int totalDocuments_{0};  // Total number of configurations
     
     void loadPretrainedEmbeddings();
     void generateSubwordEmbeddings();
@@ -442,7 +486,6 @@ private:
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
-    void handleCompleteCommand(const std::vector<std::string>& args);
     
     // Helper methods
     void loadConfigurationDatabase(const std::string& configPath);
