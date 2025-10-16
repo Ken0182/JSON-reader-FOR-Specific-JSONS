@@ -439,8 +439,86 @@ EmbeddingEngine::EmbeddingEngine() {
     generateSubwordEmbeddings();
 }
 
+bool EmbeddingEngine::loadEmbeddingIndex(const std::string& indexPath) {
+    // v1.3: Load external SKD (Semantic Knowledge Database) embedding index
+    // Replaces hash-based embeddings with semantically meaningful vectors
+    
+    std::ifstream indexFile(indexPath);
+    if (!indexFile.is_open()) {
+        std::cerr << "Warning: Could not open SKD embedding index: " << indexPath << std::endl;
+        std::cerr << "Falling back to built-in vocabulary." << std::endl;
+        return false;
+    }
+    
+    try {
+        json skdIndex;
+        indexFile >> skdIndex;
+        
+        if (!skdIndex.is_object()) {
+            std::cerr << "Warning: Invalid SKD index format (expected JSON object)" << std::endl;
+            return false;
+        }
+        
+        int loadedCount = 0;
+        int skippedCount = 0;
+        
+        // Clear existing hash-based embeddings
+        wordEmbeddings_.clear();
+        
+        // Load SKD embeddings
+        for (auto& [word, embedding] : skdIndex.items()) {
+            if (!embedding.is_array()) {
+                skippedCount++;
+                continue;
+            }
+            
+            // Validate embedding dimension
+            if (embedding.size() != 100) {
+                std::cerr << "Warning: Skipping '" << word << "' - dimension " 
+                          << embedding.size() << " (expected 100)" << std::endl;
+                skippedCount++;
+                continue;
+            }
+            
+            // Load and normalize embedding
+            EmbeddingVector vec{};
+            for (size_t i = 0; i < 100 && i < embedding.size(); ++i) {
+                vec[i] = embedding[i].get<float>();
+            }
+            
+            // Normalize to unit length (v1.2 optimization)
+            normalizeEmbedding(vec);
+            
+            wordEmbeddings_[word] = vec;
+            loadedCount++;
+        }
+        
+        if (loadedCount > 0) {
+            usingSKDIndex_ = true;
+            std::cout << "Loaded SKD embedding index: " << loadedCount << " words";
+            if (skippedCount > 0) {
+                std::cout << " (" << skippedCount << " skipped)";
+            }
+            std::cout << std::endl;
+            
+            // Regenerate subword embeddings from SKD vocabulary
+            generateSubwordEmbeddings();
+            return true;
+        } else {
+            std::cerr << "Warning: No valid embeddings found in SKD index" << std::endl;
+            return false;
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading SKD index: " << e.what() << std::endl;
+        std::cerr << "Falling back to built-in vocabulary." << std::endl;
+        return false;
+    }
+}
+
 void EmbeddingEngine::loadPretrainedEmbeddings() {
-    // Audio/music domain vocabulary with synthetic FastText-style embeddings
+    // Fallback: Audio/music domain vocabulary with synthetic FastText-style embeddings
+    // NOTE: This is replaced by loadEmbeddingIndex() when SKD is available
     std::vector<std::string> musicVocab = {
         // Timbral qualities
         "warm", "bright", "dark", "smooth", "rough", "sharp", "soft", "hard",

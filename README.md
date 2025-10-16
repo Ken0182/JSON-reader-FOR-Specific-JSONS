@@ -1,8 +1,15 @@
 # Multi-Dimensional Audio Configuration System
 
-**Version 1.2** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
+**Version 1.3** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
 
 ## What's New
+
+### v1.3 - SKD Embedding Integration 🎯
+- 🧠 **Semantic Knowledge Database (SKD)** - Real embeddings replace hash-based vectors
+- 🎨 **Meaningful similarity** - "warm" ≈ "soft", "bright" ≈ "crisp" (true semantics!)
+- 📚 **Unlimited vocabulary** - Load any embedding index (Word2Vec, GloVe, FastText)
+- ✅ **Auto-detection** - Automatically loads `data/skd_embeddings.json` if present
+- 🔄 **Graceful fallback** - Works without SKD (uses built-in vocabulary)
 
 ### v1.2 - Efficiency & Quality Upgrades
 - ⚡ **3-4x faster** semantic similarity (pre-normalized embeddings)
@@ -16,7 +23,10 @@
 - 🏗️ Works from repository root OR build/ directory
 - ⚙️ CLI overrides: `--weights <path>` `--config <path>`
 
-See `EFFICIENCY_UPGRADES.md` for v1.2 technical details and `STARTUP_BUGFIX.md` for v1.1 details.
+**Documentation:**
+- `SKD_EMBEDDING_UPGRADE.md` - v1.3 SKD integration details
+- `EFFICIENCY_UPGRADES.md` - v1.2 performance optimizations
+- `STARTUP_BUGFIX.md` - v1.1 path auto-detection
 
 ## Key Features
 

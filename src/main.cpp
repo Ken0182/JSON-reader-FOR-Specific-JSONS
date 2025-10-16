@@ -144,8 +144,29 @@ int main(int argc, char* argv[]) {
         // Initialize the main audio configuration system
         auto system = std::make_unique<AudioConfigSystem>(weightsPath);
         
-        // Load configuration database
-        if (!system->initialize(configPath)) {
+        // v1.3: Detect SKD embedding index path (optional)
+        fs::path execPath(argv[0]);
+        fs::path execDir = execPath.parent_path();
+        fs::path currentDir = fs::current_path();
+        std::string skdPath;
+        
+        // Try multiple locations for SKD index
+        if (fs::exists(currentDir / "data" / "skd_embeddings.json")) {
+            skdPath = (currentDir / "data" / "skd_embeddings.json").string();
+        } else if (currentDir.filename() == "build") {
+            fs::path rootDir = currentDir.parent_path();
+            if (fs::exists(rootDir / "data" / "skd_embeddings.json")) {
+                skdPath = (rootDir / "data" / "skd_embeddings.json").string();
+            }
+        } else if (execDir.filename() == "build") {
+            fs::path rootDir = execDir.parent_path();
+            if (fs::exists(rootDir / "data" / "skd_embeddings.json")) {
+                skdPath = (rootDir / "data" / "skd_embeddings.json").string();
+            }
+        }
+        
+        // Load configuration database (with optional SKD index)
+        if (!system->initialize(configPath, skdPath)) {
             std::cerr << "Failed to initialize audio configuration system" << std::endl;
             return 1;
         }
