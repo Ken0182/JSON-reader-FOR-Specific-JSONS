@@ -2,7 +2,13 @@
  * @file audio_config_system.hpp
  * @brief Multi-Dimensional Audio Configuration System - Main Header
  * @author AI Assistant
- * @version 1.2
+ * @version 1.3
+ * 
+ * v1.3 SKD Embedding Integration:
+ * - External Semantic Knowledge Database (SKD) embedding index
+ * - Semantically meaningful vectors (replaces hash-based embeddings)
+ * - Richer vocabulary with real pre-trained embeddings
+ * - Normalized at build time for fast dot-product similarity
  * 
  * v1.2 Efficiency & Quality Upgrades:
  * - Pre-normalized embeddings for faster similarity calculation
@@ -272,9 +278,19 @@ private:
 class EmbeddingEngine {
 public:
     /**
-     * @brief Initialize with pre-trained embeddings
+     * @brief Initialize with default vocabulary
      */
     EmbeddingEngine();
+    
+    /**
+     * @brief Load external SKD (Semantic Knowledge Database) embedding index
+     * @param indexPath Path to SKD embedding index file (JSON or binary format)
+     * @return True if loaded successfully
+     * 
+     * Format: JSON with {"word": [vec1, vec2, ..., vec100], ...}
+     * Replaces hash-based embeddings with semantically meaningful vectors
+     */
+    bool loadEmbeddingIndex(const std::string& indexPath);
     
     /**
      * @brief Get embedding for a word or phrase
@@ -337,8 +353,9 @@ private:
     std::unordered_map<std::string, EmbeddingVector> subwordEmbeddings_;
     std::unordered_map<std::string, float> tagIDF_;  // IDF weights for tags
     int totalDocuments_{0};  // Total number of configurations
+    bool usingSKDIndex_{false};  // Track if external SKD index is loaded
     
-    void loadPretrainedEmbeddings();
+    void loadPretrainedEmbeddings();  // Fallback: synthetic embeddings
     void generateSubwordEmbeddings();
     [[nodiscard]] EmbeddingVector computeTextEmbedding(const std::string& text) const;
 };
@@ -436,9 +453,11 @@ public:
     /**
      * @brief Initialize the system with configuration database
      * @param configDatabasePath Path to clean configuration JSON
+     * @param skdIndexPath Optional path to SKD embedding index (empty = use built-in)
      * @return True if initialization succeeded
      */
-    [[nodiscard]] bool initialize(const std::string& configDatabasePath);
+    [[nodiscard]] bool initialize(const std::string& configDatabasePath, 
+                                   const std::string& skdIndexPath = "");
     
     /**
      * @brief Run interactive command-line interface
