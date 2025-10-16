@@ -30,9 +30,28 @@ AudioConfigSystem::AudioConfigSystem(const std::string& weightsConfigPath)
     pointer_ = std::make_unique<MultiDimensionalPointer>(weights_, embeddingEngine_);
 }
 
-bool AudioConfigSystem::initialize(const std::string& configDatabasePath) {
+bool AudioConfigSystem::initialize(const std::string& configDatabasePath, 
+                                    const std::string& skdIndexPath) {
     try {
+        // v1.3: Load external SKD embedding index if provided
+        if (!skdIndexPath.empty()) {
+            std::cout << "Loading SKD embedding index..." << std::endl;
+            if (embeddingEngine_->loadEmbeddingIndex(skdIndexPath)) {
+                std::cout << "SKD embeddings loaded - using semantically meaningful vectors" << std::endl;
+            } else {
+                std::cout << "Using built-in vocabulary (fallback)" << std::endl;
+            }
+        }
+        
+        // Load configuration database
         loadConfigurationDatabase(configDatabasePath);
+        
+        // v1.2/v1.3: Calculate IDF statistics for all tags
+        std::vector<std::vector<std::string>> allTags;
+        for (const auto& [id, config] : configurations_) {
+            allTags.push_back(config->getSemanticTags());
+        }
+        embeddingEngine_->updateTagStatistics(allTags);
         
         std::cout << "Loaded " << configurations_.size() << " configurations with multi-dimensional metadata." << std::endl;
         
