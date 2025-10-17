@@ -51,7 +51,10 @@ SOURCES = $(SRC_DIR)/main.cpp \
           $(SRC_DIR)/audio_config_system.cpp \
           $(SRC_DIR)/audio_config_cli.cpp \
           $(SRC_DIR)/text_utils.cpp \
-          $(SRC_DIR)/search_tracker.cpp
+          $(SRC_DIR)/search_tracker.cpp \
+          $(SRC_DIR)/semantic_db.cpp \
+          $(SRC_DIR)/sentence_encoder.cpp \
+          $(SRC_DIR)/semantic_knowledge_base.cpp
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)

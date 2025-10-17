@@ -458,433 +458,108 @@ float UserContext::calculateUserBoost(const ConfigId& configId) const noexcept {
     return std::clamp(boost, 0.1f, 2.0f);
 }
 
+
 // ============================================================================
-// EmbeddingEngine Implementation
+// EmbeddingEngine Implementation (v1.6: Wraps SemanticKnowledgeBase)
 // ============================================================================
 
-EmbeddingEngine::EmbeddingEngine() {
-    loadPretrainedEmbeddings();
-    generateSubwordEmbeddings();
+EmbeddingEngine::EmbeddingEngine() 
+    : dimension_(100), isReady_(false) {
 }
 
-bool EmbeddingEngine::loadEmbeddingIndex(const std::string& indexPath) {
-    // v1.3: Load external SKD (Semantic Knowledge Database) embedding index
-    // Replaces hash-based embeddings with semantically meaningful vectors
-    
-    std::ifstream indexFile(indexPath);
-    if (!indexFile.is_open()) {
-        std::cerr << "Warning: Could not open SKD embedding index: " << indexPath << std::endl;
-        std::cerr << "Falling back to built-in vocabulary." << std::endl;
-        return false;
-    }
-    
+bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
     try {
-        json skdIndex;
-        indexFile >> skdIndex;
-        
-        if (!skdIndex.is_object()) {
-            std::cerr << "Warning: Invalid SKD index format (expected JSON object)" << std::endl;
-            return false;
+        knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(dbPath);
+        if (!knowledgeBase_->initialize(true)) {
+            std::cerr << "Warning: Failed to initialize semantic knowledge base" << std::endl;
         }
-        
-        int loadedCount = 0;
-        int skippedCount = 0;
-        
-        // Clear existing hash-based embeddings
-        wordEmbeddings_.clear();
-        
-        // Load SKD embeddings
-        for (auto& [word, embedding] : skdIndex.items()) {
-            if (!embedding.is_array()) {
-                skippedCount++;
-                continue;
-            }
-            
-            // Validate embedding dimension
-            if (embedding.size() != 100) {
-                std::cerr << "Warning: Skipping '" << word << "' - dimension " 
-                          << embedding.size() << " (expected 100)" << std::endl;
-                skippedCount++;
-                continue;
-            }
-            
-            // Load and normalize embedding
-            EmbeddingVector vec{};
-            for (size_t i = 0; i < 100 && i < embedding.size(); ++i) {
-                vec[i] = embedding[i].get<float>();
-            }
-            
-            // Normalize to unit length (v1.2 optimization)
-            normalizeEmbedding(vec);
-            
-            wordEmbeddings_[word] = vec;
-            loadedCount++;
-        }
-        
-        if (loadedCount > 0) {
-            usingSKDIndex_ = true;
-            std::cout << "Loaded SKD embedding index: " << loadedCount << " words";
-            if (skippedCount > 0) {
-                std::cout << " (" << skippedCount << " skipped)";
-            }
-            std::cout << std::endl;
-            
-            // Regenerate subword embeddings from SKD vocabulary
-            generateSubwordEmbeddings();
+        dimension_ = knowledgeBase_->getDimension();
+        isReady_ = knowledgeBase_->isReady();
+        if (isReady_) {
+            std::cout << "Loaded semantic knowledge base: " << dimension_ << "D embeddings" << std::endl;
             return true;
-        } else {
-            std::cerr << "Warning: No valid embeddings found in SKD index" << std::endl;
+        }
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading semantic database: " << e.what() << std::endl;
+        try {
+            knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
+            knowledgeBase_->initialize(true);
+            dimension_ = 100;
+            isReady_ = true;
+            return false;
+        } catch (...) {
             return false;
         }
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Error loading SKD index: " << e.what() << std::endl;
-        std::cerr << "Falling back to built-in vocabulary." << std::endl;
-        return false;
-    }
-}
-
-void EmbeddingEngine::loadPretrainedEmbeddings() {
-    // Fallback: Audio/music domain vocabulary with synthetic FastText-style embeddings
-    // NOTE: This is replaced by loadEmbeddingIndex() when SKD is available
-    std::vector<std::string> musicVocab = {
-        // Timbral qualities
-        "warm", "bright", "dark", "smooth", "rough", "sharp", "soft", "hard",
-        "thick", "thin", "rich", "sparse", "dense", "clear", "muddy", "crisp",
-        "mellow", "harsh", "sweet", "bitter", "round", "angular", "organic", "synthetic",
-        "metallic", "woody", "glassy", "silky", "gritty", "polished", "raw", "refined",
-        
-        // Emotional qualities  
-        "aggressive", "calm", "peaceful", "energetic", "dreamy", "mysterious",
-        "intimate", "bold", "delicate", "powerful", "gentle", "fierce", "serene",
-        "chaotic", "stable", "unstable", "flowing", "choppy", "smooth", "jagged",
-        "uplifting", "melancholic", "nostalgic", "futuristic", "vintage", "modern",
-        
-        // Technical terms
-        "attack", "decay", "sustain", "release", "envelope", "filter", "resonance",
-        "cutoff", "frequency", "amplitude", "oscillator", "modulation", "vibrato",
-        "tremolo", "chorus", "reverb", "delay", "echo", "compression", "distortion",
-        "saturation", "overdrive", "phaser", "flanger", "wah", "eq", "limiter",
-        
-        // Instruments
-        "guitar", "bass", "piano", "drums", "violin", "saxophone", "trumpet",
-        "flute", "synthesizer", "keyboard", "vocal", "strings", "brass", "woodwind",
-        "electric", "acoustic", "digital", "analog", "vintage", "modern",
-        
-        // Musical roles
-        "lead", "rhythm", "bass", "pad", "arp", "chord", "melody", "harmony",
-        "percussion", "kick", "snare", "hihat", "cymbal", "tom", "clap", "snap",
-        
-        // Arrangement terms
-        "foreground", "background", "midground", "layer", "texture", "foundation",
-        "support", "accent", "fill", "transition", "buildup", "breakdown",
-        
-        // Frequency ranges
-        "low", "mid", "high", "sub", "bass", "treble", "presence", "air",
-        "fundamental", "harmonic", "overtone", "resonant", "filtered"
-    };
-    
-    // Generate contextually meaningful embeddings using clustering
-    std::mt19937 rng(42); // Fixed seed for reproducibility
-    std::normal_distribution<float> normalDist(0.0f, 0.1f);
-    
-    // Create semantic clusters
-    std::unordered_map<std::string, std::vector<std::string>> semanticClusters = {
-        {"timbral_warm", {"warm", "soft", "mellow", "smooth", "round", "organic", "sweet", "silky"}},
-        {"timbral_bright", {"bright", "sharp", "crisp", "clear", "harsh", "thin", "metallic", "glassy"}},
-        {"timbral_dark", {"dark", "thick", "dense", "deep", "rich", "heavy", "woody", "raw"}},
-        {"emotional_calm", {"calm", "peaceful", "serene", "gentle", "flowing", "dreamy", "soft"}},
-        {"emotional_energetic", {"aggressive", "energetic", "bold", "powerful", "fierce", "driving", "intense"}},
-        {"technical_envelope", {"attack", "decay", "sustain", "release", "envelope", "dynamics", "response"}},
-        {"technical_filter", {"filter", "cutoff", "resonance", "frequency", "sweep", "modulation", "eq"}},
-        {"instruments_string", {"guitar", "bass", "violin", "strings", "plucked", "bowed", "acoustic"}},
-        {"instruments_electronic", {"synthesizer", "digital", "virtual", "electronic", "processed", "analog"}},
-        {"effects_spatial", {"reverb", "delay", "echo", "space", "depth", "ambience", "hall"}},
-        {"effects_modulation", {"chorus", "vibrato", "tremolo", "phaser", "flanger", "modulation", "lfo"}},
-        {"roles_lead", {"lead", "melody", "solo", "foreground", "primary", "main", "featured"}},
-        {"roles_support", {"bass", "pad", "harmony", "background", "support", "foundation", "texture"}},
-        {"arrangement", {"layer", "arrangement", "mix", "balance", "placement", "position", "priority"}}
-    };
-    
-    // Generate cluster centers
-    std::unordered_map<std::string, EmbeddingVector> clusterCenters;
-    for (const auto& [clusterName, words] : semanticClusters) {
-        EmbeddingVector center{};
-        for (int i = 0; i < 100; ++i) {
-            center[i] = normalDist(rng);
-        }
-        
-        // Normalize
-        float norm = std::sqrt(std::inner_product(center.begin(), center.end(), center.begin(), 0.0f));
-        if (norm > 0) {
-            for (float& val : center) {
-                val /= norm;
-            }
-        }
-        
-        clusterCenters[clusterName] = center;
-    }
-    
-    // Generate word embeddings around cluster centers
-    for (const auto& [clusterName, words] : semanticClusters) {
-        const auto& center = clusterCenters[clusterName];
-        
-        for (const std::string& word : words) {
-            if (std::find(musicVocab.begin(), musicVocab.end(), word) != musicVocab.end()) {
-                EmbeddingVector embedding{};
-                
-                // Perturb around cluster center
-                for (int i = 0; i < 100; ++i) {
-                    embedding[i] = center[i] + normalDist(rng) * 0.3f;
-                }
-                
-                // Normalize
-                float norm = std::sqrt(std::inner_product(embedding.begin(), embedding.end(), embedding.begin(), 0.0f));
-                if (norm > 0) {
-                    for (float& val : embedding) {
-                        val /= norm;
-                    }
-                }
-                
-                wordEmbeddings_[word] = embedding;
-            }
-        }
-    }
-    
-    // Generate embeddings for remaining vocabulary
-    for (const std::string& word : musicVocab) {
-        if (wordEmbeddings_.find(word) == wordEmbeddings_.end()) {
-            EmbeddingVector embedding{};
-            for (int i = 0; i < 100; ++i) {
-                embedding[i] = normalDist(rng);
-            }
-            
-            // Normalize
-            float norm = std::sqrt(std::inner_product(embedding.begin(), embedding.end(), embedding.begin(), 0.0f));
-            if (norm > 0) {
-                for (float& val : embedding) {
-                    val /= norm;
-                }
-            }
-            
-            wordEmbeddings_[word] = embedding;
-        }
-    }
-}
-
-void EmbeddingEngine::generateSubwordEmbeddings() {
-    // Generate character n-grams for OOV handling
-    std::set<std::string> ngrams;
-    
-    for (const auto& [word, embedding] : wordEmbeddings_) {
-        std::string paddedWord = "<" + word + ">";
-        
-        // Generate 3-6 character n-grams
-        for (int n = 3; n <= std::min(6, static_cast<int>(paddedWord.length())); ++n) {
-            for (int i = 0; i <= static_cast<int>(paddedWord.length()) - n; ++i) {
-                ngrams.insert(paddedWord.substr(i, n));
-            }
-        }
-    }
-    
-    // Generate embeddings for n-grams
-    std::mt19937 rng(42);
-    std::normal_distribution<float> normalDist(0.0f, 0.05f);
-    
-    for (const std::string& ngram : ngrams) {
-        EmbeddingVector embedding{};
-        for (int i = 0; i < 100; ++i) {
-            embedding[i] = normalDist(rng);
-        }
-        
-        // Normalize
-        float norm = std::sqrt(std::inner_product(embedding.begin(), embedding.end(), embedding.begin(), 0.0f));
-        if (norm > 0) {
-            for (float& val : embedding) {
-                val /= norm;
-            }
-        }
-        
-        subwordEmbeddings_[ngram] = embedding;
     }
 }
 
 EmbeddingVector EmbeddingEngine::getEmbedding(const std::string& text) const {
-    return computeTextEmbedding(text);
+    if (!knowledgeBase_) return EmbeddingVector(dimension_, 0.0f);
+    auto embedding = knowledgeBase_->encodeText(text);
+    if (embedding.empty()) embedding = EmbeddingVector(dimension_, 1.0f / std::sqrt(dimension_));
+    if (static_cast<int>(embedding.size()) != dimension_) {
+        embedding.resize(dimension_, 0.0f);
+        normalizeEmbedding(embedding);
+    }
+    return embedding;
 }
 
-EmbeddingVector EmbeddingEngine::computeTextEmbedding(const std::string& text) const {
-    std::vector<std::string> words;
-    std::istringstream iss(text);
-    std::string word;
-    
-    // Tokenize and clean
-    while (iss >> word) {
-        // Convert to lowercase and remove punctuation
-        std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-        word = std::regex_replace(word, std::regex("[^a-zA-Z0-9]"), "");
-        if (!word.empty()) {
-            words.push_back(word);
-        }
-    }
-    
-    EmbeddingVector result{};
-    float weightSum = 0.0f;
-    
-    for (const std::string& w : words) {
-        EmbeddingVector wordEmb{};
-        
-        // Try direct lookup
-        auto it = wordEmbeddings_.find(w);
-        if (it != wordEmbeddings_.end()) {
-            wordEmb = it->second;
-        } else {
-            // Use subword embeddings for OOV
-            std::string paddedWord = "<" + w + ">";
-            int ngramCount = 0;
-            
-            for (int n = 3; n <= std::min(6, static_cast<int>(paddedWord.length())); ++n) {
-                for (int i = 0; i <= static_cast<int>(paddedWord.length()) - n; ++i) {
-                    std::string ngram = paddedWord.substr(i, n);
-                    auto ngramIt = subwordEmbeddings_.find(ngram);
-                    if (ngramIt != subwordEmbeddings_.end()) {
-                        for (int j = 0; j < 100; ++j) {
-                            wordEmb[j] += ngramIt->second[j];
-                        }
-                        ngramCount++;
-                    }
-                }
-            }
-            
-            if (ngramCount > 0) {
-                for (float& val : wordEmb) {
-                    val /= ngramCount;
-                }
-            }
-        }
-        
-        // Add to result with TF-IDF-like weighting
-        float weight = 1.0f / std::sqrt(static_cast<float>(words.size()));
-        for (int i = 0; i < 100; ++i) {
-            result[i] += wordEmb[i] * weight;
-        }
-        weightSum += weight;
-    }
-    
-    // Normalize result
-    if (weightSum > 0) {
-        for (float& val : result) {
-            val /= weightSum;
-        }
-    }
-    
-    return result;
-}
-
-void EmbeddingEngine::normalizeEmbedding(EmbeddingVector& embedding) noexcept {
-    float norm = std::sqrt(std::inner_product(embedding.begin(), embedding.end(), embedding.begin(), 0.0f));
-    
-    if (norm > NUMERICAL_EPSILON) {  // Avoid division by zero
-        for (float& val : embedding) {
-            val /= norm;
-        }
-    } else {
-        // Zero vector - set to zero (fallback for numerical stability)
-        std::fill(embedding.begin(), embedding.end(), 0.0f);
-    }
-}
-
-CompatibilityScore EmbeddingEngine::calculateSimilarity(const EmbeddingVector& a, const EmbeddingVector& b) noexcept {
-    // v1.2: Optimized for PRE-NORMALIZED embeddings (unit vectors)
-    // For unit vectors: cosine(a,b) = dot(a,b) / (||a|| * ||b||) = dot(a,b) / (1 * 1) = dot(a,b)
-    // This eliminates the sqrt and division operations - major speedup!
-    
-    float dotProduct = std::inner_product(a.begin(), a.end(), b.begin(), 0.0f);
-    
-    // Clamp to [0,1] range (numerical stability)
-    // Pre-normalized vectors give cosine in [-1,1], clamp to [0,1] for similarity
-    return std::clamp(dotProduct, 0.0f, 1.0f);
+CompatibilityScore EmbeddingEngine::calculateSimilarity(
+    const EmbeddingVector& a, const EmbeddingVector& b) noexcept {
+    if (a.empty() || b.empty() || a.size() != b.size()) return 0.0f;
+    return std::clamp(std::inner_product(a.begin(), a.end(), b.begin(), 0.0f), 0.0f, 1.0f);
 }
 
 CompatibilityScore EmbeddingEngine::calculateWeightedSimilarity(
-    const EmbeddingVector& a, 
-    const EmbeddingVector& b,
-    const EmbeddingVector* weights) noexcept {
-    
-    if (!weights) {
-        // No weights - fall back to standard similarity
-        return calculateSimilarity(a, b);
-    }
-    
-    // Weighted cosine: dot(a .* w, b) / (||a .* w|| * ||b||)
-    // For pre-normalized vectors, we need to re-normalize after weighting
+    const EmbeddingVector& a, const EmbeddingVector& b, const EmbeddingVector* weights) noexcept {
+    if (a.empty() || b.empty() || a.size() != b.size()) return 0.0f;
+    if (!weights || weights->empty()) return calculateSimilarity(a, b);
     float weightedDot = 0.0f;
-    float normWeightedA = 0.0f;
-    
-    for (size_t i = 0; i < a.size(); ++i) {
-        float weightedA = a[i] * (*weights)[i];
-        weightedDot += weightedA * b[i];
-        normWeightedA += weightedA * weightedA;
-    }
-    
-    if (normWeightedA < 1e-8f) return 0.0f;
-    
-    // b is already normalized (unit vector), so ||b|| = 1
-    float similarity = weightedDot / std::sqrt(normWeightedA);
-    
-    return std::clamp(similarity, 0.0f, 1.0f);
+    size_t dim = std::min({a.size(), b.size(), weights->size()});
+    for (size_t i = 0; i < dim; ++i) weightedDot += (*weights)[i] * a[i] * b[i];
+    return std::clamp(weightedDot, 0.0f, 1.0f);
 }
 
-float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
-    auto it = tagIDF_.find(tag);
-    if (it != tagIDF_.end()) {
-        return it->second;
-    }
-    // Default IDF for unseen tags
-    return MIN_IDF;
-}
-
-void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
-    totalDocuments_ = static_cast<int>(allTags.size());
-    if (totalDocuments_ == 0) return;
-    
-    // Count document frequency for each tag
-    std::unordered_map<std::string, int> documentFrequency;
-    for (const auto& tags : allTags) {
-        std::unordered_set<std::string> uniqueTags(tags.begin(), tags.end());
-        for (const auto& tag : uniqueTags) {
-            documentFrequency[tag]++;
-        }
-    }
-    
-    // Calculate IDF: log(N / df) where N = total documents, df = document frequency
-    tagIDF_.clear();
-    for (const auto& [tag, df] : documentFrequency) {
-        float idf = std::log(static_cast<float>(totalDocuments_) / static_cast<float>(df));
-        tagIDF_[tag] = std::max(idf, MIN_IDF);
-    }
+void EmbeddingEngine::normalizeEmbedding(EmbeddingVector& embedding) noexcept {
+    if (embedding.empty()) return;
+    SemanticKnowledgeBase::normalizeVector(embedding);
 }
 
 std::vector<std::pair<std::string, float>> EmbeddingEngine::findSimilarWords(
     const EmbeddingVector& embedding, int topK) const {
-    
+    if (!knowledgeBase_) return {};
+    auto allTags = knowledgeBase_->getAllTags();
     std::vector<std::pair<std::string, float>> similarities;
-    
-    for (const auto& [word, wordEmb] : wordEmbeddings_) {
-        float sim = calculateSimilarity(embedding, wordEmb);
-        similarities.emplace_back(word, sim);
+    for (const auto& tag : allTags) {
+        auto tagEmb = knowledgeBase_->getTagEmbedding(tag);
+        if (!tagEmb.empty() && tagEmb.size() == embedding.size()) {
+            similarities.emplace_back(tag, calculateSimilarity(embedding, tagEmb));
+        }
     }
-    
-    // Sort by similarity descending
     std::sort(similarities.begin(), similarities.end(),
               [](const auto& a, const auto& b) { return a.second > b.second; });
-    
-    // Return top K
-    if (similarities.size() > static_cast<size_t>(topK)) {
-        similarities.resize(topK);
-    }
-    
+    if (similarities.size() > static_cast<size_t>(topK)) similarities.resize(topK);
     return similarities;
+}
+
+float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
+    return knowledgeBase_ ? knowledgeBase_->getIDF(tag) : 1.0f;
+}
+
+void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
+    if (!knowledgeBase_) return;
+    std::vector<std::string> flatTags;
+    for (const auto& tagSet : allTags) flatTags.insert(flatTags.end(), tagSet.begin(), tagSet.end());
+    knowledgeBase_->computeIDFStatistics(flatTags);
+}
+
+int EmbeddingEngine::getDimension() const noexcept {
+    return dimension_;
+}
+
+bool EmbeddingEngine::isReady() const noexcept {
+    return isReady_ && knowledgeBase_ && knowledgeBase_->isReady();
 }
 
 // ============================================================================
