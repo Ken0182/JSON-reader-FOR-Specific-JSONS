@@ -98,10 +98,10 @@ void AudioConfigSystem::loadConfigurationDatabase(const std::string& configPath)
         }
         audioConfig->setSemanticTags(std::move(semanticTags));
         
-        // Generate embedding
-        std::string embeddingText = configId;
+        // v1.4: Generate embedding from normalized tokens (same as search pipeline)
+        std::string embeddingText = TextUtils::normalizeForEmbedding(configId);
         for (const auto& tag : audioConfig->getSemanticTags()) {
-            embeddingText += " " + tag;
+            embeddingText += " " + TextUtils::normalizeForEmbedding(tag);
         }
         audioConfig->setEmbedding(embeddingEngine_->getEmbedding(embeddingText));
         
@@ -183,48 +183,89 @@ void AudioConfigSystem::loadConfigurationDatabase(const std::string& configPath)
     }
 }
 
-std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>>
+std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>> 
 AudioConfigSystem::searchConfigurations(const std::string& query, int maxResults) const {
     std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>> results;
     
-    // Generate query embedding
-    EmbeddingVector queryEmbedding = embeddingEngine_->getEmbedding(query);
+    // v1.4: Tokenize query using unified normalization pipeline
+    auto queryTokens = TextUtils::tokenize(query);
+    
+    // v1.5: Record query tokens for interest tracking
+    // Note: Using const_cast to allow recording in const method (tracker is mutable state)
+    const_cast<UserContext&>(userContext_).getSearchTracker().recordQuery(queryTokens);
+    
+    // v1.4: Generate query embedding from normalized tokens (aligned with config embeddings)
+    std::string normalizedQuery = TextUtils::normalizeForEmbedding(query);
+    EmbeddingVector queryEmbedding = embeddingEngine_->getEmbedding(normalizedQuery);
     
     for (const auto& [configId, config] : configurations_) {
         // Skip excluded configurations
         if (userContext_.isExcluded(configId)) continue;
         
-        // Calculate semantic similarity
+        // 1. Calculate semantic similarity (SKD-based cosine)
         float semanticScore = EmbeddingEngine::calculateSimilarity(queryEmbedding, config->getEmbedding());
         
-        // Check for direct text matches
-        float textScore = 0.0f;
-        std::string queryLower = query;
-        std::string configIdLower = configId;
-        std::transform(queryLower.begin(), queryLower.end(), queryLower.begin(), ::tolower);
-        std::transform(configIdLower.begin(), configIdLower.end(), configIdLower.begin(), ::tolower);
+        // 2. v1.4: Per-token matching across IDs and tags
+        auto configTokens = config->getAllTokens();
+        float tokenOverlap = TextUtils::calculateTokenOverlap(queryTokens, configTokens);
         
-        if (configIdLower.find(queryLower) != std::string::npos) {
-            textScore += 1.0f;
-        }
-        
-        // Check tag matches
-        for (const auto& tag : config->getSemanticTags()) {
-            std::string tagLower = tag;
-            std::transform(tagLower.begin(), tagLower.end(), tagLower.begin(), ::tolower);
-            if (tagLower.find(queryLower) != std::string::npos) {
-                textScore += 0.8f;
+        // 3. Boost for exact multi-token matches (e.g., "funky retro" → both tokens present)
+        float multiTokenBoost = 0.0f;
+        if (queryTokens.size() > 1 && tokenOverlap >= 0.5f) {
+            // All query tokens found in config → strong match
+            int matchedTokens = 0;
+            std::unordered_set<std::string> configTokenSet(configTokens.begin(), configTokens.end());
+            for (const auto& qToken : queryTokens) {
+                if (configTokenSet.find(qToken) != configTokenSet.end()) {
+                    matchedTokens++;
+                }
+            }
+            if (matchedTokens == static_cast<int>(queryTokens.size())) {
+                multiTokenBoost = 1.0f;  // All query tokens present
             }
         }
         
-        // Combined score
-        float combinedScore = 0.4f * textScore + 0.6f * semanticScore;
+        // 4. Combined scoring with token matching priority
+        // Token matching (exact) > Semantic similarity (fuzzy)
+        float tokenScore = tokenOverlap + multiTokenBoost;
+        float combinedScore = 0.5f * tokenScore + 0.5f * semanticScore;
+        
+        // v1.5: Apply search interest bias (gentle clamped boost)
+        // Config tokens that match user's past interests get boosted
+        float configBias = userContext_.getSearchTracker().getBiasSignal(configTokens);
+        combinedScore += configBias;  // Additive bias (already clamped in tracker)
         
         // Apply user boost
         combinedScore *= userContext_.calculateUserBoost(configId);
         
-        if (combinedScore > 0.1f) {
+        if (combinedScore > 0.05f) {  // Lower threshold for token matches
             results.emplace_back(config, combinedScore);
+        }
+    }
+    
+    // v1.4: Re-rank results with cosine-on-shared-tokens validation
+    // This ensures semantic correctness after initial pointing
+    for (auto& [config, score] : results) {
+        auto configTokens = config->getAllTokens();
+        
+        // Calculate shared token count
+        int sharedTokens = 0;
+        std::unordered_set<std::string> configTokenSet(configTokens.begin(), configTokens.end());
+        for (const auto& qToken : queryTokens) {
+            if (configTokenSet.find(qToken) != configTokenSet.end()) {
+                sharedTokens++;
+            }
+        }
+        
+        // If shared tokens > threshold, validate with semantic similarity
+        if (sharedTokens > 0) {
+            float semanticValidation = EmbeddingEngine::calculateSimilarity(
+                queryEmbedding, config->getEmbedding());
+            
+            // Boost if both token match AND semantic match are strong
+            if (semanticValidation > 0.3f) {
+                score *= (1.0f + 0.2f * semanticValidation);
+            }
         }
     }
     
@@ -290,7 +331,7 @@ void AudioConfigSystem::runInteractiveCLI() {
     std::string input;
     
     std::cout << "\n=== INTERACTIVE SESSION ===" << std::endl;
-    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, generate, help, examples, quit\n" << std::endl;
+    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, signals, generate, help, examples, quit\n" << std::endl;
     
     while (true) {
         std::cout << "> ";
@@ -325,6 +366,8 @@ void AudioConfigSystem::runInteractiveCLI() {
                 handleListCommand(tokens);
             } else if (command == "stats") {
                 handleStatsCommand(tokens);
+            } else if (command == "signals") {
+                handleSignalsCommand(tokens);
             } else if (command == "generate" || command == "suggest_config") {
                 handleGenerateCommand(tokens);
             } else {
@@ -635,6 +678,285 @@ Each suggestion shows:
   - Warnings about potential conflicts
   - Suggestions for improvements
 )" << std::endl;
+}
+
+void AudioConfigSystem::handleSignalsCommand(const std::vector<std::string>& args) {
+    // v1.5: Comprehensive signals CLI command family
+    
+    if (args.size() < 2) {
+        std::cout << "Usage: signals <subcommand> [options]\n\n";
+        std::cout << "Subcommands:\n";
+        std::cout << "  on          - Enable search interest tracking\n";
+        std::cout << "  off         - Disable search interest tracking\n";
+        std::cout << "  status      - Show tracking status and statistics\n";
+        std::cout << "  history     - Show recent search queries\n";
+        std::cout << "  active      - Show active interest signals\n";
+        std::cout << "  tune        - Adjust tracking parameters\n";
+        std::cout << "  export      - Export tracker state to file\n";
+        std::cout << "  import      - Import tracker state from file\n";
+        std::cout << "  clear       - Clear all tracked data\n";
+        std::cout << "  help        - Show detailed help\n";
+        return;
+    }
+    
+    std::string subcommand = args[1];
+    std::transform(subcommand.begin(), subcommand.end(), subcommand.begin(), ::tolower);
+    
+    auto& tracker = userContext_.getSearchTracker();
+    
+    if (subcommand == "on") {
+        tracker.setEnabled(true);
+        std::cout << "Search interest tracking: ENABLED" << std::endl;
+        std::cout << "Your searches will now be tracked to improve future recommendations." << std::endl;
+        
+    } else if (subcommand == "off") {
+        tracker.setEnabled(false);
+        std::cout << "Search interest tracking: DISABLED" << std::endl;
+        std::cout << "Your searches will no longer be tracked (existing data preserved)." << std::endl;
+        
+    } else if (subcommand == "status") {
+        auto stats = tracker.getStatistics();
+        auto params = tracker.getParameters();
+        
+        std::cout << "\n=== SEARCH INTEREST TRACKER STATUS ===" << std::endl;
+        std::cout << "Tracking: " << (tracker.isEnabled() ? "ENABLED" : "DISABLED") << std::endl;
+        std::cout << "\nStatistics:" << std::endl;
+        std::cout << "  Total queries tracked: " << static_cast<int>(stats["total_queries"]) << std::endl;
+        std::cout << "  Active signals: " << static_cast<int>(stats["active_signals"]) << std::endl;
+        std::cout << "  Total tokens tracked: " << static_cast<int>(stats["total_tokens_tracked"]) << std::endl;
+        std::cout << "  Average signal strength: " << std::fixed << std::setprecision(3) 
+                  << stats["avg_signal_strength"] << std::endl;
+        
+        std::cout << "\nParameters:" << std::endl;
+        std::cout << "  Decay half-life: " << params.decayHalfLife << " seconds (" 
+                  << (params.decayHalfLife / 3600.0f) << " hours)" << std::endl;
+        std::cout << "  Smoothing alpha: " << params.smoothingAlpha << std::endl;
+        std::cout << "  Bias strength: " << params.biasStrength << std::endl;
+        std::cout << "  Bias clamp max: " << params.biasClampMax << std::endl;
+        std::cout << "  Min signal strength: " << params.minSignalStrength << std::endl;
+        
+    } else if (subcommand == "history") {
+        int maxResults = 20;
+        if (args.size() > 2) {
+            try {
+                maxResults = std::stoi(args[2]);
+            } catch (...) {}
+        }
+        
+        auto history = tracker.getHistory(maxResults);
+        
+        std::cout << "\n=== SEARCH HISTORY (Most Recent " << history.size() << ") ===" << std::endl;
+        
+        if (history.empty()) {
+            std::cout << "No search history available." << std::endl;
+        } else {
+            for (size_t i = 0; i < history.size(); ++i) {
+                const auto& record = history[i];
+                auto now = std::chrono::system_clock::now();
+                float ageSeconds = record.getAgeSeconds(now);
+                float decayedStrength = record.getDecayedStrength(now, tracker.getParameters().decayHalfLife);
+                
+                std::cout << (i + 1) << ". ";
+                std::cout << "[" << TextUtils::joinTokens(record.tokens) << "] ";
+                std::cout << "(" << static_cast<int>(ageSeconds / 60) << " min ago, ";
+                std::cout << "strength: " << std::fixed << std::setprecision(2) << decayedStrength << ")" << std::endl;
+            }
+        }
+        
+    } else if (subcommand == "active") {
+        auto activeSignals = tracker.getActiveSignals();
+        
+        std::cout << "\n=== ACTIVE INTEREST SIGNALS (" << activeSignals.size() << ") ===" << std::endl;
+        
+        if (activeSignals.empty()) {
+            std::cout << "No active signals." << std::endl;
+        } else {
+            // Sort by strength descending
+            std::vector<std::pair<std::string, float>> sortedSignals(activeSignals.begin(), activeSignals.end());
+            std::sort(sortedSignals.begin(), sortedSignals.end(),
+                     [](const auto& a, const auto& b) { return a.second > b.second; });
+            
+            for (const auto& [token, strength] : sortedSignals) {
+                std::cout << "  " << token << ": " << std::fixed << std::setprecision(3) << strength;
+                
+                // Show visual bar
+                int barLength = static_cast<int>(strength * 20);
+                std::cout << " [";
+                for (int i = 0; i < 20; ++i) {
+                    std::cout << (i < barLength ? "=" : " ");
+                }
+                std::cout << "]" << std::endl;
+            }
+        }
+        
+    } else if (subcommand == "tune") {
+        if (args.size() < 4) {
+            std::cout << "Usage: signals tune <parameter> <value>\n\n";
+            std::cout << "Parameters:\n";
+            std::cout << "  decay_halflife    - Decay half-life in seconds (default: 7200)\n";
+            std::cout << "  smoothing_alpha   - EMA smoothing factor 0-1 (default: 0.3)\n";
+            std::cout << "  bias_strength     - Bias multiplier 0-1 (default: 0.2)\n";
+            std::cout << "  bias_clamp        - Maximum bias contribution (default: 0.15)\n";
+            std::cout << "  min_signal        - Minimum signal to keep (default: 0.01)\n";
+            return;
+        }
+        
+        std::string param = args[2];
+        float value;
+        try {
+            value = std::stof(args[3]);
+        } catch (...) {
+            std::cout << "Error: Invalid value" << std::endl;
+            return;
+        }
+        
+        auto params = tracker.getParameters();
+        
+        if (param == "decay_halflife") {
+            params.decayHalfLife = value;
+        } else if (param == "smoothing_alpha") {
+            params.smoothingAlpha = value;
+        } else if (param == "bias_strength") {
+            params.biasStrength = value;
+        } else if (param == "bias_clamp") {
+            params.biasClampMax = value;
+        } else if (param == "min_signal") {
+            params.minSignalStrength = value;
+        } else {
+            std::cout << "Error: Unknown parameter '" << param << "'" << std::endl;
+            return;
+        }
+        
+        if (!params.isValid()) {
+            std::cout << "Error: Invalid parameter value (out of range)" << std::endl;
+            return;
+        }
+        
+        tracker.setParameters(params);
+        std::cout << "Parameter updated: " << param << " = " << value << std::endl;
+        
+    } else if (subcommand == "export") {
+        std::string filename = "signals_state.json";
+        if (args.size() > 2) {
+            filename = args[2];
+        }
+        
+        auto state = tracker.exportState();
+        
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cout << "Error: Could not open file '" << filename << "' for writing" << std::endl;
+            return;
+        }
+        
+        file << state.dump(2);  // Pretty print with 2-space indent
+        file.close();
+        
+        std::cout << "Tracker state exported to: " << filename << std::endl;
+        std::cout << "  Queries: " << tracker.getHistory(1000).size() << std::endl;
+        std::cout << "  Active signals: " << tracker.getActiveSignals().size() << std::endl;
+        
+    } else if (subcommand == "import") {
+        if (args.size() < 3) {
+            std::cout << "Usage: signals import <filename>" << std::endl;
+            return;
+        }
+        
+        std::string filename = args[2];
+        
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cout << "Error: Could not open file '" << filename << "'" << std::endl;
+            return;
+        }
+        
+        nlohmann::json state;
+        try {
+            file >> state;
+        } catch (const std::exception& e) {
+            std::cout << "Error: Invalid JSON file - " << e.what() << std::endl;
+            return;
+        }
+        
+        if (tracker.importState(state)) {
+            std::cout << "Tracker state imported from: " << filename << std::endl;
+            auto stats = tracker.getStatistics();
+            std::cout << "  Queries: " << static_cast<int>(stats["total_queries"]) << std::endl;
+            std::cout << "  Active signals: " << static_cast<int>(stats["active_signals"]) << std::endl;
+        } else {
+            std::cout << "Error: Failed to import state (invalid format)" << std::endl;
+        }
+        
+    } else if (subcommand == "clear") {
+        tracker.clear();
+        std::cout << "All tracked data cleared." << std::endl;
+        
+    } else if (subcommand == "help") {
+        std::cout << R"(
+=== SIGNALS COMMAND HELP ===
+
+The signals system tracks your search interests over time with temporal decay
+and uses them to gently bias future search results toward your preferences.
+
+SUBCOMMANDS:
+
+  signals on/off
+    Enable or disable search interest tracking
+    
+  signals status
+    Show current tracking status, statistics, and parameters
+    
+  signals history [n]
+    Show recent search queries (default: 20, max: all)
+    Shows query tokens, age, and decayed strength
+    
+  signals active
+    Show currently active interest signals
+    Lists tokens with their decayed strengths and visual bars
+    
+  signals tune <parameter> <value>
+    Adjust tracking parameters:
+    - decay_halflife: How fast interests fade (seconds, default: 7200)
+    - smoothing_alpha: EMA smoothing factor (0-1, default: 0.3)
+    - bias_strength: How much to bias search (0-1, default: 0.2)
+    - bias_clamp: Maximum bias contribution (0-1, default: 0.15)
+    - min_signal: Minimum signal to keep (default: 0.01)
+    
+  signals export [filename]
+    Export tracker state to JSON file (default: signals_state.json)
+    Includes parameters, active signals, and query history
+    
+  signals import <filename>
+    Import tracker state from JSON file
+    Replaces current tracker state
+    
+  signals clear
+    Clear all tracked data (history and signals)
+    Does not disable tracking
+
+HOW IT WORKS:
+
+1. Every search query is tokenized and recorded with a timestamp
+2. Token signals decay exponentially over time (half-life: 2 hours default)
+3. New queries are smoothed with existing signals using EMA (alpha: 0.3)
+4. During search, matching tokens provide a gentle bias boost (0-0.15 max)
+5. Weak signals below threshold are pruned automatically
+
+EXAMPLES:
+
+  signals on                          # Enable tracking
+  signals history 50                  # Show last 50 queries
+  signals tune decay_halflife 3600    # Set 1-hour decay
+  signals export my_interests.json    # Save state
+  signals import my_interests.json    # Load state
+  signals clear                       # Reset all data
+
+)" << std::endl;
+        
+    } else {
+        std::cout << "Unknown subcommand: " << subcommand << std::endl;
+        std::cout << "Use 'signals help' for detailed information" << std::endl;
+    }
 }
 
 void AudioConfigSystem::printConfigurationSummary(const AudioConfig& config, CompatibilityScore score) const {
