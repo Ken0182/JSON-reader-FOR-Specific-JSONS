@@ -2,7 +2,13 @@
  * @file audio_config_system.hpp
  * @brief Multi-Dimensional Audio Configuration System - Main Header
  * @author AI Assistant
- * @version 1.3
+ * @version 1.4
+ * 
+ * v1.4 Unified Tokenization & Scoring:
+ * - Shared tokenization pipeline (camelCase, snake_case, diacritics, punctuation)
+ * - Per-token matching across IDs, tags, queries
+ * - Aligned embedding generation (uses same token stream)
+ * - Re-ranking with cosine-on-shared-tokens validation
  * 
  * v1.3 SKD Embedding Integration:
  * - External Semantic Knowledge Database (SKD) embedding index
@@ -30,6 +36,8 @@
 #include <array>
 #include <cmath>
 #include "json.hpp"
+#include "text_utils.hpp"
+#include "search_tracker.hpp"
 
 namespace audio_config {
 
@@ -164,6 +172,16 @@ public:
     [[nodiscard]] const LayeringInfo& getLayeringInfo() const noexcept { return layeringInfo_; }
     [[nodiscard]] const nlohmann::json& getConfigData() const;
     
+    /**
+     * @brief Get normalized tokens for this configuration (v1.4)
+     * @return Vector of normalized tokens from ID and tags
+     * 
+     * Includes tokens from:
+     * - Configuration ID (split camelCase/snake_case)
+     * - All semantic tags (normalized)
+     */
+    [[nodiscard]] std::vector<std::string> getAllTokens() const;
+    
     // Mutators
     void setSemanticTags(std::vector<std::string> tags);
     void setEmbedding(const EmbeddingVector& embedding);  // Auto-normalizes
@@ -188,6 +206,10 @@ private:
     TechnicalSpecs techSpecs_;
     MusicalRoleInfo musicalRole_;
     LayeringInfo layeringInfo_;
+    
+    // v1.4: Cached normalized tokens for efficient per-token matching
+    mutable std::vector<std::string> cachedTokens_;
+    mutable bool tokensCached_{false};
 };
 
 /**
@@ -262,6 +284,13 @@ public:
      * @return Boost multiplier (0.1-2.0)
      */
     [[nodiscard]] float calculateUserBoost(const ConfigId& configId) const noexcept;
+    
+    /**
+     * @brief Get search interest tracker (v1.5)
+     * @return Reference to tracker
+     */
+    SearchInterestTracker& getSearchTracker() noexcept { return searchTracker_; }
+    const SearchInterestTracker& getSearchTracker() const noexcept { return searchTracker_; }
 
 private:
     std::vector<ConfigId> selectedConfigs_;
@@ -270,6 +299,9 @@ private:
     std::unordered_set<ConfigId> excludedConfigs_;
     std::unordered_map<ConfigId, float> configBoosts_;
     std::unordered_map<MusicalRole, float> rolePreferences_;
+    
+    // v1.5: Search interest tracking with decay
+    SearchInterestTracker searchTracker_;
 };
 
 /**
@@ -505,6 +537,7 @@ private:
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
+    void handleSignalsCommand(const std::vector<std::string>& args);  // v1.5
     
     // Helper methods
     void loadConfigurationDatabase(const std::string& configPath);
