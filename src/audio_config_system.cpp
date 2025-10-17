@@ -495,13 +495,26 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
 }
 
 EmbeddingVector EmbeddingEngine::getEmbedding(const std::string& text) const {
-    if (!knowledgeBase_) return EmbeddingVector(dimension_, 0.0f);
+    // Guard: KB not initialized, return safe unit vector
+    if (!knowledgeBase_) {
+        EmbeddingVector safe(dimension_, 1.0f / std::sqrt(static_cast<float>(dimension_)));
+        return safe;  // Already unit-normalized
+    }
+    
     auto embedding = knowledgeBase_->encodeText(text);
-    if (embedding.empty()) embedding = EmbeddingVector(dimension_, 1.0f / std::sqrt(dimension_));
+    
+    // Guard: empty result (shouldn't happen, but be safe)
+    if (embedding.empty()) {
+        embedding = EmbeddingVector(dimension_, 1.0f / std::sqrt(static_cast<float>(dimension_)));
+        return embedding;
+    }
+    
+    // Guard: dimension mismatch, resize and renormalize
     if (static_cast<int>(embedding.size()) != dimension_) {
         embedding.resize(dimension_, 0.0f);
         normalizeEmbedding(embedding);
     }
+    
     return embedding;
 }
 

@@ -331,7 +331,7 @@ void AudioConfigSystem::runInteractiveCLI() {
     std::string input;
     
     std::cout << "\n=== INTERACTIVE SESSION ===" << std::endl;
-    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, signals, generate, help, examples, quit\n" << std::endl;
+    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, kbstats, signals, generate, help, examples, quit\n" << std::endl;
     
     while (true) {
         std::cout << "> ";
@@ -366,6 +366,8 @@ void AudioConfigSystem::runInteractiveCLI() {
                 handleListCommand(tokens);
             } else if (command == "stats") {
                 handleStatsCommand(tokens);
+            } else if (command == "kbstats") {
+                handleKBStatsCommand(tokens);
             } else if (command == "signals") {
                 handleSignalsCommand(tokens);
             } else if (command == "generate" || command == "suggest_config") {
@@ -552,6 +554,42 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
         }
         std::cout << "  " << roleName << ": " << count << std::endl;
     }
+    std::cout << "=========================================================" << std::endl;
+}
+
+void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& args) {
+    (void)args; // Unused parameter
+    
+    if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
+        std::cout << "Knowledge base not initialized" << std::endl;
+        return;
+    }
+    
+    std::cout << "\n=== KNOWLEDGE BASE STATISTICS ===" << std::endl;
+    std::cout << "Embedding dimension: " << embeddingEngine_->getDimension() << "D" << std::endl;
+    std::cout << "Status: " << (embeddingEngine_->isReady() ? "Ready" : "Not ready") << std::endl;
+    
+    // Get sample tags by encoding a few common words
+    std::cout << "\nSample embeddings (unit-normalized):" << std::endl;
+    std::vector<std::string> sampleWords = {"warm", "bright", "analog", "dreamy"};
+    for (const auto& word : sampleWords) {
+        auto emb = embeddingEngine_->getEmbedding(word);
+        float norm = 0.0f;
+        for (float v : emb) norm += v * v;
+        norm = std::sqrt(norm);
+        std::cout << "  " << word << ": " << emb.size() << "D, |v|=" 
+                  << std::fixed << std::setprecision(3) << norm << std::endl;
+    }
+    
+    std::cout << "\nIDF weights (top tags):" << std::endl;
+    std::vector<std::string> checkTags = {"warm", "bright", "analog", "vintage", "digital"};
+    for (const auto& tag : checkTags) {
+        float idf = embeddingEngine_->getTagIDF(tag);
+        if (idf > 0.0f) {
+            std::cout << "  " << tag << ": " << std::fixed << std::setprecision(3) << idf << std::endl;
+        }
+    }
+    
     std::cout << "=========================================================" << std::endl;
 }
 

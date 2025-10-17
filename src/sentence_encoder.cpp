@@ -42,13 +42,17 @@ HashEncoder::HashEncoder(const SemanticDatabase* db, int dimension)
 
 std::vector<float> HashEncoder::encode(const std::string& text) const {
     if (text.empty()) {
-        return std::vector<float>(dimension_, 0.0f);
+        // Return unit vector for empty input (safe neutral prior)
+        std::vector<float> neutral(dimension_, 1.0f / std::sqrt(static_cast<float>(dimension_)));
+        return neutral;
     }
     
     // Tokenize text using shared utilities
     auto tokens = TextUtils::tokenize(text);
     if (tokens.empty()) {
-        return std::vector<float>(dimension_, 0.0f);
+        // Return unit vector for whitespace-only input (safe neutral prior)
+        std::vector<float> neutral(dimension_, 1.0f / std::sqrt(static_cast<float>(dimension_)));
+        return neutral;
     }
     
     // Accumulator for averaging

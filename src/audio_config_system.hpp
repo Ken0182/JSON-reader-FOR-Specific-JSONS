@@ -51,9 +51,7 @@
 #include "json.hpp"
 #include "text_utils.hpp"
 #include "search_tracker.hpp"
-#include "semantic_db.hpp"
-#include "sentence_encoder.hpp"
-#include "semantic_knowledge_base.hpp"
+#include "semantic_knowledge_base.hpp"  // v1.6: Only new include needed
 
 namespace audio_config {
 
@@ -574,6 +572,7 @@ private:
     void handleExcludeCommand(const std::vector<std::string>& args);
     void handleListCommand(const std::vector<std::string>& args);
     void handleStatsCommand(const std::vector<std::string>& args);
+    void handleKBStatsCommand(const std::vector<std::string>& args);  // v1.6
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
