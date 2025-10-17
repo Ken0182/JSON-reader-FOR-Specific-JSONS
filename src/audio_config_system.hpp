@@ -2,7 +2,21 @@
  * @file audio_config_system.hpp
  * @brief Multi-Dimensional Audio Configuration System - Main Header
  * @author AI Assistant
- * @version 1.4
+ * @version 1.6
+ * 
+ * v1.6 Semantic Knowledge Base (MAJOR UPGRADE):
+ * - SQLite database for tags, embeddings, aliases, IDF stats
+ * - Dynamic embedding dimensions (no hardcoded 100D limit)
+ * - Sentence encoder for unlimited vocabulary (any user text)
+ * - Contrastive query vectors (positive - negative constraints)
+ * - Explainability (top contributing tags in results)
+ * - Config-driven tuning (weights stored in database)
+ * - Meaning-aware search (free-text intent, not brittle rules)
+ * 
+ * v1.5 Search Interest Tracking:
+ * - Persistent user search patterns with temporal decay
+ * - EMA smoothing for stable signal adaptation
+ * - Gentle clamped bias for personalization
  * 
  * v1.4 Unified Tokenization & Scoring:
  * - Shared tokenization pipeline (camelCase, snake_case, diacritics, punctuation)
@@ -33,17 +47,18 @@
 #include <unordered_set>
 #include <optional>
 #include <functional>
-#include <array>
 #include <cmath>
 #include "json.hpp"
 #include "text_utils.hpp"
 #include "search_tracker.hpp"
+#include "semantic_db.hpp"
+#include "sentence_encoder.hpp"
 
 namespace audio_config {
 
 // Type aliases for clarity
 using ConfigId = std::string;
-using EmbeddingVector = std::array<float, 100>;  // 100D FastText embeddings (PRE-NORMALIZED)
+using EmbeddingVector = std::vector<float>;  // DYNAMIC DIMENSION (PRE-NORMALIZED)
 using ScoreWeight = float;
 using CompatibilityScore = float;
 using TagSet = std::unordered_set<std::string>;  // O(1) lookup for tag intersection

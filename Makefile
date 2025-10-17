@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -O3 -DNDEBUG
 DEBUG_FLAGS = -std=c++17 -Wall -Wextra -Wpedantic -g -O0 -DDEBUG
 INCLUDES = -Isrc
-LDFLAGS = -pthread
+LDFLAGS = -pthread -lsqlite3
 
 # Platform detection
 ifeq ($(OS),Windows_NT)
@@ -221,6 +221,9 @@ help:
 
 # Declare phony targets
 .PHONY: all debug clean distclean setup run run-with-config create-sample-config test install uninstall format analyze docs help
+
+# Default target
+.DEFAULT_GOAL := all run-with-config create-sample-config test install uninstall format analyze docs help
 
 # Default target
 .DEFAULT_GOAL := all
