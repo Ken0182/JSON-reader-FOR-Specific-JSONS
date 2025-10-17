@@ -257,12 +257,40 @@ void AudioConfig::setSemanticTags(std::vector<std::string> tags) {
     // Cache as unordered_set for O(1) intersection
     tagSet_.clear();
     tagSet_.insert(semanticTags_.begin(), semanticTags_.end());
+    // v1.4: Invalidate token cache
+    tokensCached_ = false;
 }
 
 void AudioConfig::setEmbedding(const EmbeddingVector& embedding) {
     embedding_ = embedding;
     // Pre-normalize at ingest for faster similarity calculation
     EmbeddingEngine::normalizeEmbedding(embedding_);
+}
+
+std::vector<std::string> AudioConfig::getAllTokens() const {
+    // v1.4: Cache normalized tokens for efficient per-token search
+    if (!tokensCached_) {
+        cachedTokens_.clear();
+        
+        // Tokenize ID (splits camelCase/snake_case)
+        auto idTokens = TextUtils::tokenize(id_);
+        cachedTokens_.insert(cachedTokens_.end(), idTokens.begin(), idTokens.end());
+        
+        // Tokenize all semantic tags
+        for (const auto& tag : semanticTags_) {
+            auto tagTokens = TextUtils::tokenize(tag);
+            cachedTokens_.insert(cachedTokens_.end(), tagTokens.begin(), tagTokens.end());
+        }
+        
+        // Remove duplicates
+        std::sort(cachedTokens_.begin(), cachedTokens_.end());
+        cachedTokens_.erase(std::unique(cachedTokens_.begin(), cachedTokens_.end()), 
+                           cachedTokens_.end());
+        
+        tokensCached_ = true;
+    }
+    
+    return cachedTokens_;
 }
 
 CompatibilityScore AudioConfig::calculateSemanticSimilarity(const AudioConfig& other) const noexcept {
