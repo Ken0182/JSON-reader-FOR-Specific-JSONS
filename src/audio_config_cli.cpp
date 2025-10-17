@@ -98,10 +98,10 @@ void AudioConfigSystem::loadConfigurationDatabase(const std::string& configPath)
         }
         audioConfig->setSemanticTags(std::move(semanticTags));
         
-        // Generate embedding
-        std::string embeddingText = configId;
+        // v1.4: Generate embedding from normalized tokens (same as search pipeline)
+        std::string embeddingText = TextUtils::normalizeForEmbedding(configId);
         for (const auto& tag : audioConfig->getSemanticTags()) {
-            embeddingText += " " + tag;
+            embeddingText += " " + TextUtils::normalizeForEmbedding(tag);
         }
         audioConfig->setEmbedding(embeddingEngine_->getEmbedding(embeddingText));
         
@@ -183,48 +183,80 @@ void AudioConfigSystem::loadConfigurationDatabase(const std::string& configPath)
     }
 }
 
-std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>>
+std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>> 
 AudioConfigSystem::searchConfigurations(const std::string& query, int maxResults) const {
     std::vector<std::pair<std::shared_ptr<AudioConfig>, CompatibilityScore>> results;
     
-    // Generate query embedding
-    EmbeddingVector queryEmbedding = embeddingEngine_->getEmbedding(query);
+    // v1.4: Tokenize query using unified normalization pipeline
+    auto queryTokens = TextUtils::tokenize(query);
+    
+    // v1.4: Generate query embedding from normalized tokens (aligned with config embeddings)
+    std::string normalizedQuery = TextUtils::normalizeForEmbedding(query);
+    EmbeddingVector queryEmbedding = embeddingEngine_->getEmbedding(normalizedQuery);
     
     for (const auto& [configId, config] : configurations_) {
         // Skip excluded configurations
         if (userContext_.isExcluded(configId)) continue;
         
-        // Calculate semantic similarity
+        // 1. Calculate semantic similarity (SKD-based cosine)
         float semanticScore = EmbeddingEngine::calculateSimilarity(queryEmbedding, config->getEmbedding());
         
-        // Check for direct text matches
-        float textScore = 0.0f;
-        std::string queryLower = query;
-        std::string configIdLower = configId;
-        std::transform(queryLower.begin(), queryLower.end(), queryLower.begin(), ::tolower);
-        std::transform(configIdLower.begin(), configIdLower.end(), configIdLower.begin(), ::tolower);
+        // 2. v1.4: Per-token matching across IDs and tags
+        auto configTokens = config->getAllTokens();
+        float tokenOverlap = TextUtils::calculateTokenOverlap(queryTokens, configTokens);
         
-        if (configIdLower.find(queryLower) != std::string::npos) {
-            textScore += 1.0f;
-        }
-        
-        // Check tag matches
-        for (const auto& tag : config->getSemanticTags()) {
-            std::string tagLower = tag;
-            std::transform(tagLower.begin(), tagLower.end(), tagLower.begin(), ::tolower);
-            if (tagLower.find(queryLower) != std::string::npos) {
-                textScore += 0.8f;
+        // 3. Boost for exact multi-token matches (e.g., "funky retro" → both tokens present)
+        float multiTokenBoost = 0.0f;
+        if (queryTokens.size() > 1 && tokenOverlap >= 0.5f) {
+            // All query tokens found in config → strong match
+            int matchedTokens = 0;
+            std::unordered_set<std::string> configTokenSet(configTokens.begin(), configTokens.end());
+            for (const auto& qToken : queryTokens) {
+                if (configTokenSet.find(qToken) != configTokenSet.end()) {
+                    matchedTokens++;
+                }
+            }
+            if (matchedTokens == static_cast<int>(queryTokens.size())) {
+                multiTokenBoost = 1.0f;  // All query tokens present
             }
         }
         
-        // Combined score
-        float combinedScore = 0.4f * textScore + 0.6f * semanticScore;
+        // 4. Combined scoring with token matching priority
+        // Token matching (exact) > Semantic similarity (fuzzy)
+        float tokenScore = tokenOverlap + multiTokenBoost;
+        float combinedScore = 0.5f * tokenScore + 0.5f * semanticScore;
         
         // Apply user boost
         combinedScore *= userContext_.calculateUserBoost(configId);
         
-        if (combinedScore > 0.1f) {
+        if (combinedScore > 0.05f) {  // Lower threshold for token matches
             results.emplace_back(config, combinedScore);
+        }
+    }
+    
+    // v1.4: Re-rank results with cosine-on-shared-tokens validation
+    // This ensures semantic correctness after initial pointing
+    for (auto& [config, score] : results) {
+        auto configTokens = config->getAllTokens();
+        
+        // Calculate shared token count
+        int sharedTokens = 0;
+        std::unordered_set<std::string> configTokenSet(configTokens.begin(), configTokens.end());
+        for (const auto& qToken : queryTokens) {
+            if (configTokenSet.find(qToken) != configTokenSet.end()) {
+                sharedTokens++;
+            }
+        }
+        
+        // If shared tokens > threshold, validate with semantic similarity
+        if (sharedTokens > 0) {
+            float semanticValidation = EmbeddingEngine::calculateSimilarity(
+                queryEmbedding, config->getEmbedding());
+            
+            // Boost if both token match AND semantic match are strong
+            if (semanticValidation > 0.3f) {
+                score *= (1.0f + 0.2f * semanticValidation);
+            }
         }
     }
     

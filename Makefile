@@ -46,10 +46,11 @@ BUILD_DIR = build
 DATA_DIR = data
 CONFIG_DIR = config
 
-# Source files
+# Source files  
 SOURCES = $(SRC_DIR)/main.cpp \
           $(SRC_DIR)/audio_config_system.cpp \
-          $(SRC_DIR)/audio_config_cli.cpp
+          $(SRC_DIR)/audio_config_cli.cpp \
+          $(SRC_DIR)/text_utils.cpp
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)

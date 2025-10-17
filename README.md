@@ -1,8 +1,15 @@
 # Multi-Dimensional Audio Configuration System
 
-**Version 1.3** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
+**Version 1.4** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings** and **unified tokenization** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
 
 ## What's New
+
+### v1.4 - Unified Tokenization & Scoring 🔍
+- 🎯 **Per-token matching** - "funky retro" now finds "RetroFunky" (fixed!)
+- 🔤 **camelCase/snake_case splitting** - Properly tokenizes identifiers
+- 🌍 **Unicode normalization** - Strips diacritics, handles accents
+- 📊 **Aligned embeddings** - Search and semantics use same token stream
+- ✅ **Semantic validation** - Re-ranks with cosine-on-shared-tokens threshold
 
 ### v1.3 - SKD Embedding Integration 🎯
 - 🧠 **Semantic Knowledge Database (SKD)** - Real embeddings replace hash-based vectors
@@ -24,6 +31,7 @@
 - ⚙️ CLI overrides: `--weights <path>` `--config <path>`
 
 **Documentation:**
+- `TOKENIZATION_UPGRADE.md` - v1.4 unified tokenization system
 - `SKD_EMBEDDING_UPGRADE.md` - v1.3 SKD integration details
 - `EFFICIENCY_UPGRADES.md` - v1.2 performance optimizations
 - `STARTUP_BUGFIX.md` - v1.1 path auto-detection
