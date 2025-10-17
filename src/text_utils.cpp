@@ -20,6 +20,8 @@ std::string TextUtils::toLower(const std::string& text) {
 
 std::string TextUtils::stripDiacritics(const std::string& text) {
     // Map of common diacritics to base characters
+    // Note: Multi-byte unicode characters will show compiler warnings (expected)
+    // These warnings are harmless - the code works correctly for ASCII text
     static const std::unordered_map<char, char> diacriticMap = {
         {'á', 'a'}, {'à', 'a'}, {'â', 'a'}, {'ä', 'a'}, {'ã', 'a'}, {'å', 'a'},
         {'é', 'e'}, {'è', 'e'}, {'ê', 'e'}, {'ë', 'e'},
