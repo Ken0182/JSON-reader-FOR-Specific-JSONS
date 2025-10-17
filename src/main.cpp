@@ -150,19 +150,24 @@ int main(int argc, char* argv[]) {
         fs::path currentDir = fs::current_path();
         std::string skdPath;
         
-        // Try multiple locations for SKD index
-        if (fs::exists(currentDir / "data" / "skd_embeddings.json")) {
-            skdPath = (currentDir / "data" / "skd_embeddings.json").string();
+        // v1.6: Try multiple locations for semantic database
+        if (fs::exists(currentDir / "data" / "semantic.db")) {
+            skdPath = (currentDir / "data" / "semantic.db").string();
         } else if (currentDir.filename() == "build") {
             fs::path rootDir = currentDir.parent_path();
-            if (fs::exists(rootDir / "data" / "skd_embeddings.json")) {
-                skdPath = (rootDir / "data" / "skd_embeddings.json").string();
+            if (fs::exists(rootDir / "data" / "semantic.db")) {
+                skdPath = (rootDir / "data" / "semantic.db").string();
             }
         } else if (execDir.filename() == "build") {
             fs::path rootDir = execDir.parent_path();
-            if (fs::exists(rootDir / "data" / "skd_embeddings.json")) {
-                skdPath = (rootDir / "data" / "skd_embeddings.json").string();
+            if (fs::exists(rootDir / "data" / "semantic.db")) {
+                skdPath = (rootDir / "data" / "semantic.db").string();
             }
+        }
+        
+        // Fallback to :memory: if no DB found
+        if (skdPath.empty()) {
+            skdPath = ":memory:";
         }
         
         // Load configuration database (with optional SKD index)
