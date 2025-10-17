@@ -50,7 +50,8 @@ CONFIG_DIR = config
 SOURCES = $(SRC_DIR)/main.cpp \
           $(SRC_DIR)/audio_config_system.cpp \
           $(SRC_DIR)/audio_config_cli.cpp \
-          $(SRC_DIR)/text_utils.cpp
+          $(SRC_DIR)/text_utils.cpp \
+          $(SRC_DIR)/search_tracker.cpp
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)

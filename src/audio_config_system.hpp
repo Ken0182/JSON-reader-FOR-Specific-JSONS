@@ -37,6 +37,7 @@
 #include <cmath>
 #include "json.hpp"
 #include "text_utils.hpp"
+#include "search_tracker.hpp"
 
 namespace audio_config {
 
@@ -283,6 +284,13 @@ public:
      * @return Boost multiplier (0.1-2.0)
      */
     [[nodiscard]] float calculateUserBoost(const ConfigId& configId) const noexcept;
+    
+    /**
+     * @brief Get search interest tracker (v1.5)
+     * @return Reference to tracker
+     */
+    SearchInterestTracker& getSearchTracker() noexcept { return searchTracker_; }
+    const SearchInterestTracker& getSearchTracker() const noexcept { return searchTracker_; }
 
 private:
     std::vector<ConfigId> selectedConfigs_;
@@ -291,6 +299,9 @@ private:
     std::unordered_set<ConfigId> excludedConfigs_;
     std::unordered_map<ConfigId, float> configBoosts_;
     std::unordered_map<MusicalRole, float> rolePreferences_;
+    
+    // v1.5: Search interest tracking with decay
+    SearchInterestTracker searchTracker_;
 };
 
 /**
@@ -526,6 +537,7 @@ private:
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
+    void handleSignalsCommand(const std::vector<std::string>& args);  // v1.5
     
     // Helper methods
     void loadConfigurationDatabase(const std::string& configPath);

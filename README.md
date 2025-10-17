@@ -1,8 +1,17 @@
 # Multi-Dimensional Audio Configuration System
 
-**Version 1.4** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings** and **unified tokenization** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
+**Version 1.5** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings**, **unified tokenization**, and **persistent interest tracking** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
 
 ## What's New
+
+### v1.5 - Search Interest Tracking with Decay 🎯
+- 📈 **Persistent tracking** - Learns from your search patterns over time
+- ⏰ **Temporal decay** - Interests naturally fade (2-hour half-life)
+- 🔄 **EMA smoothing** - Stable, gradual adaptation to preferences
+- 💡 **Gentle bias** - Subtle improvements (max 15% boost, tunable)
+- ⚙️ **Tunable parameters** - Customize decay, smoothing, bias strength
+- 💾 **Export/import** - Persist your interest profile across sessions
+- 🛠️ **Comprehensive CLI** - Full `signals` command family (on/off, history, tune, export, import)
 
 ### v1.4 - Unified Tokenization & Scoring 🔍
 - 🎯 **Per-token matching** - "funky retro" now finds "RetroFunky" (fixed!)
@@ -31,6 +40,7 @@
 - ⚙️ CLI overrides: `--weights <path>` `--config <path>`
 
 **Documentation:**
+- `SIGNALS_TRACKING.md` - v1.5 interest tracking with decay
 - `TOKENIZATION_UPGRADE.md` - v1.4 unified tokenization system
 - `SKD_EMBEDDING_UPGRADE.md` - v1.3 SKD integration details
 - `EFFICIENCY_UPGRADES.md` - v1.2 performance optimizations
