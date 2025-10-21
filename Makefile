@@ -60,11 +60,13 @@ SOURCES = $(SRC_DIR)/main.cpp \
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-# Target executable
+# Target executables
 TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
+SEED_TARGET = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
+STATS_TARGET = $(BUILD_DIR)/kbstats$(EXE_EXT)
 
 # Default target
-all: $(TARGET)
+all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET)
 
 # Debug build
 debug: CXXFLAGS = $(DEBUG_FLAGS)
@@ -82,6 +84,22 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 
+# Build seeding tool
+$(SEED_TARGET): $(BUILD_DIR)/seed_semantic_db.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/sentence_encoder.o $(BUILD_DIR)/semantic_knowledge_base.o $(BUILD_DIR)/text_utils.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Build seeding tool object
+$(BUILD_DIR)/seed_semantic_db.o: tools/seed_semantic_db.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Build stats tool
+$(STATS_TARGET): $(BUILD_DIR)/kbstats.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/sentence_encoder.o $(BUILD_DIR)/semantic_knowledge_base.o $(BUILD_DIR)/text_utils.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Build stats tool object
+$(BUILD_DIR)/kbstats.o: tools/kbstats.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -98,6 +116,18 @@ setup: $(SRC_DIR)/json.hpp
 run: $(TARGET)
 	$(RUN_PREFIX)$(TARGET)
 
+# Seed the semantic database
+seed: $(SEED_TARGET)
+	$(RUN_PREFIX)$(SEED_TARGET)
+
+# Seed with force flag
+seed-force: $(SEED_TARGET)
+	$(RUN_PREFIX)$(SEED_TARGET) --force
+
+# Show database statistics
+stats: $(STATS_TARGET)
+	$(RUN_PREFIX)$(STATS_TARGET)
+
 # Run with specific config
 run-with-config: $(TARGET)
 	$(RUN_PREFIX)$(TARGET) $(CONFIG_DIR)/weights.json
@@ -105,6 +135,7 @@ run-with-config: $(TARGET)
 # Clean build artifacts
 clean:
 	$(RM_DIR) $(BUILD_DIR)
+	$(RM) semantic.db
 
 # Clean all generated files
 distclean: clean
@@ -208,6 +239,9 @@ help:
 	@echo "EXECUTION:"
 	@echo "  run          - Build and run the application"
 	@echo "  run-with-config - Run with specific configuration file"
+	@echo "  seed         - Build and seed semantic database"
+	@echo "  seed-force   - Force seed (overwrite existing database)"
+	@echo "  stats        - Show database statistics and integrity check"
 	@echo "  test         - Run basic functionality tests"
 	@echo ""
 	@echo "DISTRIBUTION:"
@@ -224,7 +258,7 @@ help:
 	@echo "  make setup && make && make run"
 
 # Declare phony targets
-.PHONY: all debug clean distclean setup run run-with-config create-sample-config test install uninstall format analyze docs help
+.PHONY: all debug clean distclean setup run run-with-config seed seed-force stats create-sample-config test install uninstall format analyze docs help
 
 # Default target
 .DEFAULT_GOAL := all run-with-config create-sample-config test install uninstall format analyze docs help

@@ -170,6 +170,14 @@ public:
     bool storeIDF(const std::string& tag, float idf, int docCount);
     
     /**
+     * @brief Store configuration parameter
+     * @param key Parameter name
+     * @param value Parameter value
+     * @return true if successful
+     */
+    bool storeConfig(const std::string& key, float value);
+    
+    /**
      * @brief Compute IDF statistics from configuration corpus
      * @param allTags All tags from all configurations
      * @return Number of tags processed
