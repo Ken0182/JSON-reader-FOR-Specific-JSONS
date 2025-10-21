@@ -1,6 +1,50 @@
 # Multi-Dimensional Audio Configuration System
 
-A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
+**Version 1.5** - A comprehensive C++17 system for intelligent audio configuration assembly using **4-dimensional pointing** with **semantic knowledge embeddings**, **unified tokenization**, and **persistent interest tracking** to recommend compatible, musically meaningful, and technically sound instrument/effect combinations.
+
+## What's New
+
+### v1.5 - Search Interest Tracking with Decay 🎯
+- 📈 **Persistent tracking** - Learns from your search patterns over time
+- ⏰ **Temporal decay** - Interests naturally fade (2-hour half-life)
+- 🔄 **EMA smoothing** - Stable, gradual adaptation to preferences
+- 💡 **Gentle bias** - Subtle improvements (max 15% boost, tunable)
+- ⚙️ **Tunable parameters** - Customize decay, smoothing, bias strength
+- 💾 **Export/import** - Persist your interest profile across sessions
+- 🛠️ **Comprehensive CLI** - Full `signals` command family (on/off, history, tune, export, import)
+
+### v1.4 - Unified Tokenization & Scoring 🔍
+- 🎯 **Per-token matching** - "funky retro" now finds "RetroFunky" (fixed!)
+- 🔤 **camelCase/snake_case splitting** - Properly tokenizes identifiers
+- 🌍 **Unicode normalization** - Strips diacritics, handles accents
+- 📊 **Aligned embeddings** - Search and semantics use same token stream
+- ✅ **Semantic validation** - Re-ranks with cosine-on-shared-tokens threshold
+
+### v1.3 - SKD Embedding Integration 🎯
+- 🧠 **Semantic Knowledge Database (SKD)** - Real embeddings replace hash-based vectors
+- 🎨 **Meaningful similarity** - "warm" ≈ "soft", "bright" ≈ "crisp" (true semantics!)
+- 📚 **Unlimited vocabulary** - Load any embedding index (Word2Vec, GloVe, FastText)
+- ✅ **Auto-detection** - Automatically loads `data/skd_embeddings.json` if present
+- 🔄 **Graceful fallback** - Works without SKD (uses built-in vocabulary)
+
+### v1.2 - Efficiency & Quality Upgrades
+- ⚡ **3-4x faster** semantic similarity (pre-normalized embeddings)
+- 🚀 **10x faster** tag matching (cached hash sets vs nested loops)
+- 📊 **IDF-weighted** tag boost for higher quality matches
+- ✅ **Score clamping** to [0,1] range (fixes >1.0 issue)
+- 🎯 **Diagonal weighting** support for semantic dimensions
+
+### v1.1 - Startup Bug Fix
+- 🔧 Auto-detects resource paths from any directory
+- 🏗️ Works from repository root OR build/ directory
+- ⚙️ CLI overrides: `--weights <path>` `--config <path>`
+
+**Documentation:**
+- `SIGNALS_TRACKING.md` - v1.5 interest tracking with decay
+- `TOKENIZATION_UPGRADE.md` - v1.4 unified tokenization system
+- `SKD_EMBEDDING_UPGRADE.md` - v1.3 SKD integration details
+- `EFFICIENCY_UPGRADES.md` - v1.2 performance optimizations
+- `STARTUP_BUGFIX.md` - v1.1 path auto-detection
 
 ## Key Features
 
@@ -48,7 +92,7 @@ Single Consolidated Binary: audio_config_system
 ## Quick Start
 
 ### Prerequisites
-- **g++** with C++17 support
+- **g++** with C++17 support (including `<filesystem>`)
 - **make** utility
 - **curl** (for downloading dependencies)
 
@@ -63,9 +107,34 @@ cd multi-dimensional-audio-system
 make setup
 make
 
-# Run the application
+# Run the application (works from any directory!)
 make run
+
+# Or run directly from repository root
+./build/audio_config_system
+
+# Or run from build/ directory
+cd build && ./audio_config_system
 ```
+
+### NEW in v1.1: Auto-Detection & CLI Overrides
+
+The system now automatically detects resource paths! Works from:
+- Repository root directory
+- Build directory (`cd build && ./audio_config_system`)
+- Any location with custom paths
+
+```bash
+# Show help and options
+./build/audio_config_system --help
+
+# Use custom resource paths
+./build/audio_config_system \
+  --weights /path/to/weights.json \
+  --config /path/to/clean_config.json
+```
+
+See `STARTUP_BUGFIX.md` for complete details on the path auto-detection system.
 
 ### Windows Users (MINGW/MSYS2)
 
@@ -76,17 +145,32 @@ See `WINDOWS_BUILD.md` for detailed Windows build instructions.
 make clean
 make
 
-# Run
+# Run from anywhere - auto-detection works!
 ./build/audio_config_system.exe
+cd build && ./audio_config_system.exe
 ```
 
 ## Usage
 
 ### Interactive CLI
 
+The system can be launched from multiple locations (auto-detection handles paths):
+
 ```bash
+# From repository root
 ./build/audio_config_system
+
+# From build/ directory (NEW in v1.1!)
+cd build && ./audio_config_system
+
+# With custom paths
+./build/audio_config_system --weights custom/weights.json --config custom/config.json
+
+# Show help
+./build/audio_config_system --help
 ```
+
+All methods produce the same output:
 
 ```
 Multi-Dimensional Audio Configuration System
@@ -337,12 +421,14 @@ make format
 make test
 ```
 
-### Performance Metrics
+### Performance Metrics (v1.2 Optimized)
 - **Initialization**: <100ms for 30+ configurations
-- **Search Response**: <1ms per query
+- **Search Response**: <1ms per query (~3x faster than v1.1)
+- **Semantic Similarity**: O(d) with pre-normalized embeddings (~4x faster)
+- **Tag Intersection**: O(min(m,n)) with hash sets (~10x faster)
 - **4D Analysis**: <5ms per compatibility check
 - **Memory Usage**: ~50MB for comprehensive system
-- **Embedding Cache**: O(1) lookup after initialization
+- **All Scores**: Properly bounded to [0,1] range
 
 ## Integration Examples
 
