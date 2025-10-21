@@ -128,7 +128,7 @@ std::vector<float> SemanticDatabase::getEmbedding(const std::string& tag) const 
         int dimension = sqlite3_column_int(stmtGetEmbedding_, 1);
         
         // Validate size
-        if (blobSize == dimension * sizeof(float) && blobData) {
+       if (blobSize == static_cast<int>(dimension * sizeof(float)) && blobData) {
             embedding.resize(dimension);
             std::memcpy(embedding.data(), blobData, blobSize);
         }
