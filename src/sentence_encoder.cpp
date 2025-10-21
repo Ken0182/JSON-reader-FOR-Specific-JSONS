@@ -10,6 +10,7 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <cstdint>
 
 namespace audio_config {
 
