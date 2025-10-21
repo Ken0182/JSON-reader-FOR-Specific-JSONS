@@ -63,6 +63,13 @@ OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 # Target executable
 TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
 
+# Tools
+TOOLS_DIR = tools
+SEED_SRC = $(TOOLS_DIR)/seed_semantic_db.cpp
+KBSTATS_SRC = $(TOOLS_DIR)/kbstats.cpp
+SEED_BIN = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
+KBSTATS_BIN = $(BUILD_DIR)/kbstats$(EXE_EXT)
+
 # Default target
 all: $(TARGET)
 
@@ -82,6 +89,15 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 
+# Build tools
+$(SEED_BIN): $(SEED_SRC) $(SRC_DIR)/semantic_db.cpp $(SRC_DIR)/sentence_encoder.cpp $(SRC_DIR)/text_utils.cpp $(SRC_DIR)/semantic_knowledge_base.cpp
+	$(call MKDIR,$(BUILD_DIR))
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SEED_SRC) $(SRC_DIR)/semantic_db.cpp $(SRC_DIR)/sentence_encoder.cpp $(SRC_DIR)/text_utils.cpp $(SRC_DIR)/semantic_knowledge_base.cpp $(LDFLAGS) -o $@
+
+$(KBSTATS_BIN): $(KBSTATS_SRC) $(SRC_DIR)/semantic_db.cpp
+	$(call MKDIR,$(BUILD_DIR))
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(KBSTATS_SRC) $(SRC_DIR)/semantic_db.cpp $(LDFLAGS) -o $@
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -97,6 +113,14 @@ setup: $(SRC_DIR)/json.hpp
 # Run the application
 run: $(TARGET)
 	$(RUN_PREFIX)$(TARGET)
+
+# Seed default semantic DB from repo content
+seed-semantic-db: $(SEED_BIN)
+	$(RUN_PREFIX)$(SEED_BIN)
+
+# Inspect semantic DB
+kbstats: $(KBSTATS_BIN)
+	$(RUN_PREFIX)$(KBSTATS_BIN)
 
 # Run with specific config
 run-with-config: $(TARGET)
