@@ -151,13 +151,12 @@ float SearchInterestTracker::getBiasSignal(const std::vector<std::string>& token
         return 0.0f;
     }
     
-    auto now = std::chrono::system_clock::now();
     float totalSignal = 0.0f;
     int matchedTokens = 0;
     
     // Aggregate signals from matching tokens
     for (const auto& token : tokens) {
-        float signal = getTokenSignal(token);
+        float signal = getTokenSignal(token);  // Handles decay internally
         if (signal > params_.minSignalStrength) {
             totalSignal += signal;
             matchedTokens++;
