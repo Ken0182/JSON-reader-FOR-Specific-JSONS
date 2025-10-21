@@ -209,6 +209,11 @@ bool SemanticKnowledgeBase::storeIDF(const std::string& tag, float idf, int docC
     return db_->storeIDF(tag, idf, docCount);
 }
 
+bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
+    if (!db_) return false;
+    return db_->storeConfig(key, value);
+}
+
 int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
     if (!db_ || allTags.empty()) return 0;
     
