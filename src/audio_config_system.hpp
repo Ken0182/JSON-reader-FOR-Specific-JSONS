@@ -2,7 +2,21 @@
  * @file audio_config_system.hpp
  * @brief Multi-Dimensional Audio Configuration System - Main Header
  * @author AI Assistant
- * @version 1.4
+ * @version 1.6
+ * 
+ * v1.6 Semantic Knowledge Base (MAJOR UPGRADE):
+ * - SQLite database for tags, embeddings, aliases, IDF stats
+ * - Dynamic embedding dimensions (no hardcoded 100D limit)
+ * - Sentence encoder for unlimited vocabulary (any user text)
+ * - Contrastive query vectors (positive - negative constraints)
+ * - Explainability (top contributing tags in results)
+ * - Config-driven tuning (weights stored in database)
+ * - Meaning-aware search (free-text intent, not brittle rules)
+ * 
+ * v1.5 Search Interest Tracking:
+ * - Persistent user search patterns with temporal decay
+ * - EMA smoothing for stable signal adaptation
+ * - Gentle clamped bias for personalization
  * 
  * v1.4 Unified Tokenization & Scoring:
  * - Shared tokenization pipeline (camelCase, snake_case, diacritics, punctuation)
@@ -33,17 +47,17 @@
 #include <unordered_set>
 #include <optional>
 #include <functional>
-#include <array>
 #include <cmath>
 #include "json.hpp"
 #include "text_utils.hpp"
 #include "search_tracker.hpp"
+#include "semantic_knowledge_base.hpp"  // v1.6: Only new include needed
 
 namespace audio_config {
 
 // Type aliases for clarity
 using ConfigId = std::string;
-using EmbeddingVector = std::array<float, 100>;  // 100D FastText embeddings (PRE-NORMALIZED)
+using EmbeddingVector = std::vector<float>;  // DYNAMIC DIMENSION (PRE-NORMALIZED)
 using ScoreWeight = float;
 using CompatibilityScore = float;
 using TagSet = std::unordered_set<std::string>;  // O(1) lookup for tag intersection
@@ -305,29 +319,35 @@ private:
 };
 
 /**
- * @brief Fast embedding engine with FastText-style capabilities
+ * @brief Embedding engine (v1.6: wraps SemanticKnowledgeBase)
+ * 
+ * Legacy API preserved for backward compatibility.
+ * Internally delegates to SemanticKnowledgeBase for unlimited vocabulary.
  */
 class EmbeddingEngine {
 public:
     /**
-     * @brief Initialize with default vocabulary
+     * @brief Initialize with default knowledge base
      */
     EmbeddingEngine();
     
     /**
-     * @brief Load external SKD (Semantic Knowledge Database) embedding index
-     * @param indexPath Path to SKD embedding index file (JSON or binary format)
+     * @brief Load semantic database (v1.6: SQLite instead of JSON)
+     * @param dbPath Path to semantic database file (.db)
      * @return True if loaded successfully
      * 
-     * Format: JSON with {"word": [vec1, vec2, ..., vec100], ...}
-     * Replaces hash-based embeddings with semantically meaningful vectors
+     * v1.6: Loads SQLite database with embeddings, aliases, IDF stats
+     * v1.5: JSON format (still supported via migration)
      */
-    bool loadEmbeddingIndex(const std::string& indexPath);
+    bool loadEmbeddingIndex(const std::string& dbPath);
     
     /**
-     * @brief Get embedding for a word or phrase
-     * @param text Input text
-     * @return 100D embedding vector
+     * @brief Get embedding for arbitrary text (v1.6: unlimited vocabulary)
+     * @param text Input text (any words, phrases, free-form descriptions)
+     * @return Dynamic-dimension embedding vector (unit-normalized)
+     * 
+     * v1.6: Uses SemanticKnowledgeBase (DB lookup + sentence encoder fallback)
+     * Guarantees: Non-empty, unit-length vector even if DB is empty
      */
     [[nodiscard]] EmbeddingVector getEmbedding(const std::string& text) const;
     
@@ -335,17 +355,20 @@ public:
      * @brief Calculate cosine similarity between PRE-NORMALIZED embeddings
      * @param a First embedding (must be normalized)
      * @param b Second embedding (must be normalized)
-     * @return Similarity score (0.0-1.0)
-     * @note O(d) for d dimensions; assumes unit vectors for efficiency
+     * @return Similarity score [0.0, 1.0]
+     * 
+     * v1.6: Handles dynamic dimensions, asserts matching sizes
      */
-    [[nodiscard]] static CompatibilityScore calculateSimilarity(const EmbeddingVector& a, const EmbeddingVector& b) noexcept;
+    [[nodiscard]] static CompatibilityScore calculateSimilarity(
+        const EmbeddingVector& a, 
+        const EmbeddingVector& b) noexcept;
     
     /**
      * @brief Calculate weighted cosine similarity with diagonal weights
      * @param a First embedding (normalized)
      * @param b Second embedding (normalized)
      * @param weights Diagonal weight vector (optional)
-     * @return Weighted similarity score (0.0-1.0)
+     * @return Weighted similarity score [0.0, 1.0]
      */
     [[nodiscard]] static CompatibilityScore calculateWeightedSimilarity(
         const EmbeddingVector& a, 
@@ -355,6 +378,8 @@ public:
     /**
      * @brief Normalize embedding to unit length (in-place)
      * @param embedding Embedding to normalize
+     * 
+     * v1.6: Works with dynamic-dimension vectors
      */
     static void normalizeEmbedding(EmbeddingVector& embedding) noexcept;
     
@@ -379,17 +404,30 @@ public:
      * @param allTags Vector of all tag sets from all configurations
      */
     void updateTagStatistics(const std::vector<std::vector<std::string>>& allTags);
+    
+    /**
+     * @brief Get embedding dimension
+     * @return Current embedding dimension
+     */
+    [[nodiscard]] int getDimension() const noexcept;
+    
+    /**
+     * @brief Check if knowledge base is ready
+     * @return true if initialized
+     */
+    [[nodiscard]] bool isReady() const noexcept;
 
 private:
-    std::unordered_map<std::string, EmbeddingVector> wordEmbeddings_;
-    std::unordered_map<std::string, EmbeddingVector> subwordEmbeddings_;
-    std::unordered_map<std::string, float> tagIDF_;  // IDF weights for tags
-    int totalDocuments_{0};  // Total number of configurations
-    bool usingSKDIndex_{false};  // Track if external SKD index is loaded
+    // v1.6: Delegate to SemanticKnowledgeBase
+    std::unique_ptr<SemanticKnowledgeBase> knowledgeBase_;
+    int dimension_{100};
+    bool isReady_{false};
     
-    void loadPretrainedEmbeddings();  // Fallback: synthetic embeddings
-    void generateSubwordEmbeddings();
-    [[nodiscard]] EmbeddingVector computeTextEmbedding(const std::string& text) const;
+    // Legacy members removed (no longer needed):
+    // - wordEmbeddings_ (replaced by SemanticDatabase)
+    // - subwordEmbeddings_ (replaced by SentenceEncoder)
+    // - tagIDF_ (stored in SemanticDatabase)
+    // - usingSKDIndex_ (always true in v1.6)
 };
 
 /**
@@ -534,6 +572,7 @@ private:
     void handleExcludeCommand(const std::vector<std::string>& args);
     void handleListCommand(const std::vector<std::string>& args);
     void handleStatsCommand(const std::vector<std::string>& args);
+    void handleKBStatsCommand(const std::vector<std::string>& args);  // v1.6
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
