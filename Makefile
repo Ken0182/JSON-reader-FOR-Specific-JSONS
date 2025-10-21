@@ -82,6 +82,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 
+# Seeder tool
+SEED_SRC = tools/seed_semantic_db.cpp
+SEED_BIN = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
+
+$(SEED_BIN): $(SEED_SRC) $(SRC_DIR)/json.hpp $(SRC_DIR)/text_utils.cpp $(SRC_DIR)/text_utils.hpp $(SRC_DIR)/semantic_db.cpp $(SRC_DIR)/semantic_db.hpp $(SRC_DIR)/sentence_encoder.cpp $(SRC_DIR)/sentence_encoder.hpp
+	$(CXX) $(CXXFLAGS) -Isrc -o $@ $(SEED_SRC) $(SRC_DIR)/text_utils.cpp $(SRC_DIR)/semantic_db.cpp $(SRC_DIR)/sentence_encoder.cpp $(LDFLAGS)
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -97,6 +104,12 @@ setup: $(SRC_DIR)/json.hpp
 # Run the application
 run: $(TARGET)
 	$(RUN_PREFIX)$(TARGET)
+
+# Seed the semantic database into data/semantic.db
+seed: $(SEED_BIN) setup
+	$(call MKDIR,$(DATA_DIR))
+	$(RUN_PREFIX)$(SEED_BIN) --db $(DATA_DIR)/semantic.db --dim 100
+	@echo "Seeded semantic DB at $(DATA_DIR)/semantic.db"
 
 # Run with specific config
 run-with-config: $(TARGET)

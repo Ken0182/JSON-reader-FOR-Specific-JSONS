@@ -237,6 +237,16 @@ int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& 
     return storedCount;
 }
 
+int SemanticKnowledgeBase::getTagCount() const {
+    if (!db_) return 0;
+    return db_->countTags();
+}
+
+int SemanticKnowledgeBase::getAliasCount() const {
+    if (!db_) return 0;
+    return db_->countAliases();
+}
+
 void SemanticKnowledgeBase::createDefaultEmbeddings() {
     if (!db_) return;
     

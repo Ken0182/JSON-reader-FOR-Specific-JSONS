@@ -175,6 +175,16 @@ public:
      * @return Number of tags processed
      */
     int computeIDFStatistics(const std::vector<std::string>& allTags);
+
+    /**
+     * @brief Get total tag count in database
+     */
+    int getTagCount() const;
+
+    /**
+     * @brief Get alias count (rows where canonical != tag)
+     */
+    int getAliasCount() const;
     
 private:
     std::unique_ptr<SemanticDatabase> db_;

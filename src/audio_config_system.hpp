@@ -417,6 +417,16 @@ public:
      */
     [[nodiscard]] bool isReady() const noexcept;
 
+    /**
+     * @brief Get knowledge base statistics
+     */
+    [[nodiscard]] int getTagCount() const noexcept { 
+        return knowledgeBase_ ? knowledgeBase_->getTagCount() : 0; 
+    }
+    [[nodiscard]] int getAliasCount() const noexcept { 
+        return knowledgeBase_ ? knowledgeBase_->getAliasCount() : 0; 
+    }
+
 private:
     // v1.6: Delegate to SemanticKnowledgeBase
     std::unique_ptr<SemanticKnowledgeBase> knowledgeBase_;

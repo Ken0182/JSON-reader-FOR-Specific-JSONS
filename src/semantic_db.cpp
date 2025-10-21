@@ -331,4 +331,47 @@ bool SemanticDatabase::executeSql(const std::string& sql) const {
     return true;
 }
 
+int SemanticDatabase::countTags() const {
+    if (!db_) return 0;
+    sqlite3_stmt* stmt = nullptr;
+    int count = 0;
+    const char* sql = "SELECT COUNT(*) FROM tags;";
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            count = sqlite3_column_int(stmt, 0);
+        }
+        sqlite3_finalize(stmt);
+    }
+    return count;
+}
+
+int SemanticDatabase::countAliases() const {
+    if (!db_) return 0;
+    sqlite3_stmt* stmt = nullptr;
+    int count = 0;
+    const char* sql = "SELECT COUNT(*) FROM tags WHERE canonical <> tag;";
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            count = sqlite3_column_int(stmt, 0);
+        }
+        sqlite3_finalize(stmt);
+    }
+    return count;
+}
+
+bool SemanticDatabase::storeAlias(const std::string& aliasTag, const std::string& canonicalTag) {
+    if (!db_ || aliasTag.empty() || canonicalTag.empty()) return false;
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "INSERT OR REPLACE INTO tags (tag, canonical, dimension) VALUES (?, ?, COALESCE((SELECT dimension FROM tags WHERE tag = ?), 100));";
+    bool success = false;
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, aliasTag.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, canonicalTag.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, canonicalTag.c_str(), -1, SQLITE_TRANSIENT);
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+    }
+    return success;
+}
+
 } // namespace audio_config

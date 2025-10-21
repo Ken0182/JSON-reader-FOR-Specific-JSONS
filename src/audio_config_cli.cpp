@@ -616,22 +616,25 @@ void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& arg
     }
     
     std::cout << "\n=== KNOWLEDGE BASE STATISTICS ===" << std::endl;
-    std::cout << "Embedding dimension: " << embeddingEngine_->getDimension() << "D" << std::endl;
+    int D = embeddingEngine_->getDimension();
+    std::cout << "Embedding dimension: " << D << "D" << std::endl;
     std::cout << "Status: " << (embeddingEngine_->isReady() ? "Ready" : "Not ready") << std::endl;
+    std::cout << "Tag count: " << embeddingEngine_->getTagCount() << std::endl;
+    std::cout << "Alias count: " << embeddingEngine_->getAliasCount() << std::endl;
     
     // Get sample tags by encoding a few common words
-    std::cout << "\nSample embeddings (unit-normalized):" << std::endl;
-    std::vector<std::string> sampleWords = {"warm", "bright", "analog", "dreamy"};
+    std::cout << "\nSample embeddings (unit-norm check):" << std::endl;
+    std::vector<std::string> sampleWords = {"warm", "bright", "analog", "dreamy", "harsh"};
     for (const auto& word : sampleWords) {
         auto emb = embeddingEngine_->getEmbedding(word);
         float norm = 0.0f;
         for (float v : emb) norm += v * v;
         norm = std::sqrt(norm);
-        std::cout << "  " << word << ": " << emb.size() << "D, |v|=" 
+        std::cout << "  " << word << ": D=" << emb.size() << ", |v|=" 
                   << std::fixed << std::setprecision(3) << norm << std::endl;
     }
     
-    std::cout << "\nIDF weights (top tags):" << std::endl;
+    std::cout << "\nIDF weights (sample tags):" << std::endl;
     std::vector<std::string> checkTags = {"warm", "bright", "analog", "vintage", "digital"};
     for (const auto& tag : checkTags) {
         float idf = embeddingEngine_->getTagIDF(tag);

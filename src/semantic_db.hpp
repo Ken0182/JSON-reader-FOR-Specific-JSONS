@@ -167,6 +167,26 @@ public:
      * @return Database file path
      */
     std::string getPath() const { return dbPath_; }
+
+    /**
+     * @brief Count total tags (including aliases)
+     * @return Number of rows in tags table
+     */
+    int countTags() const;
+
+    /**
+     * @brief Count alias rows (where canonical != tag)
+     * @return Number of aliases
+     */
+    int countAliases() const;
+
+    /**
+     * @brief Store an alias mapping without embedding
+     * @param aliasTag Alias tag (e.g., "synthesizer")
+     * @param canonicalTag Canonical tag (e.g., "synth")
+     * @return true if successful
+     */
+    bool storeAlias(const std::string& aliasTag, const std::string& canonicalTag);
     
 private:
     sqlite3* db_{nullptr};
