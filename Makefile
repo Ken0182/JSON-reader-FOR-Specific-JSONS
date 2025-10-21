@@ -45,6 +45,7 @@ SRC_DIR = src
 BUILD_DIR = build
 DATA_DIR = data
 CONFIG_DIR = config
+TOOLS_DIR = tools
 
 # Source files  
 SOURCES = $(SRC_DIR)/main.cpp \
@@ -60,11 +61,26 @@ SOURCES = $(SRC_DIR)/main.cpp \
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-# Target executable
+# Target executables
 TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
+SEED_TOOL = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
+
+# Library objects (for tools)
+LIB_SOURCES = $(SRC_DIR)/text_utils.cpp \
+              $(SRC_DIR)/semantic_db.cpp \
+              $(SRC_DIR)/sentence_encoder.cpp \
+              $(SRC_DIR)/semantic_knowledge_base.cpp
+LIB_OBJECTS = $(LIB_SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 # Default target
 all: $(TARGET)
+
+# Build tools
+tools: $(SEED_TOOL)
+
+# Seed semantic database tool
+$(SEED_TOOL): $(TOOLS_DIR)/seed_semantic_db.cpp $(LIB_OBJECTS) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(TOOLS_DIR)/seed_semantic_db.cpp $(LIB_OBJECTS) $(LDFLAGS) -o $@
 
 # Debug build
 debug: CXXFLAGS = $(DEBUG_FLAGS)
@@ -102,9 +118,16 @@ run: $(TARGET)
 run-with-config: $(TARGET)
 	$(RUN_PREFIX)$(TARGET) $(CONFIG_DIR)/weights.json
 
+# Seed the semantic database
+seed-db: $(SEED_TOOL)
+	@echo "Seeding semantic database..."
+	$(RUN_PREFIX)$(SEED_TOOL) --db semantic.db --dimension 100
+	@echo "Database seeded successfully!"
+
 # Clean build artifacts
 clean:
 	$(RM_DIR) $(BUILD_DIR)
+	$(RM) semantic.db
 
 # Clean all generated files
 distclean: clean
@@ -198,8 +221,12 @@ help:
 	@echo "BUILD TARGETS:"
 	@echo "  all          - Build release version (default)"
 	@echo "  debug        - Build debug version with symbols"
+	@echo "  tools        - Build semantic database tools"
 	@echo "  clean        - Remove build artifacts"
 	@echo "  distclean    - Remove all generated files"
+	@echo ""
+	@echo "DATABASE TOOLS:"
+	@echo "  seed-db      - Seed semantic.db from MD files and configs"
 	@echo ""
 	@echo "SETUP & DEPENDENCIES:"
 	@echo "  setup        - Download dependencies and setup directories"
@@ -224,7 +251,7 @@ help:
 	@echo "  make setup && make && make run"
 
 # Declare phony targets
-.PHONY: all debug clean distclean setup run run-with-config create-sample-config test install uninstall format analyze docs help
+.PHONY: all debug tools seed-db clean distclean setup run run-with-config create-sample-config test install uninstall format analyze docs help
 
 # Default target
 .DEFAULT_GOAL := all run-with-config create-sample-config test install uninstall format analyze docs help
