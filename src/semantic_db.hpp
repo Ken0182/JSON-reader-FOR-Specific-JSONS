@@ -135,6 +135,19 @@ public:
     bool isValid() const;
     
     /**
+     * @brief Get current schema version
+     * @return Schema version number
+     */
+    int getSchemaVersion() const;
+    
+    /**
+     * @brief Set schema version
+     * @param version Version number
+     * @return true if successful
+     */
+    bool setSchemaVersion(int version);
+    
+    /**
      * @brief Store embedding for a tag
      * @param tag Tag name
      * @param embedding Embedding vector
