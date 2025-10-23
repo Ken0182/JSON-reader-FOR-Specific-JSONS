@@ -223,17 +223,24 @@ std::string SemanticDatabase::getCanonicalTag(const std::string& tag) const {
 }
 
 float SemanticDatabase::getIDF(const std::string& tag) const {
-    if (!stmtGetIDF_) return 0.0f;
+    if (!db_) return 0.0f;
     
-    // Reset statement
-    sqlite3_reset(stmtGetIDF_);
-    sqlite3_bind_text(stmtGetIDF_, 1, tag.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT idf FROM idf_stats WHERE tag = ?";
     
-    if (sqlite3_step(stmtGetIDF_) == SQLITE_ROW) {
-        return static_cast<float>(sqlite3_column_double(stmtGetIDF_, 0));
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return 0.0f;
     }
     
-    return 0.0f;
+    sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_STATIC);
+    
+    float idf = 0.0f;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        idf = static_cast<float>(sqlite3_column_double(stmt, 0));
+    }
+    
+    sqlite3_finalize(stmt);
+    return idf;
 }
 
 float SemanticDatabase::getConfigValue(const std::string& key, float defaultValue) const {
@@ -329,6 +336,67 @@ bool SemanticDatabase::setSchemaVersion(int version) {
     return executeSql(sql);
 }
 
+int SemanticDatabase::getTagCount() const {
+    if (!db_) return 0;
+    
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT COUNT(*) FROM tags";
+    
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return 0;
+    }
+    
+    int count = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        count = sqlite3_column_int(stmt, 0);
+    }
+    
+    sqlite3_finalize(stmt);
+    return count;
+}
+
+int SemanticDatabase::getAliasCount() const {
+    if (!db_) return 0;
+    
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT COUNT(*) FROM tags WHERE canonical != tag";
+    
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return 0;
+    }
+    
+    int count = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        count = sqlite3_column_int(stmt, 0);
+    }
+    
+    sqlite3_finalize(stmt);
+    return count;
+}
+
+bool SemanticDatabase::storeIDF(const std::string& tag, float idf, int docCount) {
+    if (!db_) return false;
+    
+    sqlite3_stmt* stmt;
+    const char* sql = "INSERT OR REPLACE INTO idf_stats (tag, idf, doc_count) VALUES (?, ?, ?)";
+    
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+    
+    sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_double(stmt, 2, idf);
+    sqlite3_bind_int(stmt, 3, docCount);
+    
+    int result = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    
+    return result == SQLITE_DONE;
+    
+    return true;
+}
+
+
 bool SemanticDatabase::storeEmbedding(const std::string& tag, 
                                      const std::vector<float>& embedding,
                                      const std::string& canonical) {
@@ -371,23 +439,6 @@ bool SemanticDatabase::storeEmbedding(const std::string& tag,
     return success;
 }
 
-bool SemanticDatabase::storeIDF(const std::string& tag, float idf, int docCount) {
-    if (!db_) return false;
-    
-    sqlite3_stmt* stmt = nullptr;
-    const char* sql = "INSERT OR REPLACE INTO idf_stats (tag, idf, doc_count) VALUES (?, ?, ?);";
-    
-    bool success = false;
-    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
-        sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_double(stmt, 2, idf);
-        sqlite3_bind_int(stmt, 3, docCount);
-        success = (sqlite3_step(stmt) == SQLITE_DONE);
-        sqlite3_finalize(stmt);
-    }
-    
-    return success;
-}
 
 bool SemanticDatabase::storeConfig(const std::string& key, float value) {
     if (!db_) return false;

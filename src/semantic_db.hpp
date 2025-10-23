@@ -148,6 +148,18 @@ public:
     bool setSchemaVersion(int version);
     
     /**
+     * @brief Get tag count
+     * @return Number of tags in database
+     */
+    int getTagCount() const;
+    
+    /**
+     * @brief Get alias count
+     * @return Number of aliases in database
+     */
+    int getAliasCount() const;
+    
+    /**
      * @brief Store embedding for a tag
      * @param tag Tag name
      * @param embedding Embedding vector

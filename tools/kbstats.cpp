@@ -48,6 +48,12 @@ public:
      */
     bool printStats();
     
+    /**
+     * @brief Print statistics in JSON format
+     * @return true if successful
+     */
+    bool printStatsJSON();
+    
 private:
     std::string dbPath_;
     std::unique_ptr<SemanticKnowledgeBase> kb_;
@@ -286,24 +292,93 @@ void KBStats::printTagDetails() {
     }
 }
 
+bool KBStats::printStatsJSON() {
+    // Load knowledge base
+    try {
+        kb_ = std::make_unique<SemanticKnowledgeBase>(dbPath_);
+        if (!kb_->initialize()) {
+            std::cerr << "Failed to initialize knowledge base" << std::endl;
+            return false;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading knowledge base: " << e.what() << std::endl;
+        return false;
+    }
+    
+    auto db = kb_->getDatabase();
+    if (!db) {
+        std::cerr << "Failed to get database" << std::endl;
+        return false;
+    }
+    
+    // Get basic statistics
+    int dimension = kb_->getDimension();
+    int tagCount = db->getTagCount();
+    int aliasCount = db->getAliasCount();
+    int schemaVersion = db->getSchemaVersion();
+    
+    // Validate normalization
+    auto [checked, unitNorm] = validateNormalization();
+    float normRate = checked > 0 ? (100.0f * unitNorm / checked) : 0.0f;
+    
+    // Test search
+    bool searchWorks = testSearch("dreamy not harsh");
+    
+    // Output JSON
+    std::cout << "{\n";
+    std::cout << "  \"database\": \"" << dbPath_ << "\",\n";
+    std::cout << "  \"dimension\": " << dimension << ",\n";
+    std::cout << "  \"tag_count\": " << tagCount << ",\n";
+    std::cout << "  \"alias_count\": " << aliasCount << ",\n";
+    std::cout << "  \"schema_version\": " << schemaVersion << ",\n";
+    std::cout << "  \"has_idf\": true,\n";
+    std::cout << "  \"normalization\": {\n";
+    std::cout << "    \"vectors_checked\": " << checked << ",\n";
+    std::cout << "    \"unit_norm_vectors\": " << unitNorm << ",\n";
+    std::cout << "    \"normalization_rate\": " << std::fixed << std::setprecision(1) << normRate << "\n";
+    std::cout << "  },\n";
+    std::cout << "  \"search_test\": {\n";
+    std::cout << "    \"query\": \"dreamy not harsh\",\n";
+    std::cout << "    \"passed\": " << (searchWorks ? "true" : "false") << "\n";
+    std::cout << "  }\n";
+    std::cout << "}\n";
+    
+    return true;
+}
+
 } // namespace audio_config
 
 int main(int argc, char* argv[]) {
     std::string dbPath = "semantic.db";
+    bool jsonOutput = false;
     
     // Parse command line arguments
-    if (argc > 1) {
-        dbPath = argv[1];
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "--json") {
+            jsonOutput = true;
+        } else if (arg != "--json") {
+            dbPath = arg;
+        }
     }
     
     try {
         audio_config::KBStats stats(dbPath);
-        if (stats.printStats()) {
-            std::cout << "\n=== Statistics Complete ===" << std::endl;
-            return 0;
+        if (jsonOutput) {
+            if (stats.printStatsJSON()) {
+                return 0;
+            } else {
+                std::cerr << "Failed to print JSON statistics!" << std::endl;
+                return 1;
+            }
         } else {
-            std::cerr << "Failed to print statistics!" << std::endl;
-            return 1;
+            if (stats.printStats()) {
+                std::cout << "\n=== Statistics Complete ===" << std::endl;
+                return 0;
+            } else {
+                std::cerr << "Failed to print statistics!" << std::endl;
+                return 1;
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

@@ -13,6 +13,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <filesystem>
+#include <thread>
+#include <chrono>
 
 namespace audio_config {
 
@@ -276,20 +278,63 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
 bool SemanticKnowledgeBase::learnTag(const std::string& tag, const std::vector<float>& embedding, const std::string& canonical) {
     if (!db_ || !isReady_) return false;
     
+    // Check dimension drift
+    if (static_cast<int>(embedding.size()) != dimension_) {
+        std::cerr << "Error: Vector dimension mismatch. Expected " << dimension_ 
+                  << ", got " << embedding.size() << " for tag '" << tag << "'" << std::endl;
+        return false;
+    }
+    
     // Normalize the embedding
     std::vector<float> normalizedEmbedding = embedding;
     normalizeVector(normalizedEmbedding);
     
-    // Store the tag and embedding
-    return db_->storeEmbedding(tag, normalizedEmbedding, canonical);
+    // Store the tag and embedding with retry on SQLITE_BUSY
+    bool success = false;
+    int retries = 3;
+    while (retries > 0 && !success) {
+        success = db_->storeEmbedding(tag, normalizedEmbedding, canonical);
+        if (!success) {
+            retries--;
+            if (retries > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+    }
+    
+    if (success) {
+        std::cout << "learnTag name=" << tag << ", canonical=" << canonical 
+                  << ", dim=" << dimension_ << std::endl;
+    } else {
+        std::cerr << "Error: Failed to store tag '" << tag << "' after retries" << std::endl;
+    }
+    return success;
 }
 
 bool SemanticKnowledgeBase::learnTagFromText(const std::string& tag, const std::string& text, const std::string& canonical) {
-    if (!encoder_ || !encoder_->isReady()) return false;
+    if (!encoder_ || !encoder_->isReady()) {
+        std::cerr << "Error: Encoder not ready for tag '" << tag << "'" << std::endl;
+        return false;
+    }
     
     // Encode the text
     auto embedding = encoder_->encode(text);
-    if (embedding.empty()) return false;
+    if (embedding.empty()) {
+        std::cerr << "Error: Failed to encode text for tag '" << tag << "'" << std::endl;
+        return false;
+    }
+    
+    // Check for zero vectors (encoder fallback protection)
+    float norm = 0.0f;
+    for (float val : embedding) {
+        norm += val * val;
+    }
+    norm = std::sqrt(norm);
+    
+    if (norm < 1e-6f) {
+        std::cerr << "Error: Encoder produced zero vector for tag '" << tag << "', refusing to store" << std::endl;
+        return false;
+    }
     
     // Learn the tag
     return learnTag(tag, embedding, canonical);

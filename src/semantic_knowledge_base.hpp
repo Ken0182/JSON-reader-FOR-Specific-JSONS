@@ -205,6 +205,12 @@ public:
     bool updateIDF(const std::string& tag, float idf, int docCount);
     
     /**
+     * @brief Get database instance for direct access
+     * @return Raw pointer to database (for testing)
+     */
+    SemanticDatabase* getDatabase() const { return db_.get(); }
+    
+    /**
      * @brief Compute IDF statistics from configuration corpus
      * @param allTags All tags from all configurations
      * @return Number of tags processed
