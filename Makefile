@@ -64,9 +64,10 @@ OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
 SEED_TARGET = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
 STATS_TARGET = $(BUILD_DIR)/kbstats$(EXE_EXT)
+SMOKE_TARGET = $(BUILD_DIR)/smoke_test$(EXE_EXT)
 
 # Default target
-all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET)
+all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET) $(SMOKE_TARGET)
 
 # Debug build
 debug: CXXFLAGS = $(DEBUG_FLAGS)
@@ -100,6 +101,14 @@ $(STATS_TARGET): $(BUILD_DIR)/kbstats.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/
 $(BUILD_DIR)/kbstats.o: tools/kbstats.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
+# Build smoke test
+$(SMOKE_TARGET): $(BUILD_DIR)/smoke_test.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/sentence_encoder.o $(BUILD_DIR)/semantic_knowledge_base.o $(BUILD_DIR)/text_utils.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Build smoke test object
+$(BUILD_DIR)/smoke_test.o: tools/smoke_test.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -127,6 +136,9 @@ seed-force: $(SEED_TARGET)
 # Show database statistics
 stats: $(STATS_TARGET)
 	$(RUN_PREFIX)$(STATS_TARGET)
+
+smoke-test: $(SMOKE_TARGET)
+	$(RUN_PREFIX)$(SMOKE_TARGET)
 
 # Run with specific config
 run-with-config: $(TARGET)
@@ -242,6 +254,7 @@ help:
 	@echo "  seed         - Build and seed semantic database"
 	@echo "  seed-force   - Force seed (overwrite existing database)"
 	@echo "  stats        - Show database statistics and integrity check"
+	@echo "  smoke-test   - Run comprehensive smoke tests"
 	@echo "  test         - Run basic functionality tests"
 	@echo ""
 	@echo "DISTRIBUTION:"
