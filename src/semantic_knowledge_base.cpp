@@ -12,13 +12,29 @@
 #include <numeric>
 #include <iostream>
 #include <unordered_map>
+#include <filesystem>
+#include <thread>
+#include <chrono>
 
 namespace audio_config {
 
 SemanticKnowledgeBase::SemanticKnowledgeBase(const std::string& dbPath) {
     // Create database connection
     try {
-        db_ = std::make_unique<SemanticDatabase>(dbPath);
+        // Try to use shipped database first, fallback to in-memory
+        std::string actualPath = dbPath;
+        if (dbPath == ":memory:" || dbPath.empty()) {
+            // Look for shipped database
+            if (std::filesystem::exists("data/semantic.db")) {
+                actualPath = "data/semantic.db";
+                std::cout << "Using shipped semantic database: " << actualPath << std::endl;
+            } else {
+                std::cout << "No shipped database found, using in-memory database" << std::endl;
+                actualPath = ":memory:";
+            }
+        }
+        
+        db_ = std::make_unique<SemanticDatabase>(actualPath);
     } catch (const std::exception& e) {
         std::cerr << "Failed to open semantic database: " << e.what() << std::endl;
         throw;
@@ -40,19 +56,20 @@ bool SemanticKnowledgeBase::initialize(bool createDefault) {
         // No embeddings yet, use default
         dimension_ = 100;
         std::cout << "No embeddings in database, using default dimension: " << dimension_ << std::endl;
-        
-        if (createDefault) {
-            createDefaultEmbeddings();
-        }
     } else {
         std::cout << "Loaded semantic database with dimension: " << dimension_ << std::endl;
     }
     
     // Create sentence encoder
     encoder_ = SentenceEncoder::createDefault(db_.get(), dimension_);
-    if (!encoder_ || !encoder_->isReady()) {
+    if (!encoder_) {
         std::cerr << "Failed to create sentence encoder" << std::endl;
         return false;
+    }
+    
+    // Create default embeddings if requested (only after encoder exists)
+    if (createDefault && dimension_ == 100) {
+        createDefaultEmbeddings();
     }
     
     isReady_ = true;
@@ -75,6 +92,27 @@ std::vector<float> SemanticKnowledgeBase::getTagEmbedding(const std::string& tag
     // Try direct lookup
     auto embedding = db_->getEmbedding(tag);
     if (!embedding.empty()) {
+        // Check for zero or near-zero vectors
+        float norm = 0.0f;
+        for (float val : embedding) {
+            norm += val * val;
+        }
+        norm = std::sqrt(norm);
+        
+        if (norm < 1e-6f) {
+            // Zero vector detected, regenerate
+            std::cout << "Warning: Zero vector detected for tag '" << tag << "', regenerating..." << std::endl;
+            if (encoder_ && encoder_->isReady()) {
+                auto encoded = encoder_->encode(tag);
+                if (!encoded.empty()) {
+                    // Store the regenerated vector
+                    std::string canonical = db_->getCanonicalTag(tag);
+                    db_->storeEmbedding(tag, encoded, canonical);
+                    return encoded;
+                }
+            }
+            return {};
+        }
         return embedding;
     }
     
@@ -83,13 +121,36 @@ std::vector<float> SemanticKnowledgeBase::getTagEmbedding(const std::string& tag
     if (canonical != tag) {
         embedding = db_->getEmbedding(canonical);
         if (!embedding.empty()) {
+            // Check for zero vectors in canonical form too
+            float norm = 0.0f;
+            for (float val : embedding) {
+                norm += val * val;
+            }
+            norm = std::sqrt(norm);
+            
+            if (norm < 1e-6f) {
+                std::cout << "Warning: Zero vector detected for canonical tag '" << canonical << "', regenerating..." << std::endl;
+                if (encoder_ && encoder_->isReady()) {
+                    auto encoded = encoder_->encode(tag);
+                    if (!encoded.empty()) {
+                        db_->storeEmbedding(tag, encoded, canonical);
+                        return encoded;
+                    }
+                }
+                return {};
+            }
             return embedding;
         }
     }
     
     // Not in database, encode using sentence encoder
     if (encoder_) {
-        return encoder_->encode(tag);
+        auto encoded = encoder_->encode(tag);
+        if (!encoded.empty()) {
+            // Store for future use
+            db_->storeEmbedding(tag, encoded, canonical);
+        }
+        return encoded;
     }
     
     return {};
@@ -214,26 +275,105 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
     return db_->storeConfig(key, value);
 }
 
+bool SemanticKnowledgeBase::learnTag(const std::string& tag, const std::vector<float>& embedding, const std::string& canonical) {
+    if (!db_ || !isReady_) return false;
+    
+    // Check dimension drift
+    if (static_cast<int>(embedding.size()) != dimension_) {
+        std::cerr << "Error: Vector dimension mismatch. Expected " << dimension_ 
+                  << ", got " << embedding.size() << " for tag '" << tag << "'" << std::endl;
+        return false;
+    }
+    
+    // Normalize the embedding
+    std::vector<float> normalizedEmbedding = embedding;
+    normalizeVector(normalizedEmbedding);
+    
+    // Store the tag and embedding with retry on SQLITE_BUSY
+    bool success = false;
+    int retries = 3;
+    while (retries > 0 && !success) {
+        success = db_->storeEmbedding(tag, normalizedEmbedding, canonical);
+        if (!success) {
+            retries--;
+            if (retries > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+    }
+    
+    if (success) {
+        std::cout << "learnTag name=" << tag << ", canonical=" << canonical 
+                  << ", dim=" << dimension_ << std::endl;
+    } else {
+        std::cerr << "Error: Failed to store tag '" << tag << "' after retries" << std::endl;
+    }
+    return success;
+}
+
+bool SemanticKnowledgeBase::learnTagFromText(const std::string& tag, const std::string& text, const std::string& canonical) {
+    if (!encoder_ || !encoder_->isReady()) {
+        std::cerr << "Error: Encoder not ready for tag '" << tag << "'" << std::endl;
+        return false;
+    }
+    
+    // Encode the text
+    auto embedding = encoder_->encode(text);
+    if (embedding.empty()) {
+        std::cerr << "Error: Failed to encode text for tag '" << tag << "'" << std::endl;
+        return false;
+    }
+    
+    // Check for zero vectors (encoder fallback protection)
+    float norm = 0.0f;
+    for (float val : embedding) {
+        norm += val * val;
+    }
+    norm = std::sqrt(norm);
+    
+    if (norm < 1e-6f) {
+        std::cerr << "Error: Encoder produced zero vector for tag '" << tag << "', refusing to store" << std::endl;
+        return false;
+    }
+    
+    // Learn the tag
+    return learnTag(tag, embedding, canonical);
+}
+
+bool SemanticKnowledgeBase::updateIDF(const std::string& tag, float idf, int docCount) {
+    if (!db_) return false;
+    return db_->storeIDF(tag, idf, docCount);
+}
+
 int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
     if (!db_ || allTags.empty()) return 0;
     
-    // Count tag occurrences
-    std::unordered_map<std::string, int> tagCounts;
+    // Count document frequency for each tag (how many documents contain each tag)
+    std::unordered_map<std::string, int> tagDocCount;
+    std::unordered_set<std::string> uniqueTags;
+    
+    // Count unique tags as "documents" - each unique tag represents a document
     for (const auto& tag : allTags) {
-        // Canonicalize
+        uniqueTags.insert(tag);
+    }
+    
+    // For each unique tag, count how many documents contain it
+    // In this simplified model, we'll count occurrences as document frequency
+    for (const auto& tag : allTags) {
         std::string canonical = getCanonicalTag(tag);
-        tagCounts[canonical]++;
+        tagDocCount[canonical]++;
     }
     
     // Compute IDF for each tag
-    int totalDocs = static_cast<int>(allTags.size());
+    int totalDocs = static_cast<int>(uniqueTags.size());
     int storedCount = 0;
     
-    for (const auto& [tag, count] : tagCounts) {
-        // IDF = log(totalDocs / docFreq)
-        float idf = std::log(static_cast<float>(totalDocs) / count);
+    for (const auto& [tag, docFreq] : tagDocCount) {
+        // IDF = log(N_docs / (1 + df_docs(tag)))
+        // where N_docs = total documents, df_docs = documents containing the tag
+        float idf = std::log(static_cast<float>(totalDocs) / (1.0f + static_cast<float>(docFreq)));
         
-        if (db_->storeIDF(tag, idf, count)) {
+        if (db_->storeIDF(tag, idf, docFreq)) {
             ++storedCount;
         }
     }
