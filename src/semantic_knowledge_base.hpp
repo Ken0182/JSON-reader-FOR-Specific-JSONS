@@ -168,7 +168,7 @@ public:
      * @return true if successful
      */
     bool storeIDF(const std::string& tag, float idf, int docCount);
-
+    
     /**
      * @brief Store configuration parameter
      * @param key Parameter name
@@ -176,8 +176,40 @@ public:
      * @return true if successful
      */
     bool storeConfig(const std::string& key, float value);
-
-
+    
+    /**
+     * @brief Runtime learning: Store a new tag embedding
+     * @param tag Tag name
+     * @param embedding Embedding vector
+     * @param canonical Canonical form (optional)
+     * @return true if successful
+     */
+    bool learnTag(const std::string& tag, const std::vector<float>& embedding, const std::string& canonical = "");
+    
+    /**
+     * @brief Runtime learning: Store a new tag by encoding text
+     * @param tag Tag name
+     * @param text Text to encode
+     * @param canonical Canonical form (optional)
+     * @return true if successful
+     */
+    bool learnTagFromText(const std::string& tag, const std::string& text, const std::string& canonical = "");
+    
+    /**
+     * @brief Runtime learning: Update IDF statistics
+     * @param tag Tag name
+     * @param idf IDF score
+     * @param docCount Document count
+     * @return true if successful
+     */
+    bool updateIDF(const std::string& tag, float idf, int docCount);
+    
+    /**
+     * @brief Get database instance for direct access
+     * @return Raw pointer to database (for testing)
+     */
+    SemanticDatabase* getDatabase() const { return db_.get(); }
+    
     /**
      * @brief Compute IDF statistics from configuration corpus
      * @param allTags All tags from all configurations
