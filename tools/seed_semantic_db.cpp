@@ -129,6 +129,17 @@ bool SemanticSeeder::seed(bool force) {
     std::cout << "=== Semantic Knowledge Base Seeder ===" << std::endl;
     std::cout << "Database: " << dbPath_ << std::endl;
     
+    // Ensure parent directory exists
+    std::filesystem::path dbPathObj(dbPath_);
+    if (!dbPathObj.parent_path().empty()) {
+        try {
+            std::filesystem::create_directories(dbPathObj.parent_path());
+        } catch (const std::exception& e) {
+            std::cerr << "Failed to create directory for database: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
     // Check if database exists
     if (std::filesystem::exists(dbPath_) && !force) {
         std::cout << "Database already exists. Use --force to overwrite." << std::endl;
