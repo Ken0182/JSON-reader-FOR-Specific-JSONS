@@ -82,6 +82,30 @@ bool SemanticDatabase::initializeSchema() {
     executeSql("CREATE INDEX IF NOT EXISTS idx_canonical ON tags(canonical);");
     executeSql("CREATE INDEX IF NOT EXISTS idx_idf ON idf_stats(idf DESC);");
     
+    // User signals table for search interest tracking
+    if (!executeSql(R"(
+        CREATE TABLE IF NOT EXISTS user_signals (
+            token TEXT PRIMARY KEY,
+            strength REAL NOT NULL,
+            last_update INTEGER NOT NULL,
+            created_at INTEGER NOT NULL
+        );
+    )")) return false;
+    
+    // Query history table for search tracking
+    if (!executeSql(R"(
+        CREATE TABLE IF NOT EXISTS query_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tokens TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            raw_strength REAL NOT NULL
+        );
+    )")) return false;
+    
+    // Create additional indices for user signals
+    executeSql("CREATE INDEX IF NOT EXISTS idx_user_signals_strength ON user_signals(strength DESC);");
+    executeSql("CREATE INDEX IF NOT EXISTS idx_query_history_timestamp ON query_history(timestamp DESC);");
+    
     return true;
 }
 
@@ -312,6 +336,92 @@ bool SemanticDatabase::storeConfig(const std::string& key, float value) {
     }
     
     return success;
+}
+
+bool SemanticDatabase::storeUserSignal(const std::string& token, float strength, std::time_t lastUpdate) {
+    if (!db_) return false;
+    
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "INSERT OR REPLACE INTO user_signals (token, strength, last_update, created_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM user_signals WHERE token = ?), ?));";
+    
+    bool success = false;
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, token.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, strength);
+        sqlite3_bind_int64(stmt, 3, static_cast<sqlite3_int64>(lastUpdate));
+        sqlite3_bind_text(stmt, 4, token.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 5, static_cast<sqlite3_int64>(lastUpdate));
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+    }
+    
+    return success;
+}
+
+std::unordered_map<std::string, std::pair<float, std::time_t>> SemanticDatabase::loadUserSignals() const {
+    std::unordered_map<std::string, std::pair<float, std::time_t>> signals;
+    if (!db_) return signals;
+    
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT token, strength, last_update FROM user_signals ORDER BY strength DESC;";
+    
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* token = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            float strength = static_cast<float>(sqlite3_column_double(stmt, 1));
+            std::time_t lastUpdate = static_cast<std::time_t>(sqlite3_column_int64(stmt, 2));
+            
+            if (token) {
+                signals[token] = {strength, lastUpdate};
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+    
+    return signals;
+}
+
+bool SemanticDatabase::storeQueryHistory(const std::string& tokens, std::time_t timestamp, float rawStrength) {
+    if (!db_) return false;
+    
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "INSERT INTO query_history (tokens, timestamp, raw_strength) VALUES (?, ?, ?);";
+    
+    bool success = false;
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, tokens.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 2, static_cast<sqlite3_int64>(timestamp));
+        sqlite3_bind_double(stmt, 3, rawStrength);
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+    }
+    
+    return success;
+}
+
+std::vector<std::tuple<std::string, std::time_t, float>> SemanticDatabase::loadQueryHistory(int maxResults) const {
+    std::vector<std::tuple<std::string, std::time_t, float>> history;
+    if (!db_) return history;
+    
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT tokens, timestamp, raw_strength FROM query_history ORDER BY timestamp DESC LIMIT ?;";
+    
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, maxResults);
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* tokens = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::time_t timestamp = static_cast<std::time_t>(sqlite3_column_int64(stmt, 1));
+            float rawStrength = static_cast<float>(sqlite3_column_double(stmt, 2));
+            
+            if (tokens) {
+                history.emplace_back(tokens, timestamp, rawStrength);
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+    
+    return history;
 }
 
 bool SemanticDatabase::executeSql(const std::string& sql) const {
