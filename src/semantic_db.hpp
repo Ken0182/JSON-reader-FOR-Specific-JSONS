@@ -47,7 +47,9 @@
 #include <unordered_map>
 #include <optional>
 #include <memory>
+#include <ctime>
 #include <sqlite3.h>
+#include "json.hpp"
 
 namespace audio_config {
 
@@ -161,6 +163,12 @@ public:
      * @return true if successful
      */
     bool storeConfig(const std::string& key, float value);
+
+    // --- User signals persistence ---
+    bool clearUserSignals();
+    bool upsertUserSignal(const std::string& token, float strength, std::time_t lastUpdate);
+    bool addQueryRecord(const std::vector<std::string>& tokens, std::time_t timestamp, float rawStrength);
+    nlohmann::json loadTrackerStateJson() const;
     
     /**
      * @brief Get database file path

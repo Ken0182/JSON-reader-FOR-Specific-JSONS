@@ -36,6 +36,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <ctime>
+#include "json.hpp"
 #include "semantic_db.hpp"
 #include "sentence_encoder.hpp"
 
@@ -180,10 +182,20 @@ public:
 
     /**
      * @brief Compute IDF statistics from configuration corpus
-     * @param allTags All tags from all configurations
+     * @param docs Vector of documents, each a list of tags (per configuration)
      * @return Number of tags processed
      */
-    int computeIDFStatistics(const std::vector<std::string>& allTags);
+    int computeIDFStatistics(const std::vector<std::vector<std::string>>& docs);
+
+    // --- User signals persistence (Problem 5) ---
+    /** Clear all stored user signals in the database */
+    bool clearUserSignals();
+    /** Upsert a single user signal */
+    bool upsertUserSignal(const std::string& token, float strength, std::time_t lastUpdate);
+    /** Append a query history record */
+    bool addQueryRecord(const std::vector<std::string>& tokens, std::time_t timestamp, float rawStrength);
+    /** Load tracker state (signals + history) as JSON for import */
+    nlohmann::json loadTrackerStateJson() const;
     
 private:
     std::unique_ptr<SemanticDatabase> db_;

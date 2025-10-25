@@ -482,9 +482,11 @@ int SemanticSeeder::generateEmbeddings() {
 }
 
 int SemanticSeeder::computeIDFStatistics() {
-    // Convert set to vector for IDF computation
-    std::vector<std::string> allTagsVec(allTags_.begin(), allTags_.end());
-    return kb_->computeIDFStatistics(allTagsVec);
+    // Build a single-document corpus from all unique tags (best-effort)
+    std::vector<std::string> uniqueTags(allTags_.begin(), allTags_.end());
+    std::vector<std::vector<std::string>> docs;
+    docs.push_back(std::move(uniqueTags));
+    return kb_->computeIDFStatistics(docs);
 }
 
 int SemanticSeeder::storeTunableParameters() {

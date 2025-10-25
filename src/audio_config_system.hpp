@@ -404,6 +404,12 @@ public:
      * @param allTags Vector of all tag sets from all configurations
      */
     void updateTagStatistics(const std::vector<std::vector<std::string>>& allTags);
+
+    /** Persist user search tracker signals and history into the knowledge base */
+    bool persistTrackerState(const SearchInterestTracker& tracker);
+
+    /** Load persisted tracker state from the knowledge base into the tracker */
+    bool loadTrackerState(SearchInterestTracker& tracker) const;
     
     /**
      * @brief Get embedding dimension
@@ -583,6 +589,9 @@ private:
     void printConfigurationSummary(const AudioConfig& config, CompatibilityScore score = -1.0f) const;
     void printCompatibilityResult(const CompatibilityResult& result) const;
     [[nodiscard]] std::vector<std::string> tokenizeCommand(const std::string& command) const;
+
+    // Orchestrates KB updates and persistence tasks
+    void syncKnowledgeBase();
 };
 
 } // namespace audio_config

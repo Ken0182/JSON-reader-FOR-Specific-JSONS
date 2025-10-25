@@ -43,6 +43,9 @@ bool AudioConfigSystem::initialize(const std::string& configDatabasePath,
                 std::cout << "Using built-in vocabulary (fallback)" << std::endl;
             }
         }
+        if (skdIndexPath.empty()) {
+            std::cout << "Semantic DB path: on-disk default will be used if present (in-memory disabled by default)" << std::endl;
+        }
         
         // Load configuration database
         loadConfigurationDatabase(configDatabasePath);
@@ -53,6 +56,8 @@ bool AudioConfigSystem::initialize(const std::string& configDatabasePath,
             allTags.push_back(config->getSemanticTags());
         }
         embeddingEngine_->updateTagStatistics(allTags);
+        // v1.6: Attempt to load persisted tracker state
+        embeddingEngine_->loadTrackerState(userContext_.getSearchTracker());
         
         std::cout << "Loaded " << configurations_.size() << " configurations with multi-dimensional metadata." << std::endl;
         
@@ -608,17 +613,37 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
 }
 
 void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& args) {
-    (void)args; // Unused parameter
-    
     if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
         std::cout << "Knowledge base not initialized" << std::endl;
         return;
     }
-    
+
+    // Subcommands: refresh, sync, help
+    if (args.size() > 1) {
+        std::string sub = args[1];
+        std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
+        if (sub == "refresh" || sub == "sync") {
+            std::cout << "Synchronizing knowledge base (recompute IDF, persist signals)..." << std::endl;
+            syncKnowledgeBase();
+            std::cout << "Sync complete." << std::endl;
+            return;
+        } else if (sub == "help") {
+            std::cout << R"(
+kbstats [subcommand]
+  Show knowledge base diagnostics or trigger maintenance.
+
+Subcommands:
+  refresh | sync   Recompute IDF from configs and persist learning signals
+  help             Show this help
+)" << std::endl;
+            return;
+        }
+    }
+
     std::cout << "\n=== KNOWLEDGE BASE STATISTICS ===" << std::endl;
     std::cout << "Embedding dimension: " << embeddingEngine_->getDimension() << "D" << std::endl;
     std::cout << "Status: " << (embeddingEngine_->isReady() ? "Ready" : "Not ready") << std::endl;
-    
+
     // Get sample tags by encoding a few common words
     std::cout << "\nSample embeddings (unit-normalized):" << std::endl;
     std::vector<std::string> sampleWords = {"warm", "bright", "analog", "dreamy"};
@@ -627,10 +652,10 @@ void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& arg
         float norm = 0.0f;
         for (float v : emb) norm += v * v;
         norm = std::sqrt(norm);
-        std::cout << "  " << word << ": " << emb.size() << "D, |v|=" 
+        std::cout << "  " << word << ": " << emb.size() << "D, |v|="
                   << std::fixed << std::setprecision(3) << norm << std::endl;
     }
-    
+
     std::cout << "\nIDF weights (top tags):" << std::endl;
     std::vector<std::string> checkTags = {"warm", "bright", "analog", "vintage", "digital"};
     for (const auto& tag : checkTags) {
@@ -639,7 +664,7 @@ void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& arg
             std::cout << "  " << tag << ": " << std::fixed << std::setprecision(3) << idf << std::endl;
         }
     }
-    
+
     std::cout << "=========================================================" << std::endl;
 }
 
@@ -696,6 +721,7 @@ GENERATION & OUTPUT:
   
 INFORMATION:
   stats                   - Show system statistics and user preferences
+  kbstats [refresh|sync]  - Show KB stats or sync (recompute IDF, persist signals)
   help                    - Show this help message
   examples                - Show usage examples and patterns
   
