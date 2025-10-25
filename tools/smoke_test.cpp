@@ -26,6 +26,9 @@ public:
 
     ~SmokeTester() {
         // Clean up test database
+        // First ensure all database connections are closed
+        kb_.reset();
+        // Then remove the database file
         std::filesystem::remove(testDbPath_);
     }
 

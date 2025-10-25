@@ -193,6 +193,13 @@ public:
      */
     std::string getPath() const { return dbPath_; }
     
+    /**
+     * @brief Execute SQL statement (public interface)
+     * @param sql SQL statement
+     * @return true if successful
+     */
+    bool executeSqlPublic(const std::string& sql) const;
+    
 private:
     sqlite3* db_{nullptr};
     std::string dbPath_;
