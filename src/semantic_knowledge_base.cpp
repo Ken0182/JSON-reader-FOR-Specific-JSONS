@@ -40,19 +40,20 @@ bool SemanticKnowledgeBase::initialize(bool createDefault) {
         // No embeddings yet, use default
         dimension_ = 100;
         std::cout << "No embeddings in database, using default dimension: " << dimension_ << std::endl;
-        
-        if (createDefault) {
-            createDefaultEmbeddings();
-        }
     } else {
         std::cout << "Loaded semantic database with dimension: " << dimension_ << std::endl;
     }
     
-    // Create sentence encoder
+    // Create sentence encoder FIRST (before creating default embeddings)
     encoder_ = SentenceEncoder::createDefault(db_.get(), dimension_);
     if (!encoder_ || !encoder_->isReady()) {
         std::cerr << "Failed to create sentence encoder" << std::endl;
         return false;
+    }
+    
+    // Now create default embeddings with encoder available
+    if (createDefault && dimension_ == 100) {
+        createDefaultEmbeddings();
     }
     
     isReady_ = true;
@@ -214,31 +215,60 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
     return db_->storeConfig(key, value);
 }
 
-int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
-    if (!db_ || allTags.empty()) return 0;
+bool SemanticKnowledgeBase::storeUserSignal(const std::string& token, float strength, std::time_t lastUpdate) {
+    if (!db_) return false;
+    return db_->storeUserSignal(token, strength, lastUpdate);
+}
+
+std::unordered_map<std::string, std::pair<float, std::time_t>> SemanticKnowledgeBase::loadUserSignals() const {
+    if (!db_) return {};
+    return db_->loadUserSignals();
+}
+
+bool SemanticKnowledgeBase::storeQueryHistory(const std::string& tokens, std::time_t timestamp, float rawStrength) {
+    if (!db_) return false;
+    return db_->storeQueryHistory(tokens, timestamp, rawStrength);
+}
+
+std::vector<std::tuple<std::string, std::time_t, float>> SemanticKnowledgeBase::loadQueryHistory(int maxResults) const {
+    if (!db_) return {};
+    return db_->loadQueryHistory(maxResults);
+}
+
+int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::vector<std::string>>& docs) {
+    if (!db_ || docs.empty()) return 0;
     
-    // Count tag occurrences
-    std::unordered_map<std::string, int> tagCounts;
-    for (const auto& tag : allTags) {
-        // Canonicalize
-        std::string canonical = getCanonicalTag(tag);
-        tagCounts[canonical]++;
+    // Count document frequency for each tag (how many documents contain the tag)
+    std::unordered_map<std::string, int> docFreq;
+    int totalDocs = static_cast<int>(docs.size());
+    
+    for (const auto& docTags : docs) {
+        // Use set to avoid counting duplicate tags within same document
+        std::unordered_set<std::string> uniqueTags;
+        for (const auto& tag : docTags) {
+            std::string canonical = getCanonicalTag(tag);
+            uniqueTags.insert(canonical);
+        }
+        
+        // Count each unique tag in this document
+        for (const auto& tag : uniqueTags) {
+            docFreq[tag]++;
+        }
     }
     
     // Compute IDF for each tag
-    int totalDocs = static_cast<int>(allTags.size());
     int storedCount = 0;
     
-    for (const auto& [tag, count] : tagCounts) {
+    for (const auto& [tag, docCount] : docFreq) {
         // IDF = log(totalDocs / docFreq)
-        float idf = std::log(static_cast<float>(totalDocs) / count);
+        float idf = std::log(static_cast<float>(totalDocs) / docCount);
         
-        if (db_->storeIDF(tag, idf, count)) {
+        if (db_->storeIDF(tag, idf, docCount)) {
             ++storedCount;
         }
     }
     
-    std::cout << "Computed IDF for " << storedCount << " tags" << std::endl;
+    std::cout << "Computed IDF for " << storedCount << " tags across " << totalDocs << " documents" << std::endl;
     return storedCount;
 }
 
@@ -294,6 +324,15 @@ void SemanticKnowledgeBase::createDefaultEmbeddings() {
         
         if (db_->storeEmbedding(tagData.tag, embedding, tagData.canonical)) {
             ++storedCount;
+            
+            // Verify the stored embedding is non-zero
+            float norm = 0.0f;
+            for (float v : embedding) norm += v * v;
+            norm = std::sqrt(norm);
+            
+            if (norm < 1e-6f) {
+                std::cerr << "Warning: Stored embedding for '" << tagData.tag << "' has zero norm" << std::endl;
+            }
         }
     }
     
