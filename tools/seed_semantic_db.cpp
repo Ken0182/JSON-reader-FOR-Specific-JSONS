@@ -482,9 +482,32 @@ int SemanticSeeder::generateEmbeddings() {
 }
 
 int SemanticSeeder::computeIDFStatistics() {
-    // Convert set to vector for IDF computation
+    // Create per-document tag structure from the allTags_ set
+    // Since we don't have per-configuration data in this seeder,
+    // we'll create synthetic documents by grouping related tags
+    std::vector<std::vector<std::string>> allTagsDocs;
+    
+    // Convert the set to a vector and group into synthetic documents
     std::vector<std::string> allTagsVec(allTags_.begin(), allTags_.end());
-    return kb_->computeIDFStatistics(allTagsVec);
+    
+    if (allTagsVec.empty()) {
+        std::cout << "No tags to compute IDF for" << std::endl;
+        return 0;
+    }
+    
+    // Group tags into synthetic documents (e.g., 5-10 tags per "document")
+    const size_t tagsPerDoc = 7;
+    for (size_t i = 0; i < allTagsVec.size(); i += tagsPerDoc) {
+        std::vector<std::string> doc;
+        for (size_t j = i; j < std::min(i + tagsPerDoc, allTagsVec.size()); ++j) {
+            doc.push_back(allTagsVec[j]);
+        }
+        if (!doc.empty()) {
+            allTagsDocs.push_back(doc);
+        }
+    }
+    
+    return kb_->computeIDFStatistics(allTagsDocs);
 }
 
 int SemanticSeeder::storeTunableParameters() {

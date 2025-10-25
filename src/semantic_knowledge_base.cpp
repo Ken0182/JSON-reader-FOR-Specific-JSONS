@@ -36,23 +36,28 @@ bool SemanticKnowledgeBase::initialize(bool createDefault) {
     
     // Get embedding dimension from database
     dimension_ = db_->getEmbeddingDimension();
+    bool needsDefaultEmbeddings = false;
+    
     if (dimension_ == 0) {
         // No embeddings yet, use default
         dimension_ = 100;
         std::cout << "No embeddings in database, using default dimension: " << dimension_ << std::endl;
-        
-        if (createDefault) {
-            createDefaultEmbeddings();
-        }
+        needsDefaultEmbeddings = createDefault;
     } else {
         std::cout << "Loaded semantic database with dimension: " << dimension_ << std::endl;
     }
     
-    // Create sentence encoder
+    // CRITICAL: Create sentence encoder BEFORE seeding defaults
+    // This ensures encoder is available for createDefaultEmbeddings()
     encoder_ = SentenceEncoder::createDefault(db_.get(), dimension_);
     if (!encoder_ || !encoder_->isReady()) {
         std::cerr << "Failed to create sentence encoder" << std::endl;
         return false;
+    }
+    
+    // Now create default embeddings (if needed) with encoder available
+    if (needsDefaultEmbeddings) {
+        createDefaultEmbeddings();
     }
     
     isReady_ = true;
@@ -214,36 +219,86 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
     return db_->storeConfig(key, value);
 }
 
-int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
-    if (!db_ || allTags.empty()) return 0;
+int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::vector<std::string>>& docs) {
+    if (!db_ || docs.empty()) return 0;
     
-    // Count tag occurrences
-    std::unordered_map<std::string, int> tagCounts;
-    for (const auto& tag : allTags) {
-        // Canonicalize
-        std::string canonical = getCanonicalTag(tag);
-        tagCounts[canonical]++;
+    // Count document frequency (number of documents containing each tag)
+    std::unordered_map<std::string, int> docFrequency;
+    
+    for (const auto& docTags : docs) {
+        // Get unique canonical tags in this document
+        std::unordered_set<std::string> uniqueTagsInDoc;
+        for (const auto& tag : docTags) {
+            std::string canonical = getCanonicalTag(tag);
+            uniqueTagsInDoc.insert(canonical);
+        }
+        
+        // Increment document frequency for each unique tag
+        for (const auto& canonicalTag : uniqueTagsInDoc) {
+            docFrequency[canonicalTag]++;
+        }
     }
     
     // Compute IDF for each tag
-    int totalDocs = static_cast<int>(allTags.size());
+    int totalDocs = static_cast<int>(docs.size());
     int storedCount = 0;
     
-    for (const auto& [tag, count] : tagCounts) {
+    for (const auto& [tag, docCount] : docFrequency) {
         // IDF = log(totalDocs / docFreq)
-        float idf = std::log(static_cast<float>(totalDocs) / count);
+        // Higher IDF means more discriminative (appears in fewer documents)
+        float idf = std::log(static_cast<float>(totalDocs) / static_cast<float>(docCount));
         
-        if (db_->storeIDF(tag, idf, count)) {
+        // Store both IDF and the actual document count
+        if (db_->storeIDF(tag, idf, docCount)) {
             ++storedCount;
         }
     }
     
-    std::cout << "Computed IDF for " << storedCount << " tags" << std::endl;
+    std::cout << "Computed IDF for " << storedCount << " unique tags across " 
+              << totalDocs << " documents" << std::endl;
     return storedCount;
+}
+
+bool SemanticKnowledgeBase::storeUserSignal(const std::string& token, float strength, int64_t lastUpdate) {
+    if (!db_) return false;
+    return db_->storeUserSignal(token, strength, lastUpdate);
+}
+
+std::unordered_map<std::string, std::pair<float, int64_t>> SemanticKnowledgeBase::loadUserSignals() const {
+    if (!db_) return {};
+    return db_->loadUserSignals();
+}
+
+bool SemanticKnowledgeBase::storeQueryHistory(const std::string& queryText, const std::string& tokens,
+                                             int64_t timestamp, float rawStrength) {
+    if (!db_) return false;
+    return db_->storeQueryHistory(queryText, tokens, timestamp, rawStrength);
+}
+
+std::vector<std::tuple<std::string, std::string, int64_t, float>>
+SemanticKnowledgeBase::loadQueryHistory(int maxResults) const {
+    if (!db_) return {};
+    return db_->loadQueryHistory(maxResults);
+}
+
+bool SemanticKnowledgeBase::clearUserSignals() {
+    if (!db_) return false;
+    return db_->clearUserSignals();
+}
+
+bool SemanticKnowledgeBase::clearQueryHistory() {
+    if (!db_) return false;
+    return db_->clearQueryHistory();
 }
 
 void SemanticKnowledgeBase::createDefaultEmbeddings() {
     if (!db_) return;
+    
+    // CRITICAL: Ensure encoder is ready before seeding
+    if (!encoder_ || !encoder_->isReady()) {
+        std::cerr << "Warning: Cannot create default embeddings - encoder not ready" << std::endl;
+        return;
+    }
     
     std::cout << "Creating default embeddings..." << std::endl;
     
@@ -282,14 +337,23 @@ void SemanticKnowledgeBase::createDefaultEmbeddings() {
     // Generate simple semantic embeddings
     // For production, these would be from a pre-trained model
     int storedCount = 0;
+    int zeroVectorCount = 0;
+    
     for (const auto& tagData : commonTags) {
-        // Create a simple embedding based on semantic neighbors
-        // This is a placeholder - real embeddings would be from a model
-        std::vector<float> embedding(dimension_, 0.0f);
-        
         // Generate hash-based embedding using sentence encoder
-        if (encoder_) {
-            embedding = encoder_->encode(tagData.tag);
+        std::vector<float> embedding = encoder_->encode(tagData.tag);
+        
+        // Verify embedding is non-zero
+        float norm = 0.0f;
+        for (float val : embedding) {
+            norm += val * val;
+        }
+        norm = std::sqrt(norm);
+        
+        if (norm < 1e-6f) {
+            std::cerr << "Warning: Zero-length embedding generated for tag: " << tagData.tag << std::endl;
+            ++zeroVectorCount;
+            continue;  // Skip storing zero vectors
         }
         
         if (db_->storeEmbedding(tagData.tag, embedding, tagData.canonical)) {
@@ -297,7 +361,26 @@ void SemanticKnowledgeBase::createDefaultEmbeddings() {
         }
     }
     
-    std::cout << "Created " << storedCount << " default embeddings" << std::endl;
+    std::cout << "Created " << storedCount << " default embeddings";
+    if (zeroVectorCount > 0) {
+        std::cout << " (skipped " << zeroVectorCount << " zero vectors)";
+    }
+    std::cout << std::endl;
+    
+    // Verify: Read back one tag to ensure persistence worked
+    auto verifyEmbed = db_->getEmbedding("warm");
+    if (verifyEmbed.empty()) {
+        std::cerr << "Warning: Could not verify stored embeddings" << std::endl;
+    } else {
+        float verifyNorm = 0.0f;
+        for (float val : verifyEmbed) {
+            verifyNorm += val * val;
+        }
+        verifyNorm = std::sqrt(verifyNorm);
+        if (verifyNorm < 1e-6f) {
+            std::cerr << "Warning: Stored embedding has zero length - encoder may not be working correctly" << std::endl;
+        }
+    }
 }
 
 } // namespace audio_config

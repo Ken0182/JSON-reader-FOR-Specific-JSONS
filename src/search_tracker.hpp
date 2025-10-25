@@ -181,6 +181,20 @@ public:
      * @return Map of stat_name → value
      */
     std::unordered_map<std::string, float> getStatistics() const;
+    
+    /**
+     * @brief Save tracker state to knowledge base
+     * @param kb Knowledge base to save to
+     * @return true if successful
+     */
+    bool saveToKnowledgeBase(class SemanticKnowledgeBase* kb) const;
+    
+    /**
+     * @brief Load tracker state from knowledge base
+     * @param kb Knowledge base to load from
+     * @return true if successful
+     */
+    bool loadFromKnowledgeBase(class SemanticKnowledgeBase* kb);
 
 private:
     SignalParameters params_;

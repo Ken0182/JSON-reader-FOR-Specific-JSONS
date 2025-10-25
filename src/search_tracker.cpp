@@ -6,6 +6,8 @@
  */
 
 #include "search_tracker.hpp"
+#include "semantic_knowledge_base.hpp"
+#include "text_utils.hpp"
 #include <cmath>
 #include <algorithm>
 #include <sstream>
@@ -368,6 +370,64 @@ void SearchInterestTracker::updateTokenSignal(const std::string& token, float ne
 float SearchInterestTracker::calculateDecayFactor(float ageSeconds) const noexcept {
     // Exponential decay: (0.5)^(age / halfLife)
     return std::pow(0.5f, ageSeconds / params_.decayHalfLife);
+}
+
+bool SearchInterestTracker::saveToKnowledgeBase(SemanticKnowledgeBase* kb) const {
+    if (!kb) return false;
+    
+    // Save all token signals
+    for (const auto& [token, signalData] : tokenSignals_) {
+        const auto& [strength, lastUpdate] = signalData;
+        int64_t timestamp = std::chrono::system_clock::to_time_t(lastUpdate);
+        
+        if (!kb->storeUserSignal(token, strength, timestamp)) {
+            return false;
+        }
+    }
+    
+    // Save query history
+    for (const auto& record : queryHistory_) {
+        int64_t timestamp = std::chrono::system_clock::to_time_t(record.timestamp);
+        std::string queryText = TextUtils::joinTokens(record.tokens);
+        std::string tokensStr = TextUtils::joinTokens(record.tokens);
+        
+        if (!kb->storeQueryHistory(queryText, tokensStr, timestamp, record.rawStrength)) {
+            // Non-fatal - continue with other records
+        }
+    }
+    
+    return true;
+}
+
+bool SearchInterestTracker::loadFromKnowledgeBase(SemanticKnowledgeBase* kb) {
+    if (!kb) return false;
+    
+    // Load token signals
+    auto signals = kb->loadUserSignals();
+    tokenSignals_.clear();
+    
+    for (const auto& [token, signalData] : signals) {
+        const auto& [strength, timestamp] = signalData;
+        auto timePoint = std::chrono::system_clock::from_time_t(timestamp);
+        tokenSignals_[token] = {strength, timePoint};
+    }
+    
+    // Load query history
+    auto historyRecords = kb->loadQueryHistory(params_.maxHistorySize);
+    queryHistory_.clear();
+    
+    for (const auto& [queryText, tokensStr, timestamp, rawStrength] : historyRecords) {
+        QueryRecord record;
+        record.tokens = TextUtils::tokenize(queryText);  // Re-tokenize from query text
+        record.timestamp = std::chrono::system_clock::from_time_t(timestamp);
+        record.rawStrength = rawStrength;
+        queryHistory_.push_back(record);
+    }
+    
+    // Reverse to get chronological order (loadQueryHistory returns newest first)
+    std::reverse(queryHistory_.begin(), queryHistory_.end());
+    
+    return true;
 }
 
 } // namespace audio_config

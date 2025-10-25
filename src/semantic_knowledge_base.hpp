@@ -177,13 +177,61 @@ public:
      */
     bool storeConfig(const std::string& key, float value);
 
-
     /**
      * @brief Compute IDF statistics from configuration corpus
-     * @param allTags All tags from all configurations
+     * @param docs Vector of tag sets (one per document/configuration)
      * @return Number of tags processed
+     * 
+     * Correctly calculates IDF = log(totalDocs / docFreq) where docFreq
+     * is the number of documents containing each tag (not token count)
      */
-    int computeIDFStatistics(const std::vector<std::string>& allTags);
+    int computeIDFStatistics(const std::vector<std::vector<std::string>>& docs);
+    
+    /**
+     * @brief Store user signal (for search interest tracking)
+     * @param token Token name
+     * @param strength Signal strength
+     * @param lastUpdate Timestamp of last update
+     * @return true if successful
+     */
+    bool storeUserSignal(const std::string& token, float strength, int64_t lastUpdate);
+    
+    /**
+     * @brief Load all user signals
+     * @return Map of token → (strength, lastUpdate)
+     */
+    std::unordered_map<std::string, std::pair<float, int64_t>> loadUserSignals() const;
+    
+    /**
+     * @brief Store query history record
+     * @param queryText Original query text
+     * @param tokens Tokenized query (joined by spaces)
+     * @param timestamp Query timestamp
+     * @param rawStrength Initial signal strength
+     * @return true if successful
+     */
+    bool storeQueryHistory(const std::string& queryText, const std::string& tokens,
+                          int64_t timestamp, float rawStrength);
+    
+    /**
+     * @brief Load query history
+     * @param maxResults Maximum number of records
+     * @return Vector of (queryText, tokens, timestamp, rawStrength)
+     */
+    std::vector<std::tuple<std::string, std::string, int64_t, float>>
+        loadQueryHistory(int maxResults = 100) const;
+    
+    /**
+     * @brief Clear all user signals
+     * @return true if successful
+     */
+    bool clearUserSignals();
+    
+    /**
+     * @brief Clear query history
+     * @return true if successful
+     */
+    bool clearQueryHistory();
     
 private:
     std::unique_ptr<SemanticDatabase> db_;
