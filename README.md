@@ -178,7 +178,7 @@ Multi-Dimensional Audio Configuration System
 Loaded 30 configurations with multi-dimensional metadata.
 
 === INTERACTIVE SESSION ===
-Commands: search, select, boost, demote, exclude, list, stats, generate, help, examples, quit
+Commands: search, select, boost, demote, exclude, list, stats, kbstats, signals, generate, help, examples, quit
 
 > 
 ```
