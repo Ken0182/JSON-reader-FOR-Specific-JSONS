@@ -78,6 +78,29 @@ bool SemanticDatabase::initializeSchema() {
         );
     )")) return false;
     
+    // User signals tables (tracker state)
+    if (!executeSql(R"(
+        CREATE TABLE IF NOT EXISTS user_signals (
+            token TEXT PRIMARY KEY,
+            strength REAL NOT NULL,
+            timestamp INTEGER NOT NULL
+        );
+    )")) return false;
+    if (!executeSql(R"(
+        CREATE TABLE IF NOT EXISTS query_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER NOT NULL,
+            raw_strength REAL NOT NULL,
+            tokens TEXT NOT NULL
+        );
+    )")) return false;
+    if (!executeSql(R"(
+        CREATE TABLE IF NOT EXISTS signal_params (
+            key TEXT PRIMARY KEY,
+            value REAL NOT NULL
+        );
+    )")) return false;
+    
     // Create indices for performance
     executeSql("CREATE INDEX IF NOT EXISTS idx_canonical ON tags(canonical);");
     executeSql("CREATE INDEX IF NOT EXISTS idx_idf ON idf_stats(idf DESC);");
@@ -312,6 +335,155 @@ bool SemanticDatabase::storeConfig(const std::string& key, float value) {
     }
     
     return success;
+}
+
+bool SemanticDatabase::storeTrackerState(const nlohmann::json& state) {
+    if (!db_) return false;
+    executeSql("BEGIN TRANSACTION;");
+    bool ok = true;
+    
+    // Clear existing
+    ok &= executeSql("DELETE FROM user_signals;");
+    ok &= executeSql("DELETE FROM query_history;");
+    ok &= executeSql("DELETE FROM signal_params;");
+    if (!ok) { executeSql("ROLLBACK;"); return false; }
+    
+    // Store parameters
+    if (state.contains("parameters")) {
+        auto params = state["parameters"];
+        for (auto it = params.begin(); it != params.end(); ++it) {
+            sqlite3_stmt* stmt = nullptr;
+            const char* sql = "INSERT OR REPLACE INTO signal_params (key, value) VALUES (?, ?);";
+            if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+                std::string key = it.key();
+                double val = it.value().get<double>();
+                sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_double(stmt, 2, val);
+                ok &= (sqlite3_step(stmt) == SQLITE_DONE);
+                sqlite3_finalize(stmt);
+            } else {
+                ok = false;
+            }
+            if (!ok) { executeSql("ROLLBACK;"); return false; }
+        }
+    }
+    
+    // Store signals
+    if (state.contains("signals")) {
+        for (auto& item : state["signals"].items()) {
+            const std::string token = item.key();
+            const auto& s = item.value();
+            sqlite3_stmt* stmt = nullptr;
+            const char* sql = "INSERT OR REPLACE INTO user_signals (token, strength, timestamp) VALUES (?, ?, ?);";
+            if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+                sqlite3_bind_text(stmt, 1, token.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_double(stmt, 2, s.value("strength", 0.0));
+                sqlite3_bind_int64(stmt, 3, static_cast<sqlite3_int64>(s.value("timestamp", 0)));
+                ok &= (sqlite3_step(stmt) == SQLITE_DONE);
+                sqlite3_finalize(stmt);
+            } else {
+                ok = false;
+            }
+            if (!ok) { executeSql("ROLLBACK;"); return false; }
+        }
+    }
+    
+    // Store history
+    if (state.contains("history") && state["history"].is_array()) {
+        for (const auto& rec : state["history"]) {
+            sqlite3_stmt* stmt = nullptr;
+            const char* sql = "INSERT INTO query_history (timestamp, raw_strength, tokens) VALUES (?, ?, ?);";
+            if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+                auto ts = static_cast<sqlite3_int64>(rec.value("timestamp", 0));
+                double raw = rec.value("rawStrength", 1.0);
+                // Store tokens as JSON string
+                std::string tokensJson;
+                try {
+                    tokensJson = nlohmann::json(rec.value("tokens", std::vector<std::string>{})).dump();
+                } catch (...) { tokensJson = "[]"; }
+                sqlite3_bind_int64(stmt, 1, ts);
+                sqlite3_bind_double(stmt, 2, raw);
+                sqlite3_bind_text(stmt, 3, tokensJson.c_str(), -1, SQLITE_TRANSIENT);
+                ok &= (sqlite3_step(stmt) == SQLITE_DONE);
+                sqlite3_finalize(stmt);
+            } else {
+                ok = false;
+            }
+            if (!ok) { executeSql("ROLLBACK;"); return false; }
+        }
+    }
+    
+    executeSql(ok ? "COMMIT;" : "ROLLBACK;");
+    return ok;
+}
+
+nlohmann::json SemanticDatabase::loadTrackerState() {
+    nlohmann::json state;
+    if (!db_) return state;
+    
+    // Params
+    {
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = "SELECT key, value FROM signal_params;";
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            nlohmann::json params = nlohmann::json::object();
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char* key = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+                double val = sqlite3_column_double(stmt, 1);
+                if (key) params[key] = val;
+            }
+            sqlite3_finalize(stmt);
+            state["parameters"] = params;
+        }
+    }
+    
+    // Signals
+    {
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = "SELECT token, strength, timestamp FROM user_signals;";
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            nlohmann::json signals = nlohmann::json::object();
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char* token = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+                double strength = sqlite3_column_double(stmt, 1);
+                sqlite3_int64 ts = sqlite3_column_int64(stmt, 2);
+                if (token) {
+                    nlohmann::json s;
+                    s["strength"] = strength;
+                    s["timestamp"] = static_cast<long long>(ts);
+                    signals[token] = s;
+                }
+            }
+            sqlite3_finalize(stmt);
+            state["signals"] = signals;
+        }
+    }
+    
+    // History
+    {
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = "SELECT timestamp, raw_strength, tokens FROM query_history ORDER BY id;";
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            nlohmann::json history = nlohmann::json::array();
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                nlohmann::json rec;
+                rec["timestamp"] = static_cast<long long>(sqlite3_column_int64(stmt, 0));
+                rec["rawStrength"] = sqlite3_column_double(stmt, 1);
+                const char* tokensText = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                try {
+                    if (tokensText) rec["tokens"] = nlohmann::json::parse(tokensText);
+                    else rec["tokens"] = nlohmann::json::array();
+                } catch (...) {
+                    rec["tokens"] = nlohmann::json::array();
+                }
+                history.push_back(rec);
+            }
+            sqlite3_finalize(stmt);
+            state["history"] = history;
+        }
+    }
+    
+    return state;
 }
 
 bool SemanticDatabase::executeSql(const std::string& sql) const {

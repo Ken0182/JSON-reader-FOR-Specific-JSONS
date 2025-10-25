@@ -417,6 +417,10 @@ public:
      */
     [[nodiscard]] bool isReady() const noexcept;
 
+    // Persistence API passthrough
+    bool persistTrackerState(const nlohmann::json& state);
+    nlohmann::json loadTrackerState();
+
 private:
     // v1.6: Delegate to SemanticKnowledgeBase
     std::unique_ptr<SemanticKnowledgeBase> knowledgeBase_;
@@ -576,6 +580,9 @@ private:
     void handleGenerateCommand(const std::vector<std::string>& args);
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
+
+    // v1.6: Helper to orchestrate KB refresh/sync
+    void syncKnowledgeBase(const std::string& mode = "refresh");
     void handleSignalsCommand(const std::vector<std::string>& args);  // v1.5
     
     // Helper methods

@@ -38,6 +38,7 @@
 #include <unordered_map>
 #include "semantic_db.hpp"
 #include "sentence_encoder.hpp"
+#include "json.hpp"
 
 namespace audio_config {
 
@@ -179,11 +180,25 @@ public:
 
 
     /**
-     * @brief Compute IDF statistics from configuration corpus
-     * @param allTags All tags from all configurations
+     * @brief Compute IDF statistics from configuration corpus (per-document)
+     * @param docs Vector of documents; each document is a vector of tags
      * @return Number of tags processed
      */
-    int computeIDFStatistics(const std::vector<std::string>& allTags);
+    int computeIDFStatistics(const std::vector<std::vector<std::string>>& docs);
+
+    // --- User signals persistence (v1.6 upgradeable) ---
+    /**
+     * @brief Persist tracker state (parameters, signals, history) to DB
+     * @param state JSON state as produced by SearchInterestTracker::exportState()
+     * @return true on success
+     */
+    bool persistTrackerState(const nlohmann::json& state);
+
+    /**
+     * @brief Load tracker state from DB
+     * @return JSON suitable for SearchInterestTracker::importState(); empty on failure
+     */
+    nlohmann::json loadTrackerState();
     
 private:
     std::unique_ptr<SemanticDatabase> db_;

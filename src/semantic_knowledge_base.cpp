@@ -34,27 +34,38 @@ bool SemanticKnowledgeBase::initialize(bool createDefault) {
         }
     }
     
-    // Get embedding dimension from database
+    // First, create sentence encoder so default seeding can encode properly
+    // Probe dimension from DB; if none, use provisional default for encoder
     dimension_ = db_->getEmbeddingDimension();
-    if (dimension_ == 0) {
-        // No embeddings yet, use default
+    if (dimension_ <= 0) {
         dimension_ = 100;
-        std::cout << "No embeddings in database, using default dimension: " << dimension_ << std::endl;
-        
-        if (createDefault) {
-            createDefaultEmbeddings();
-        }
+        std::cout << "No embeddings in database, provisional dimension: " << dimension_ << std::endl;
     } else {
         std::cout << "Loaded semantic database with dimension: " << dimension_ << std::endl;
     }
     
-    // Create sentence encoder
+    // Create sentence encoder before any default embedding creation
     encoder_ = SentenceEncoder::createDefault(db_.get(), dimension_);
     if (!encoder_ || !encoder_->isReady()) {
         std::cerr << "Failed to create sentence encoder" << std::endl;
         return false;
     }
     
+    // After encoder is ready, if no embeddings exist and createDefault requested, seed defaults
+    if (createDefault && db_->getEmbeddingDimension() == 0) {
+        createDefaultEmbeddings();
+        // Validate that defaults are non-zero; if zero, warn
+        auto test = getTagEmbedding("warm");
+        float norm = 0.0f; for (float v : test) norm += v*v; norm = std::sqrt(norm);
+        if (norm < 1e-6f) {
+            std::cerr << "Warning: default embeddings appear zero; encoder may be misconfigured" << std::endl;
+        }
+        // Update dimension after seeding
+        int seededDim = db_->getEmbeddingDimension();
+        if (seededDim > 0) dimension_ = seededDim;
+    }
+    
+    // Ready
     isReady_ = true;
     return true;
 }
@@ -214,32 +225,44 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
     return db_->storeConfig(key, value);
 }
 
-int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
-    if (!db_ || allTags.empty()) return 0;
+int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::vector<std::string>>& docs) {
+    if (!db_ || docs.empty()) return 0;
     
-    // Count tag occurrences
-    std::unordered_map<std::string, int> tagCounts;
-    for (const auto& tag : allTags) {
-        // Canonicalize
-        std::string canonical = getCanonicalTag(tag);
-        tagCounts[canonical]++;
-    }
-    
-    // Compute IDF for each tag
-    int totalDocs = static_cast<int>(allTags.size());
-    int storedCount = 0;
-    
-    for (const auto& [tag, count] : tagCounts) {
-        // IDF = log(totalDocs / docFreq)
-        float idf = std::log(static_cast<float>(totalDocs) / count);
-        
-        if (db_->storeIDF(tag, idf, count)) {
-            ++storedCount;
+    // Count document frequency per canonical tag
+    std::unordered_map<std::string, int> docFreq;
+    for (const auto& doc : docs) {
+        std::unordered_map<std::string, bool> seen;
+        for (const auto& tag : doc) {
+            std::string canonical = getCanonicalTag(tag);
+            if (!seen[canonical]) {
+                docFreq[canonical]++;
+                seen[canonical] = true;
+            }
         }
     }
     
-    std::cout << "Computed IDF for " << storedCount << " tags" << std::endl;
+    const int totalDocs = static_cast<int>(docs.size());
+    int storedCount = 0;
+    for (const auto& [tag, df] : docFreq) {
+        // Avoid division by zero; also guard df>0
+        if (df <= 0) continue;
+        float idf = std::log(static_cast<float>(totalDocs) / static_cast<float>(df));
+        if (db_->storeIDF(tag, idf, df)) {
+            ++storedCount;
+        }
+    }
+    std::cout << "Computed IDF for " << storedCount << " tags (" << totalDocs << " documents)" << std::endl;
     return storedCount;
+}
+
+bool SemanticKnowledgeBase::persistTrackerState(const nlohmann::json& state) {
+    if (!db_) return false;
+    return db_->storeTrackerState(state);
+}
+
+nlohmann::json SemanticKnowledgeBase::loadTrackerState() {
+    if (!db_) return nlohmann::json();
+    return db_->loadTrackerState();
 }
 
 void SemanticKnowledgeBase::createDefaultEmbeddings() {

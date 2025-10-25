@@ -54,6 +54,17 @@ bool AudioConfigSystem::initialize(const std::string& configDatabasePath,
         }
         embeddingEngine_->updateTagStatistics(allTags);
         
+        // v1.6: Load persisted tracker state if available
+        try {
+            auto state = embeddingEngine_->loadTrackerState();
+            if (!state.is_null() && !state.empty()) {
+                userContext_.getSearchTracker().importState(state);
+                std::cout << "Loaded persisted user signals from semantic DB." << std::endl;
+            }
+        } catch (...) {
+            // Non-fatal
+        }
+        
         std::cout << "Loaded " << configurations_.size() << " configurations with multi-dimensional metadata." << std::endl;
         
         return true;
@@ -615,6 +626,17 @@ void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& arg
         return;
     }
     
+    // Subcommands: refresh/sync
+    if (args.size() > 1) {
+        std::string sub = args[1];
+        std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
+        if (sub == "refresh" || sub == "sync") {
+            std::cout << "KB sync requested (mode: " << sub << ")..." << std::endl;
+            syncKnowledgeBase(sub);
+            return;
+        }
+    }
+    
     std::cout << "\n=== KNOWLEDGE BASE STATISTICS ===" << std::endl;
     std::cout << "Embedding dimension: " << embeddingEngine_->getDimension() << "D" << std::endl;
     std::cout << "Status: " << (embeddingEngine_->isReady() ? "Ready" : "Not ready") << std::endl;
@@ -696,6 +718,7 @@ GENERATION & OUTPUT:
   
 INFORMATION:
   stats                   - Show system statistics and user preferences
+  kbstats [refresh|sync]  - Show knowledge-base stats or persist updates
   help                    - Show this help message
   examples                - Show usage examples and patterns
   
