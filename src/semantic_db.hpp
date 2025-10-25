@@ -47,6 +47,7 @@
 #include <unordered_map>
 #include <optional>
 #include <memory>
+#include <ctime>
 #include <sqlite3.h>
 
 namespace audio_config {
@@ -161,6 +162,37 @@ public:
      * @return true if successful
      */
     bool storeConfig(const std::string& key, float value);
+    
+    /**
+     * @brief Store user signal
+     * @param token Token name
+     * @param strength Signal strength
+     * @param lastUpdate Last update timestamp
+     * @return true if successful
+     */
+    bool storeUserSignal(const std::string& token, float strength, std::time_t lastUpdate);
+    
+    /**
+     * @brief Load all user signals
+     * @return Map of token -> {strength, lastUpdate}
+     */
+    std::unordered_map<std::string, std::pair<float, std::time_t>> loadUserSignals() const;
+    
+    /**
+     * @brief Store query history record
+     * @param tokens Query tokens (JSON array)
+     * @param timestamp Query timestamp
+     * @param rawStrength Raw signal strength
+     * @return true if successful
+     */
+    bool storeQueryHistory(const std::string& tokens, std::time_t timestamp, float rawStrength);
+    
+    /**
+     * @brief Load query history
+     * @param maxResults Maximum number of records to return
+     * @return Vector of query records
+     */
+    std::vector<std::tuple<std::string, std::time_t, float>> loadQueryHistory(int maxResults = 1000) const;
     
     /**
      * @brief Get database file path
