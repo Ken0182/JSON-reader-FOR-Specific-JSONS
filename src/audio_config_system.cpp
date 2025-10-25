@@ -476,21 +476,26 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
         dimension_ = knowledgeBase_->getDimension();
         isReady_ = knowledgeBase_->isReady();
         if (isReady_) {
-            std::cout << "Loaded semantic knowledge base: " << dimension_ << "D embeddings" << std::endl;
+            std::cout << "Loaded semantic knowledge base from " << dbPath << ": " << dimension_ << "D embeddings" << std::endl;
             return true;
         }
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error loading semantic database: " << e.what() << std::endl;
-        try {
-            knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
-            knowledgeBase_->initialize(true);
-            dimension_ = 100;
-            isReady_ = true;
-            return false;
-        } catch (...) {
-            return false;
+        // Only use in-memory DB if explicitly requested
+        if (dbPath == ":memory:") {
+            try {
+                std::cerr << "Falling back to in-memory database (data will not persist)" << std::endl;
+                knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
+                knowledgeBase_->initialize(true);
+                dimension_ = 100;
+                isReady_ = true;
+                return false;
+            } catch (...) {
+                return false;
+            }
         }
+        return false;
     }
 }
 
@@ -562,9 +567,8 @@ float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
 
 void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
     if (!knowledgeBase_) return;
-    std::vector<std::string> flatTags;
-    for (const auto& tagSet : allTags) flatTags.insert(flatTags.end(), tagSet.begin(), tagSet.end());
-    knowledgeBase_->computeIDFStatistics(flatTags);
+    // Pass structured data directly (don't flatten) for correct document frequency calculation
+    knowledgeBase_->computeIDFStatistics(allTags);
 }
 
 int EmbeddingEngine::getDimension() const noexcept {
@@ -573,6 +577,10 @@ int EmbeddingEngine::getDimension() const noexcept {
 
 bool EmbeddingEngine::isReady() const noexcept {
     return isReady_ && knowledgeBase_ && knowledgeBase_->isReady();
+}
+
+SemanticKnowledgeBase* EmbeddingEngine::getKnowledgeBase() const noexcept {
+    return knowledgeBase_.get();
 }
 
 // ============================================================================

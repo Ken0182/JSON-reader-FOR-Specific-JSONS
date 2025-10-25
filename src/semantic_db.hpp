@@ -163,6 +163,52 @@ public:
     bool storeConfig(const std::string& key, float value);
     
     /**
+     * @brief Store user signal (for search interest tracking)
+     * @param token Token name
+     * @param strength Signal strength
+     * @param lastUpdate Timestamp of last update (Unix time)
+     * @return true if successful
+     */
+    bool storeUserSignal(const std::string& token, float strength, int64_t lastUpdate);
+    
+    /**
+     * @brief Load all user signals
+     * @return Map of token → (strength, lastUpdate)
+     */
+    std::unordered_map<std::string, std::pair<float, int64_t>> loadUserSignals() const;
+    
+    /**
+     * @brief Store query history record
+     * @param queryText Original query text
+     * @param tokens Tokenized query
+     * @param timestamp Query timestamp (Unix time)
+     * @param rawStrength Initial signal strength
+     * @return true if successful
+     */
+    bool storeQueryHistory(const std::string& queryText, const std::string& tokens,
+                          int64_t timestamp, float rawStrength);
+    
+    /**
+     * @brief Load query history (most recent first)
+     * @param maxResults Maximum number of records to return
+     * @return Vector of (queryText, tokens, timestamp, rawStrength)
+     */
+    std::vector<std::tuple<std::string, std::string, int64_t, float>> 
+        loadQueryHistory(int maxResults = 100) const;
+    
+    /**
+     * @brief Clear all user signals
+     * @return true if successful
+     */
+    bool clearUserSignals();
+    
+    /**
+     * @brief Clear query history
+     * @return true if successful
+     */
+    bool clearQueryHistory();
+    
+    /**
      * @brief Get database file path
      * @return Database file path
      */

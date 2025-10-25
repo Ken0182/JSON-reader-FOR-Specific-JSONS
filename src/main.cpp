@@ -165,10 +165,33 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        // Fallback to :memory: if no DB found
+        // If no DB found, create data/semantic.db (instead of using :memory:)
         if (skdPath.empty()) {
-            skdPath = ":memory:";
+            // Determine data directory location
+            fs::path dataDir;
+            if (fs::exists(currentDir / "data")) {
+                dataDir = currentDir / "data";
+            } else if (currentDir.filename() == "build") {
+                dataDir = currentDir.parent_path() / "data";
+            } else if (execDir.filename() == "build") {
+                dataDir = execDir.parent_path() / "data";
+            } else {
+                dataDir = currentDir / "data";
+            }
+            
+            // Create data directory if it doesn't exist
+            try {
+                fs::create_directories(dataDir);
+                skdPath = (dataDir / "semantic.db").string();
+                std::cout << "Creating new semantic database: " << skdPath << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "Warning: Could not create data directory, using in-memory database" << std::endl;
+                skdPath = ":memory:";
+            }
         }
+        
+        // Log the chosen database path
+        std::cout << "Using semantic database: " << skdPath << std::endl;
         
         // Load configuration database (with optional SKD index)
         if (!system->initialize(configPath, skdPath)) {

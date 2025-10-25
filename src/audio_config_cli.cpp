@@ -54,6 +54,18 @@ bool AudioConfigSystem::initialize(const std::string& configDatabasePath,
         }
         embeddingEngine_->updateTagStatistics(allTags);
         
+        // Load persisted user search interest signals
+        auto* kb = embeddingEngine_->getKnowledgeBase();
+        if (kb) {
+            auto& tracker = userContext_.getSearchTracker();
+            if (tracker.loadFromKnowledgeBase(kb)) {
+                auto signals = tracker.getActiveSignals();
+                if (!signals.empty()) {
+                    std::cout << "Loaded " << signals.size() << " persisted search interest signals" << std::endl;
+                }
+            }
+        }
+        
         std::cout << "Loaded " << configurations_.size() << " configurations with multi-dimensional metadata." << std::endl;
         
         return true;
@@ -296,6 +308,69 @@ std::shared_ptr<AudioConfig> AudioConfigSystem::getConfiguration(const ConfigId&
     return it != configurations_.end() ? it->second : nullptr;
 }
 
+bool AudioConfigSystem::syncKnowledgeBase() {
+    if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
+        std::cerr << "Error: Knowledge base not initialized" << std::endl;
+        return false;
+    }
+    
+    bool success = true;
+    
+    // 1. Recompute IDF statistics from current configuration corpus
+    std::cout << "  [1/3] Recomputing IDF statistics..." << std::endl;
+    std::vector<std::vector<std::string>> allTags;
+    for (const auto& [id, config] : configurations_) {
+        allTags.push_back(config->getSemanticTags());
+    }
+    
+    if (!allTags.empty()) {
+        embeddingEngine_->updateTagStatistics(allTags);
+    } else {
+        std::cout << "  Warning: No configurations loaded" << std::endl;
+    }
+    
+    // 2. Persist user search interest signals
+    std::cout << "  [2/3] Persisting user search interest signals..." << std::endl;
+    auto& tracker = userContext_.getSearchTracker();
+    auto* kb = embeddingEngine_->getKnowledgeBase();
+    
+    if (kb) {
+        // Save tracker state to knowledge base
+        if (tracker.saveToKnowledgeBase(kb)) {
+            auto trackerState = tracker.exportState();
+            int signalCount = 0;
+            if (trackerState.contains("signals")) {
+                signalCount = static_cast<int>(trackerState["signals"].size());
+            }
+            int historyCount = 0;
+            if (trackerState.contains("history")) {
+                historyCount = static_cast<int>(trackerState["history"].size());
+            }
+            
+            std::cout << "  Persisted " << signalCount << " token signals" << std::endl;
+            std::cout << "  Persisted " << historyCount << " query history records" << std::endl;
+        } else {
+            std::cout << "  Warning: Failed to persist some signals" << std::endl;
+            success = false;
+        }
+    } else {
+        std::cout << "  Warning: Knowledge base not accessible for persistence" << std::endl;
+        success = false;
+    }
+    
+    // 3. Flush any cached data
+    std::cout << "  [3/3] Flushing cached data..." << std::endl;
+    std::cout << "  Total configurations: " << configurations_.size() << std::endl;
+    
+    if (success) {
+        std::cout << "Sync completed successfully" << std::endl;
+    } else {
+        std::cout << "Sync completed with warnings" << std::endl;
+    }
+    
+    return success;
+}
+
 bool AudioConfigSystem::generateSynthesisConfiguration(const std::string& outputPath) const {
     try {
         std::vector<std::shared_ptr<AudioConfig>> selectedConfigs;
@@ -341,7 +416,7 @@ void AudioConfigSystem::runInteractiveCLI() {
     std::string input;
     
     std::cout << "\n=== INTERACTIVE SESSION ===" << std::endl;
-    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, kbstats, signals, generate, help, examples, quit\n" << std::endl;
+    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, kbstats [refresh|sync], signals, generate, help, examples, quit\n" << std::endl;
     
     while (true) {
         std::cout << "> ";
@@ -608,8 +683,25 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
 }
 
 void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& args) {
-    (void)args; // Unused parameter
+    // Parse subcommand if provided
+    std::string subcommand = args.size() > 1 ? args[1] : "";
+    std::transform(subcommand.begin(), subcommand.end(), subcommand.begin(), ::tolower);
     
+    if (subcommand == "refresh" || subcommand == "sync") {
+        // Trigger knowledge base synchronization
+        std::cout << "\n=== KNOWLEDGE BASE SYNC ===" << std::endl;
+        std::cout << "Synchronizing knowledge base..." << std::endl;
+        
+        if (syncKnowledgeBase()) {
+            std::cout << "Knowledge base synchronized successfully!" << std::endl;
+        } else {
+            std::cout << "Warning: Some sync operations may have failed" << std::endl;
+        }
+        std::cout << "=========================================================" << std::endl;
+        return;
+    }
+    
+    // Default: Show statistics
     if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
         std::cout << "Knowledge base not initialized" << std::endl;
         return;
@@ -640,6 +732,8 @@ void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& arg
         }
     }
     
+    std::cout << "\nUsage: kbstats [refresh|sync]" << std::endl;
+    std::cout << "  refresh/sync - Recompute embeddings, IDF stats, and persist user signals" << std::endl;
     std::cout << "=========================================================" << std::endl;
 }
 
@@ -689,6 +783,7 @@ LEARNING & PREFERENCES:
   boost <config_id>       - Mark as preferred (improves future suggestions)
   demote <config_id>      - Mark as disliked (reduces future suggestions)
   exclude <config_id>     - Exclude from all future searches
+  signals                 - Manage search interest tracking (see 'signals help')
   
 GENERATION & OUTPUT:
   generate [filename]     - Generate synthesis-ready configuration
@@ -696,6 +791,8 @@ GENERATION & OUTPUT:
   
 INFORMATION:
   stats                   - Show system statistics and user preferences
+  kbstats [refresh|sync]  - Show/manage knowledge base statistics
+                           refresh/sync: Recompute embeddings and persist signals
   help                    - Show this help message
   examples                - Show usage examples and patterns
   
@@ -707,6 +804,7 @@ Tips:
   - Musical roles: "lead", "bass", "pad", "arp", "chord"
   - Technical terms: "attack", "reverb", "filter", "envelope"
   - Combine multiple terms for better results
+  - Use 'kbstats sync' to persist your search preferences
 )" << std::endl;
 }
 

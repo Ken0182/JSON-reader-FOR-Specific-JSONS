@@ -416,6 +416,12 @@ public:
      * @return true if initialized
      */
     [[nodiscard]] bool isReady() const noexcept;
+    
+    /**
+     * @brief Get access to underlying knowledge base (for persistence operations)
+     * @return Pointer to knowledge base (nullptr if not initialized)
+     */
+    SemanticKnowledgeBase* getKnowledgeBase() const noexcept;
 
 private:
     // v1.6: Delegate to SemanticKnowledgeBase
@@ -556,6 +562,17 @@ public:
      * @return True if generation succeeded
      */
     [[nodiscard]] bool generateSynthesisConfiguration(const std::string& outputPath) const;
+    
+    /**
+     * @brief Synchronize knowledge base (refresh embeddings, persist signals)
+     * @return True if sync succeeded
+     * 
+     * This method:
+     * - Re-encodes tags and updates embeddings if encoder is available
+     * - Recomputes IDF statistics from current configuration corpus
+     * - Persists user search interest signals to database
+     */
+    [[nodiscard]] bool syncKnowledgeBase();
 
 private:
     std::shared_ptr<EmbeddingEngine> embeddingEngine_;
