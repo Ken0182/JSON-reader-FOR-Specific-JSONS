@@ -694,8 +694,25 @@ GENERATION & OUTPUT:
   generate [filename]     - Generate synthesis-ready configuration
   suggest_config [file]   - Alias for generate command
   
-INFORMATION:
+INFORMATION & STATISTICS:
   stats                   - Show system statistics and user preferences
+  kbstats                 - Show knowledge base statistics and integrity check
+                           Displays embedding dimensions, tag counts, normalization
+                           status, and sample embeddings for debugging
+  
+SIGNALS & TRACKING:
+  signals <subcommand>    - Search interest tracking system
+    on/off                - Enable/disable search interest tracking
+    status                - Show tracking status and statistics
+    history [n]           - Show recent search queries (default: 20)
+    active                - Show currently active interest signals
+    tune <param> <value>  - Adjust tracking parameters
+    export [filename]     - Export tracker state to JSON file
+    import <filename>     - Import tracker state from JSON file
+    clear                 - Clear all tracked data
+    help                  - Detailed signals system help
+  
+HELP & EXAMPLES:
   help                    - Show this help message
   examples                - Show usage examples and patterns
   
@@ -707,6 +724,8 @@ Tips:
   - Musical roles: "lead", "bass", "pad", "arp", "chord"
   - Technical terms: "attack", "reverb", "filter", "envelope"
   - Combine multiple terms for better results
+  - Use 'signals on' to enable intelligent search bias based on your history
+  - Use 'kbstats' to check knowledge base health and debugging info
 )" << std::endl;
 }
 
