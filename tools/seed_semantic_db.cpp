@@ -1,4 +1,4 @@
-/**
+**
  * @file seed_semantic_db.cpp
  * @brief Semantic Knowledge Base Seeder
  * @author AI Assistant
@@ -482,9 +482,17 @@ int SemanticSeeder::generateEmbeddings() {
 }
 
 int SemanticSeeder::computeIDFStatistics() {
-    // Convert set to vector for IDF computation
+    // Convert set to vector of tag sets for IDF computation
+    // Since we don't have document structure here, create single-document entries
+    std::vector<std::vector<std::string>> allTagsDocs;
     std::vector<std::string> allTagsVec(allTags_.begin(), allTags_.end());
-    return kb_->computeIDFStatistics(allTagsVec);
+    
+    // Group tags into documents (for now, each tag is its own document)
+    for (const auto& tag : allTagsVec) {
+        allTagsDocs.push_back({tag});
+    }
+    
+    return kb_->computeIDFStatistics(allTagsDocs);
 }
 
 int SemanticSeeder::storeTunableParameters() {
