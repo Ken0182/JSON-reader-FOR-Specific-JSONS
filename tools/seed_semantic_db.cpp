@@ -482,9 +482,11 @@ int SemanticSeeder::generateEmbeddings() {
 }
 
 int SemanticSeeder::computeIDFStatistics() {
-    // Convert set to vector for IDF computation
-    std::vector<std::string> allTagsVec(allTags_.begin(), allTags_.end());
-    return kb_->computeIDFStatistics(allTagsVec);
+    // Treat each source file as a document: for simplicity, split unique tags arbitrarily into one doc
+    // Here we create a single document containing all tags, but callers may pass structured docs.
+    std::vector<std::vector<std::string>> docs;
+    docs.emplace_back(allTags_.begin(), allTags_.end());
+    return kb_->computeIDFStatistics(docs);
 }
 
 int SemanticSeeder::storeTunableParameters() {

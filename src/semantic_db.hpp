@@ -48,6 +48,7 @@
 #include <optional>
 #include <memory>
 #include <sqlite3.h>
+#include "json.hpp"
 
 namespace audio_config {
 
@@ -161,6 +162,17 @@ public:
      * @return true if successful
      */
     bool storeConfig(const std::string& key, float value);
+    
+    // --- User signals persistence ---
+    /**
+     * @brief Store complete tracker state to DB (replaces previous state)
+     */
+    bool storeTrackerState(const nlohmann::json& state);
+    
+    /**
+     * @brief Load tracker state from DB as JSON
+     */
+    nlohmann::json loadTrackerState();
     
     /**
      * @brief Get database file path

@@ -27,8 +27,10 @@
 #include <set>
 #include <map>
 #include <ctime>
+#include <filesystem>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 namespace audio_config {
 
@@ -469,6 +471,7 @@ EmbeddingEngine::EmbeddingEngine()
 
 bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
     try {
+        std::cout << "Semantic DB path: " << dbPath << std::endl;
         knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(dbPath);
         if (!knowledgeBase_->initialize(true)) {
             std::cerr << "Warning: Failed to initialize semantic knowledge base" << std::endl;
@@ -482,15 +485,8 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error loading semantic database: " << e.what() << std::endl;
-        try {
-            knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
-            knowledgeBase_->initialize(true);
-            dimension_ = 100;
-            isReady_ = true;
-            return false;
-        } catch (...) {
-            return false;
-        }
+        // Do not silently fall back to in-memory unless explicitly requested upstream
+        return false;
     }
 }
 
@@ -562,9 +558,7 @@ float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
 
 void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
     if (!knowledgeBase_) return;
-    std::vector<std::string> flatTags;
-    for (const auto& tagSet : allTags) flatTags.insert(flatTags.end(), tagSet.begin(), tagSet.end());
-    knowledgeBase_->computeIDFStatistics(flatTags);
+    knowledgeBase_->computeIDFStatistics(allTags);
 }
 
 int EmbeddingEngine::getDimension() const noexcept {
@@ -573,6 +567,42 @@ int EmbeddingEngine::getDimension() const noexcept {
 
 bool EmbeddingEngine::isReady() const noexcept {
     return isReady_ && knowledgeBase_ && knowledgeBase_->isReady();
+}
+
+bool EmbeddingEngine::persistTrackerState(const nlohmann::json& state) {
+    if (!knowledgeBase_) return false;
+    return knowledgeBase_->persistTrackerState(state);
+}
+
+nlohmann::json EmbeddingEngine::loadTrackerState() {
+    if (!knowledgeBase_) return nlohmann::json();
+    return knowledgeBase_->loadTrackerState();
+}
+void AudioConfigSystem::syncKnowledgeBase(const std::string& mode) {
+    (void)mode; // future: differentiate modes
+    if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
+        std::cout << "Knowledge base not initialized; cannot sync." << std::endl;
+        return;
+    }
+    
+    std::cout << "Recomputing IDF statistics across configurations..." << std::endl;
+    std::vector<std::vector<std::string>> allTags;
+    allTags.reserve(configurations_.size());
+    for (const auto& [id, cfg] : configurations_) {
+        allTags.push_back(cfg->getSemanticTags());
+    }
+    embeddingEngine_->updateTagStatistics(allTags);
+    std::cout << "IDF statistics updated." << std::endl;
+    
+    // Persist search tracker state
+    auto state = userContext_.getSearchTracker().exportState();
+    bool persisted = embeddingEngine_->persistTrackerState(state);
+    
+    if (persisted) {
+        std::cout << "User signals synchronized to database." << std::endl;
+    } else {
+        std::cout << "Note: Could not persist user signals (no DB path)." << std::endl;
+    }
 }
 
 // ============================================================================

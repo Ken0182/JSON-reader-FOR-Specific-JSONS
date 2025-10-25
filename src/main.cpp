@@ -165,9 +165,15 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        // Fallback to :memory: if no DB found
+        // Fallback to on-disk DB if not found
         if (skdPath.empty()) {
-            skdPath = ":memory:";
+            fs::path dataDir = currentDir / "data";
+            std::error_code ec;
+            fs::create_directories(dataDir, ec);
+            skdPath = (dataDir / "semantic.db").string();
+            std::cout << "Semantic DB not found; using on-disk path: " << skdPath << std::endl;
+        } else {
+            std::cout << "Using semantic DB: " << skdPath << std::endl;
         }
         
         // Load configuration database (with optional SKD index)

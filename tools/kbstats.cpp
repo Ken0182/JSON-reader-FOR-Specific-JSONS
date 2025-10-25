@@ -48,6 +48,11 @@ public:
      */
     bool printStats();
     
+    /**
+     * @brief Refresh/sync persistence (tracker state)
+     */
+    bool sync();
+    
 private:
     std::string dbPath_;
     std::unique_ptr<SemanticKnowledgeBase> kb_;
@@ -150,6 +155,25 @@ bool KBStats::printStats() {
     printTagDetails();
     
     return true;
+}
+
+bool KBStats::sync() {
+    std::cout << "=== Knowledge Base Sync ===" << std::endl;
+    try {
+        kb_ = std::make_unique<SemanticKnowledgeBase>(dbPath_);
+        if (!kb_->initialize()) {
+            std::cerr << "Failed to initialize knowledge base" << std::endl;
+            return false;
+        }
+        // Load any existing tracker state and persist it back (no-op if empty)
+        auto state = kb_->loadTrackerState();
+        bool ok = kb_->persistTrackerState(state);
+        std::cout << (ok ? "Tracker state synchronized." : "No tracker state to synchronize or failed.") << std::endl;
+        return ok;
+    } catch (const std::exception& e) {
+        std::cerr << "Sync error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::pair<int, int> KBStats::validateNormalization() {
@@ -290,14 +314,23 @@ void KBStats::printTagDetails() {
 
 int main(int argc, char* argv[]) {
     std::string dbPath = "semantic.db";
+    bool doSync = false;
     
     // Parse command line arguments
-    if (argc > 1) {
-        dbPath = argv[1];
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "refresh" || arg == "sync") {
+            doSync = true;
+        } else if (!arg.empty() && arg[0] != '-') {
+            dbPath = arg;
+        }
     }
     
     try {
         audio_config::KBStats stats(dbPath);
+        if (doSync) {
+            return stats.sync() ? 0 : 1;
+        }
         if (stats.printStats()) {
             std::cout << "\n=== Statistics Complete ===" << std::endl;
             return 0;
