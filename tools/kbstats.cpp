@@ -27,10 +27,12 @@
 #include <cmath>
 #include <algorithm>
 #include <unordered_map>
+#include <fstream>
 
 // Include our semantic database and encoder
 #include "../src/semantic_db.hpp"
 #include "../src/semantic_knowledge_base.hpp"
+#include "../json.hpp"
 
 namespace audio_config {
 
@@ -47,6 +49,7 @@ public:
      * @return true if successful
      */
     bool printStats();
+    bool refresh();
     
 private:
     std::string dbPath_;
@@ -150,6 +153,55 @@ bool KBStats::printStats() {
     printTagDetails();
     
     return true;
+}
+
+bool KBStats::refresh() {
+    std::cout << "=== Knowledge Base Sync ===" << std::endl;
+    std::cout << "Database: " << dbPath_ << std::endl;
+    try {
+        kb_ = std::make_unique<SemanticKnowledgeBase>(dbPath_);
+        if (!kb_->initialize()) {
+            std::cerr << "Failed to initialize knowledge base" << std::endl;
+            return false;
+        }
+        // Load clean_config.json to recompute IDF using per-document tags
+        nlohmann::json configs;
+        std::ifstream f("data/clean_config.json");
+        if (!f.is_open()) {
+            std::cerr << "Could not open data/clean_config.json to build corpus" << std::endl;
+            return false;
+        }
+        f >> configs;
+        std::vector<std::vector<std::string>> docs;
+        for (auto& [id, cfg] : configs.items()) {
+            (void)id;
+            std::vector<std::string> tags;
+            if (cfg.contains("soundCharacteristics")) {
+                const auto& sc = cfg["soundCharacteristics"];
+                if (sc.contains("timbral") && sc["timbral"].is_string()) {
+                    tags.push_back(sc["timbral" ].get<std::string>());
+                }
+                if (sc.contains("dynamic") && sc["dynamic"].is_string()) {
+                    tags.push_back(sc["dynamic" ].get<std::string>());
+                }
+                if (sc.contains("material") && sc["material"].is_string()) {
+                    tags.push_back(sc["material" ].get<std::string>());
+                }
+                if (sc.contains("emotional") && sc["emotional"].is_array()) {
+                    for (const auto& e : sc["emotional"]) {
+                        if (e.is_object() && e.contains("tag")) tags.push_back(e["tag"].get<std::string>());
+                    }
+                }
+            }
+            docs.push_back(std::move(tags));
+        }
+        int n = kb_->computeIDFStatistics(docs);
+        std::cout << "Recomputed IDF entries: " << n << std::endl;
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Sync error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::pair<int, int> KBStats::validateNormalization() {
@@ -290,14 +342,29 @@ void KBStats::printTagDetails() {
 
 int main(int argc, char* argv[]) {
     std::string dbPath = "semantic.db";
-    
-    // Parse command line arguments
+    std::string subcommand;
+
+    // Parse command line: kbstats [db] [subcommand]
     if (argc > 1) {
-        dbPath = argv[1];
+        std::string arg1 = argv[1];
+        if (!arg1.empty() && arg1[0] != '-') {
+            dbPath = arg1;
+            if (argc > 2) subcommand = argv[2];
+        } else {
+            subcommand = arg1;
+        }
     }
-    
+
     try {
         audio_config::KBStats stats(dbPath);
+        if (subcommand == "refresh" || subcommand == "sync") {
+            if (stats.refresh()) {
+                std::cout << "\n=== Sync Complete ===" << std::endl;
+                return 0;
+            }
+            std::cerr << "Sync failed" << std::endl;
+            return 2;
+        }
         if (stats.printStats()) {
             std::cout << "\n=== Statistics Complete ===" << std::endl;
             return 0;

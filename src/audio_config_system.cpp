@@ -473,6 +473,7 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
         if (!knowledgeBase_->initialize(true)) {
             std::cerr << "Warning: Failed to initialize semantic knowledge base" << std::endl;
         }
+        std::cout << "Semantic DB path: " << dbPath << std::endl;
         dimension_ = knowledgeBase_->getDimension();
         isReady_ = knowledgeBase_->isReady();
         if (isReady_) {
@@ -482,15 +483,8 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error loading semantic database: " << e.what() << std::endl;
-        try {
-            knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
-            knowledgeBase_->initialize(true);
-            dimension_ = 100;
-            isReady_ = true;
-            return false;
-        } catch (...) {
-            return false;
-        }
+        // Only construct in-memory DB if explicitly requested by caller elsewhere
+        return false;
     }
 }
 
@@ -562,9 +556,43 @@ float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
 
 void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
     if (!knowledgeBase_) return;
-    std::vector<std::string> flatTags;
-    for (const auto& tagSet : allTags) flatTags.insert(flatTags.end(), tagSet.begin(), tagSet.end());
-    knowledgeBase_->computeIDFStatistics(flatTags);
+    knowledgeBase_->computeIDFStatistics(allTags);
+}
+
+bool EmbeddingEngine::persistTrackerState(const SearchInterestTracker& tracker) {
+    if (!knowledgeBase_) return false;
+    // Export state and store via KB helpers
+    auto state = tracker.exportState();
+    // Clear existing
+    if (!knowledgeBase_->clearUserSignals()) return false;
+    // Store signals
+    if (state.contains("signals")) {
+        for (auto& [token, s] : state["signals"].items()) {
+            float strength = s.value("strength", 0.0f);
+            std::time_t ts = s.value("timestamp", std::time_t{0});
+            knowledgeBase_->upsertUserSignal(token, strength, ts);
+        }
+    }
+    // Store history
+    if (state.contains("history")) {
+        for (const auto& h : state["history"]) {
+            std::vector<std::string> tokens;
+            if (h.contains("tokens")) tokens = h["tokens"].get<std::vector<std::string>>();
+            std::time_t ts = h.value("timestamp", std::time_t{0});
+            float raw = h.value("rawStrength", 1.0f);
+            knowledgeBase_->addQueryRecord(tokens, ts, raw);
+        }
+    }
+    return true;
+}
+
+bool EmbeddingEngine::loadTrackerState(SearchInterestTracker& tracker) const {
+    if (!knowledgeBase_) return false;
+    auto state = knowledgeBase_->loadTrackerStateJson();
+    if (state.is_object()) {
+        return tracker.importState(state);
+    }
+    return false;
 }
 
 int EmbeddingEngine::getDimension() const noexcept {
@@ -816,6 +844,23 @@ void ConfigGenerator::applyUserPreferences(nlohmann::json& config, const UserCon
     
     config["metadata"]["user_selection"] = true;
     config["metadata"]["selected_count"] = userContext.getSelectedConfigs().size();
+}
+
+// ----------------------------------------------------------------------------
+// System-level KB sync orchestration
+// ----------------------------------------------------------------------------
+void AudioConfigSystem::syncKnowledgeBase() {
+    // Recompute IDF statistics from current configurations
+    std::vector<std::vector<std::string>> allTags;
+    allTags.reserve(configurations_.size());
+    for (const auto& [id, cfg] : configurations_) {
+        (void)id;
+        allTags.push_back(cfg->getSemanticTags());
+    }
+    embeddingEngine_->updateTagStatistics(allTags);
+
+    // Persist search tracker state to DB
+    embeddingEngine_->persistTrackerState(userContext_.getSearchTracker());
 }
 
 } // namespace audio_config

@@ -12,6 +12,7 @@
 #include <numeric>
 #include <iostream>
 #include <unordered_map>
+#include <ctime>
 
 namespace audio_config {
 
@@ -34,27 +35,53 @@ bool SemanticKnowledgeBase::initialize(bool createDefault) {
         }
     }
     
-    // Get embedding dimension from database
+    // Determine embedding dimension (0 if empty DB)
     dimension_ = db_->getEmbeddingDimension();
     if (dimension_ == 0) {
         // No embeddings yet, use default
         dimension_ = 100;
         std::cout << "No embeddings in database, using default dimension: " << dimension_ << std::endl;
-        
-        if (createDefault) {
-            createDefaultEmbeddings();
-        }
     } else {
         std::cout << "Loaded semantic database with dimension: " << dimension_ << std::endl;
     }
     
-    // Create sentence encoder
+    // Create sentence encoder FIRST (so default seeding can use it)
     encoder_ = SentenceEncoder::createDefault(db_.get(), dimension_);
     if (!encoder_ || !encoder_->isReady()) {
         std::cerr << "Failed to create sentence encoder" << std::endl;
         return false;
     }
-    
+
+    // Seed defaults only after encoder is ready
+    if (createDefault && db_->getEmbeddingDimension() == 0) {
+        createDefaultEmbeddings();
+    }
+
+    // Upgrade path: replace zero-norm embeddings with freshly encoded ones
+    // This handles older databases that might contain zeroed vectors.
+    {
+        auto tags = getAllTags();
+        int upgraded = 0;
+        for (const auto& tag : tags) {
+            auto emb = db_->getEmbedding(tag);
+            if (!emb.empty()) {
+                float sumSquares = 0.0f;
+                for (float v : emb) sumSquares += v * v;
+                if (sumSquares < 1e-8f) {
+                    auto fresh = encoder_->encode(tag);
+                    if (!fresh.empty()) {
+                        if (db_->storeEmbedding(tag, fresh, getCanonicalTag(tag))) {
+                            upgraded++;
+                        }
+                    }
+                }
+            }
+        }
+        if (upgraded > 0) {
+            std::cout << "Upgraded " << upgraded << " zero-norm embeddings" << std::endl;
+        }
+    }
+
     isReady_ = true;
     return true;
 }
@@ -214,32 +241,54 @@ bool SemanticKnowledgeBase::storeConfig(const std::string& key, float value) {
     return db_->storeConfig(key, value);
 }
 
-int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::string>& allTags) {
-    if (!db_ || allTags.empty()) return 0;
-    
-    // Count tag occurrences
-    std::unordered_map<std::string, int> tagCounts;
-    for (const auto& tag : allTags) {
-        // Canonicalize
-        std::string canonical = getCanonicalTag(tag);
-        tagCounts[canonical]++;
+int SemanticKnowledgeBase::computeIDFStatistics(const std::vector<std::vector<std::string>>& docs) {
+    if (!db_ || docs.empty()) return 0;
+
+    // Document frequency per canonical tag
+    std::unordered_map<std::string, int> docFreq;
+    for (const auto& doc : docs) {
+        std::unordered_map<std::string, bool> seenInDoc;
+        for (const auto& tag : doc) {
+            std::string canonical = getCanonicalTag(tag);
+            if (!seenInDoc[canonical]) {
+                docFreq[canonical] += 1;
+                seenInDoc[canonical] = true;
+            }
+        }
     }
-    
-    // Compute IDF for each tag
-    int totalDocs = static_cast<int>(allTags.size());
+
+    const int totalDocs = static_cast<int>(docs.size());
     int storedCount = 0;
-    
-    for (const auto& [tag, count] : tagCounts) {
-        // IDF = log(totalDocs / docFreq)
-        float idf = std::log(static_cast<float>(totalDocs) / count);
-        
-        if (db_->storeIDF(tag, idf, count)) {
+    for (const auto& [tag, df] : docFreq) {
+        if (df <= 0) continue;
+        float idf = std::log(static_cast<float>(totalDocs) / static_cast<float>(df));
+        if (db_->storeIDF(tag, idf, df)) {
             ++storedCount;
         }
     }
-    
-    std::cout << "Computed IDF for " << storedCount << " tags" << std::endl;
+    std::cout << "Computed IDF for " << storedCount << " tags across " << totalDocs << " documents" << std::endl;
     return storedCount;
+}
+
+// --- User signals persistence wrappers ---
+bool SemanticKnowledgeBase::clearUserSignals() {
+    if (!db_) return false;
+    return db_->clearUserSignals();
+}
+
+bool SemanticKnowledgeBase::upsertUserSignal(const std::string& token, float strength, std::time_t lastUpdate) {
+    if (!db_) return false;
+    return db_->upsertUserSignal(token, strength, lastUpdate);
+}
+
+bool SemanticKnowledgeBase::addQueryRecord(const std::vector<std::string>& tokens, std::time_t timestamp, float rawStrength) {
+    if (!db_) return false;
+    return db_->addQueryRecord(tokens, timestamp, rawStrength);
+}
+
+nlohmann::json SemanticKnowledgeBase::loadTrackerStateJson() const {
+    if (!db_) return nlohmann::json::object();
+    return db_->loadTrackerStateJson();
 }
 
 void SemanticKnowledgeBase::createDefaultEmbeddings() {
