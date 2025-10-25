@@ -65,9 +65,10 @@ TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
 SEED_TARGET = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
 STATS_TARGET = $(BUILD_DIR)/kbstats$(EXE_EXT)
 SMOKE_TARGET = $(BUILD_DIR)/smoke_test$(EXE_EXT)
+KB_CLI_TARGET = $(BUILD_DIR)/kb$(EXE_EXT)
 
 # Default target
-all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET) $(SMOKE_TARGET)
+all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET) $(SMOKE_TARGET) $(KB_CLI_TARGET)
 
 # Debug build
 debug: CXXFLAGS = $(DEBUG_FLAGS)
@@ -109,6 +110,14 @@ $(SMOKE_TARGET): $(BUILD_DIR)/smoke_test.o $(BUILD_DIR)/semantic_db.o $(BUILD_DI
 $(BUILD_DIR)/smoke_test.o: tools/smoke_test.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
+# Build KB CLI tool
+$(KB_CLI_TARGET): $(BUILD_DIR)/kb_cli.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/sentence_encoder.o $(BUILD_DIR)/semantic_knowledge_base.o $(BUILD_DIR)/text_utils.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Build KB CLI tool object
+$(BUILD_DIR)/kb_cli.o: tools/kb_cli.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -139,6 +148,22 @@ stats: $(STATS_TARGET)
 
 smoke-test: $(SMOKE_TARGET)
 	$(RUN_PREFIX)$(SMOKE_TARGET)
+
+# KB CLI commands
+kb: $(KB_CLI_TARGET)
+	$(RUN_PREFIX)$(KB_CLI_TARGET)
+
+kb-learn-tag: $(KB_CLI_TARGET)
+	$(RUN_PREFIX)$(KB_CLI_TARGET) learn-tag
+
+kb-rebuild-idf: $(KB_CLI_TARGET)
+	$(RUN_PREFIX)$(KB_CLI_TARGET) rebuild-idf
+
+kb-vacuum: $(KB_CLI_TARGET)
+	$(RUN_PREFIX)$(KB_CLI_TARGET) vacuum
+
+kb-checkpoint: $(KB_CLI_TARGET)
+	$(RUN_PREFIX)$(KB_CLI_TARGET) checkpoint
 
 # Run with specific config
 run-with-config: $(TARGET)
@@ -256,6 +281,13 @@ help:
 	@echo "  stats        - Show database statistics and integrity check"
 	@echo "  smoke-test   - Run comprehensive smoke tests"
 	@echo "  test         - Run basic functionality tests"
+	@echo ""
+	@echo "KB CLI COMMANDS:"
+	@echo "  kb           - Knowledge Base CLI tool"
+	@echo "  kb-learn-tag - Learn new tags from text"
+	@echo "  kb-rebuild-idf - Rebuild IDF statistics"
+	@echo "  kb-vacuum    - Optimize database storage"
+	@echo "  kb-checkpoint - Create WAL checkpoint"
 	@echo ""
 	@echo "DISTRIBUTION:"
 	@echo "  install      - Install to system"

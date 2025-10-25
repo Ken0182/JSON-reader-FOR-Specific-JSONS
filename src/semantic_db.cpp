@@ -474,4 +474,8 @@ bool SemanticDatabase::executeSql(const std::string& sql) const {
     return true;
 }
 
+bool SemanticDatabase::executeSqlPublic(const std::string& sql) const {
+    return executeSql(sql);
+}
+
 } // namespace audio_config
