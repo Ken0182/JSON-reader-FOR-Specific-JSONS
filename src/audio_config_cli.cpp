@@ -608,11 +608,38 @@ void AudioConfigSystem::handleStatsCommand(const std::vector<std::string>& args)
 }
 
 void AudioConfigSystem::handleKBStatsCommand(const std::vector<std::string>& args) {
-    (void)args; // Unused parameter
-    
     if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
         std::cout << "Knowledge base not initialized" << std::endl;
         return;
+    }
+    
+    // Check for subcommands
+    if (args.size() > 1) {
+        std::string subcommand = args[1];
+        std::transform(subcommand.begin(), subcommand.end(), subcommand.begin(), ::tolower);
+        
+        if (subcommand == "refresh" || subcommand == "sync") {
+            std::cout << "\n=== KNOWLEDGE BASE SYNC ===" << std::endl;
+            std::cout << "Synchronizing knowledge base..." << std::endl;
+            
+            if (syncKnowledgeBase()) {
+                std::cout << "Knowledge base synchronized successfully!" << std::endl;
+            } else {
+                std::cout << "Failed to synchronize knowledge base" << std::endl;
+                return;
+            }
+        } else if (subcommand == "help") {
+            std::cout << "\n=== KNOWLEDGE BASE COMMANDS ===" << std::endl;
+            std::cout << "kbstats              - Show knowledge base statistics" << std::endl;
+            std::cout << "kbstats refresh      - Refresh/sync knowledge base data" << std::endl;
+            std::cout << "kbstats sync         - Alias for refresh" << std::endl;
+            std::cout << "kbstats help         - Show this help" << std::endl;
+            return;
+        } else {
+            std::cout << "Unknown subcommand: " << subcommand << std::endl;
+            std::cout << "Use 'kbstats help' for available commands" << std::endl;
+            return;
+        }
     }
     
     std::cout << "\n=== KNOWLEDGE BASE STATISTICS ===" << std::endl;
@@ -696,6 +723,7 @@ GENERATION & OUTPUT:
   
 INFORMATION:
   stats                   - Show system statistics and user preferences
+  kbstats [refresh|sync]  - Show knowledge base statistics or sync data
   help                    - Show this help message
   examples                - Show usage examples and patterns
   
@@ -1090,6 +1118,79 @@ void AudioConfigSystem::printConfigurationSummary(const AudioConfig& config, Com
 
 void AudioConfigSystem::printCompatibilityResult(const CompatibilityResult& result) const {
     std::cout << result.generateExplanation() << std::endl;
+}
+
+bool AudioConfigSystem::syncKnowledgeBase() {
+    try {
+        if (!embeddingEngine_ || !embeddingEngine_->isReady()) {
+            std::cerr << "Embedding engine not ready" << std::endl;
+            return false;
+        }
+        
+        // 1. Recompute IDF statistics from current configurations
+        std::vector<std::vector<std::string>> allTags;
+        for (const auto& [id, config] : configurations_) {
+            allTags.push_back(config->getSemanticTags());
+        }
+        
+        if (!allTags.empty()) {
+            std::cout << "  Recomputing IDF statistics for " << allTags.size() << " configurations..." << std::endl;
+            embeddingEngine_->updateTagStatistics(allTags);
+        }
+        
+        // 2. Persist user signals if available
+        auto& tracker = userContext_.getSearchTracker();
+        if (tracker.isEnabled()) {
+            std::cout << "  Persisting user search signals..." << std::endl;
+            
+            // Get the knowledge base from the embedding engine
+            auto* kb = embeddingEngine_->getKnowledgeBase();
+            if (kb) {
+                // Export tracker state
+                auto state = tracker.exportState();
+                
+                // Store user signals
+                if (state.contains("signals")) {
+                    for (auto& [token, signalJson] : state["signals"].items()) {
+                        float strength = signalJson["strength"].get<float>();
+                        auto time_t_val = signalJson["timestamp"].get<std::time_t>();
+                        kb->storeUserSignal(token, strength, time_t_val);
+                    }
+                }
+                
+                // Store query history
+                if (state.contains("history")) {
+                    for (const auto& recordJson : state["history"]) {
+                        std::string tokens = recordJson["tokens"].dump();
+                        std::time_t timestamp = recordJson["timestamp"].get<std::time_t>();
+                        float rawStrength = recordJson["rawStrength"].get<float>();
+                        kb->storeQueryHistory(tokens, timestamp, rawStrength);
+                    }
+                }
+                
+                std::cout << "    Stored " << tracker.getActiveSignals().size() << " active signals" << std::endl;
+                std::cout << "    Stored " << tracker.getHistory(1000).size() << " query records" << std::endl;
+            }
+        }
+        
+        // 3. Refresh any stale embeddings
+        std::cout << "  Refreshing embeddings..." << std::endl;
+        for (const auto& [id, config] : configurations_) {
+            // Re-encode configuration to ensure fresh embeddings
+            std::string embeddingText = TextUtils::normalizeForEmbedding(id);
+            for (const auto& tag : config->getSemanticTags()) {
+                embeddingText += " " + TextUtils::normalizeForEmbedding(tag);
+            }
+            config->setEmbedding(embeddingEngine_->getEmbedding(embeddingText));
+        }
+        
+        std::cout << "  Synchronized " << configurations_.size() << " configurations" << std::endl;
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error during knowledge base sync: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<std::string> AudioConfigSystem::tokenizeCommand(const std::string& command) const {

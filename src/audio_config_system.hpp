@@ -416,6 +416,12 @@ public:
      * @return true if initialized
      */
     [[nodiscard]] bool isReady() const noexcept;
+    
+    /**
+     * @brief Get the underlying knowledge base (for persistence operations)
+     * @return Pointer to knowledge base or nullptr
+     */
+    SemanticKnowledgeBase* getKnowledgeBase() const noexcept;
 
 private:
     // v1.6: Delegate to SemanticKnowledgeBase
@@ -583,6 +589,14 @@ private:
     void printConfigurationSummary(const AudioConfig& config, CompatibilityScore score = -1.0f) const;
     void printCompatibilityResult(const CompatibilityResult& result) const;
     [[nodiscard]] std::vector<std::string> tokenizeCommand(const std::string& command) const;
+    
+    /**
+     * @brief Synchronize knowledge base with current configuration data
+     * @return true if synchronization succeeded
+     * 
+     * Recomputes IDF statistics, updates embeddings, and persists user signals
+     */
+    bool syncKnowledgeBase();
 };
 
 } // namespace audio_config

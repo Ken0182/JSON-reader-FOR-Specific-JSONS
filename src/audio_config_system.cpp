@@ -482,13 +482,21 @@ bool EmbeddingEngine::loadEmbeddingIndex(const std::string& dbPath) {
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error loading semantic database: " << e.what() << std::endl;
-        try {
-            knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
-            knowledgeBase_->initialize(true);
-            dimension_ = 100;
-            isReady_ = true;
-            return false;
-        } catch (...) {
+        
+        // Only fall back to in-memory if explicitly requested
+        if (dbPath == ":memory:") {
+            try {
+                knowledgeBase_ = std::make_unique<SemanticKnowledgeBase>(":memory:");
+                knowledgeBase_->initialize(true);
+                dimension_ = 100;
+                isReady_ = true;
+                std::cout << "Using in-memory fallback database" << std::endl;
+                return false;
+            } catch (...) {
+                return false;
+            }
+        } else {
+            std::cerr << "Failed to load database and no in-memory fallback requested" << std::endl;
             return false;
         }
     }
@@ -562,9 +570,8 @@ float EmbeddingEngine::getTagIDF(const std::string& tag) const noexcept {
 
 void EmbeddingEngine::updateTagStatistics(const std::vector<std::vector<std::string>>& allTags) {
     if (!knowledgeBase_) return;
-    std::vector<std::string> flatTags;
-    for (const auto& tagSet : allTags) flatTags.insert(flatTags.end(), tagSet.begin(), tagSet.end());
-    knowledgeBase_->computeIDFStatistics(flatTags);
+    // Pass the structured data directly (no flattening)
+    knowledgeBase_->computeIDFStatistics(allTags);
 }
 
 int EmbeddingEngine::getDimension() const noexcept {
@@ -573,6 +580,10 @@ int EmbeddingEngine::getDimension() const noexcept {
 
 bool EmbeddingEngine::isReady() const noexcept {
     return isReady_ && knowledgeBase_ && knowledgeBase_->isReady();
+}
+
+SemanticKnowledgeBase* EmbeddingEngine::getKnowledgeBase() const noexcept {
+    return knowledgeBase_.get();
 }
 
 // ============================================================================
