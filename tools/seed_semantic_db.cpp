@@ -1,4 +1,4 @@
-**
+/**
  * @file seed_semantic_db.cpp
  * @brief Semantic Knowledge Base Seeder
  * @author AI Assistant

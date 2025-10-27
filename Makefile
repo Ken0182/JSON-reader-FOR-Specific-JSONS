@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -O3 -DNDEBUG
 DEBUG_FLAGS = -std=c++17 -Wall -Wextra -Wpedantic -g -O0 -DDEBUG
 INCLUDES = -Isrc
-LDFLAGS = -pthread -lsqlite3
+LDFLAGS = -pthread -lsqlite3 -lasound
 
 # Platform detection
 ifeq ($(OS),Windows_NT)
@@ -55,7 +55,8 @@ SOURCES = $(SRC_DIR)/main.cpp \
           $(SRC_DIR)/semantic_db.cpp \
           $(SRC_DIR)/sentence_encoder.cpp \
           $(SRC_DIR)/semantic_knowledge_base.cpp \
-          $(SRC_DIR)/contrastive_query.cpp
+          $(SRC_DIR)/contrastive_query.cpp \
+          $(SRC_DIR)/sound_synthesizer.cpp
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
@@ -64,9 +65,10 @@ OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 TARGET = $(BUILD_DIR)/audio_config_system$(EXE_EXT)
 SEED_TARGET = $(BUILD_DIR)/seed_semantic_db$(EXE_EXT)
 STATS_TARGET = $(BUILD_DIR)/kbstats$(EXE_EXT)
+SYNTH_DEMO_TARGET = $(BUILD_DIR)/synthesizer_demo$(EXE_EXT)
 
 # Default target
-all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET)
+all: $(TARGET) $(SEED_TARGET) $(STATS_TARGET) $(SYNTH_DEMO_TARGET)
 
 # Debug build
 debug: CXXFLAGS = $(DEBUG_FLAGS)
@@ -100,6 +102,14 @@ $(STATS_TARGET): $(BUILD_DIR)/kbstats.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/
 $(BUILD_DIR)/kbstats.o: tools/kbstats.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
+# Build synthesizer demo
+$(SYNTH_DEMO_TARGET): $(BUILD_DIR)/synthesizer_demo.o $(BUILD_DIR)/audio_config_system.o $(BUILD_DIR)/audio_config_cli.o $(BUILD_DIR)/text_utils.o $(BUILD_DIR)/search_tracker.o $(BUILD_DIR)/semantic_db.o $(BUILD_DIR)/sentence_encoder.o $(BUILD_DIR)/semantic_knowledge_base.o $(BUILD_DIR)/contrastive_query.o $(BUILD_DIR)/sound_synthesizer.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Build synthesizer demo object
+$(BUILD_DIR)/synthesizer_demo.o: $(SRC_DIR)/synthesizer_demo.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
 # Download JSON library if not present
 $(SRC_DIR)/json.hpp:
 	@echo "Downloading nlohmann/json library..."
@@ -127,6 +137,10 @@ seed-force: $(SEED_TARGET)
 # Show database statistics
 stats: $(STATS_TARGET)
 	$(RUN_PREFIX)$(STATS_TARGET)
+
+# Run synthesizer demo
+synth-demo: $(SYNTH_DEMO_TARGET)
+	$(RUN_PREFIX)$(SYNTH_DEMO_TARGET) clean_config.json
 
 # Run with specific config
 run-with-config: $(TARGET)
