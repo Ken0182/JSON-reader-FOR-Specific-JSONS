@@ -14,6 +14,7 @@
 
 #include "audio_config_system.hpp"
 #include "json.hpp"
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -31,6 +32,40 @@
 using json = nlohmann::json;
 
 namespace audio_config {
+// =========================================================================
+// SynthLinkPlanner Implementation (scaffold)
+// =========================================================================
+
+nlohmann::json SynthLinkPlanner::createPlanFor(const AudioConfig& config) {
+    nlohmann::json plan = nlohmann::json::object();
+    const auto& tech = config.getTechnicalSpecs();
+    const auto& role = config.getMusicalRole();
+
+    // Basic extraction
+    std::string synthType = "unknown";
+    if (config.getConfigData().contains("synthesisType")) {
+        synthType = config.getConfigData()["synthesisType"].get<std::string>();
+    }
+
+    plan["id"] = config.getId();
+    plan["role"] = role.tonalCharacter;
+    plan["synthesisType"] = synthType;
+    plan["envelope"] = {
+        {"type", tech.envelopeType},
+        {"attack_ms", 10},
+        {"release_ms", 200}
+    };
+
+    // Suggest an external command line integration point
+    plan["suggestedCommand"] = nlohmann::json::array({
+        "synth-runner",
+        "--preset", config.getId(),
+        "--type", synthType
+    });
+
+    return plan;
+}
+
 
 // Constants for semantic similarity calculation (v1.2 enhanced)
 namespace {

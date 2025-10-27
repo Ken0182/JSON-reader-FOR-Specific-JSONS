@@ -516,6 +516,19 @@ private:
 };
 
 /**
+ * @brief Planner for linking selected configs to an external synthesizer
+ */
+class SynthLinkPlanner {
+public:
+    /**
+     * @brief Create a minimal playback plan for a configuration
+     * @param config Audio configuration
+     * @return JSON plan with synthesis type, envelope and suggested command
+     */
+    [[nodiscard]] static nlohmann::json createPlanFor(const AudioConfig& config);
+};
+
+/**
  * @brief Main audio configuration system
  */
 class AudioConfigSystem {
@@ -580,6 +593,7 @@ private:
     void handleStatsCommand(const std::vector<std::string>& args);
     void handleKBStatsCommand(const std::vector<std::string>& args);  // v1.6
     void handleGenerateCommand(const std::vector<std::string>& args);
+    void handlePlayCommand(const std::vector<std::string>& args);      // Synth linkage scaffold
     void handleHelpCommand(const std::vector<std::string>& args);
     void handleExamplesCommand(const std::vector<std::string>& args);
     void handleSignalsCommand(const std::vector<std::string>& args);  // v1.5

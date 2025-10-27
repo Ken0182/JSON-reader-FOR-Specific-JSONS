@@ -341,7 +341,7 @@ void AudioConfigSystem::runInteractiveCLI() {
     std::string input;
     
     std::cout << "\n=== INTERACTIVE SESSION ===" << std::endl;
-    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, kbstats, signals, generate, help, examples, quit\n" << std::endl;
+    std::cout << "Commands: search, select, boost, demote, exclude, list, stats, kbstats, signals, generate, play, help, examples, quit\n" << std::endl;
     
     while (true) {
         std::cout << "> ";
@@ -382,6 +382,8 @@ void AudioConfigSystem::runInteractiveCLI() {
                 handleSignalsCommand(tokens);
             } else if (command == "generate" || command == "suggest_config") {
                 handleGenerateCommand(tokens);
+            } else if (command == "play") {
+                handlePlayCommand(tokens);
             } else {
                 std::cout << "Unknown command: " << command << std::endl;
                 std::cout << "Type 'help' for available commands." << std::endl;
@@ -719,6 +721,7 @@ LEARNING & PREFERENCES:
   
 GENERATION & OUTPUT:
   generate [filename]     - Generate synthesis-ready configuration
+  play [config_id]        - Print synthesis plan for a config
   suggest_config [file]   - Alias for generate command
   
 INFORMATION:
@@ -794,6 +797,25 @@ Each suggestion shows:
   - Warnings about potential conflicts
   - Suggestions for improvements
 )" << std::endl;
+}
+
+void AudioConfigSystem::handlePlayCommand(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        std::cout << "Usage: play <config_id>" << std::endl;
+        return;
+    }
+
+    const std::string& configId = args[1];
+    auto cfg = getConfiguration(configId);
+    if (!cfg) {
+        std::cout << "Configuration not found: " << configId << std::endl;
+        return;
+    }
+
+    auto plan = SynthLinkPlanner::createPlanFor(*cfg);
+    std::cout << "\n=== SYNTHESIS PLAN ===" << std::endl;
+    std::cout << plan.dump(2) << std::endl;
+    std::cout << "\nNote: This prints a suggested external command; wire it to your synth." << std::endl;
 }
 
 void AudioConfigSystem::handleSignalsCommand(const std::vector<std::string>& args) {
